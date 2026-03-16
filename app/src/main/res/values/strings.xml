@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">MobileProject</string>
+
+    <string name="login_title">Đăng nhập</string>
+    <string name="login_subtitle">Nhập thông tin để tiếp tục</string>
+    <string name="login_username">Tài khoản</string>
+    <string name="login_password">Mật khẩu</string>
+    <string name="login_button">Đăng nhập</string>
+
+    <string name="home_title">Trang chủ</string>
+</resources>

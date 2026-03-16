@@ -1,0 +1,41 @@
+# Cấu trúc file .gitignore chuẩn cho Android/Kotlin (Clean Architecture)
+
+# 1. Các file tạm của hệ thống và IDE
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# 2. Thư mục Build (Quan trọng nhất - không bao giờ push thư mục này)
+**/build/
+/build
+
+# 3. Kotlin & Java
+*.class
+*.kt.tooling.log
+
+# 4. Android Studio & IntelliJ
+*.iws
+*.out
+.idea/
+
+# 5. Keystore & Secrets (Bảo mật: Không bao giờ push file ký app lên Git công khai)
+*.jks
+*.keystore
+google-services.json
+
+# 6. Log files
+*.log
+
+# 7. Local configuration (Dành cho việc cấu hình môi trường riêng)
+.idea/deploymentTargetSelector.xml
