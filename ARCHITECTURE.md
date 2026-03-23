@@ -137,6 +137,8 @@ Vai trò:
 - Khai báo dependency injection modules (Hilt/Koin).
 - Nơi bind interface -> implementation, provide API client, DB, dispatcher, repository, use case.
 
+Hướng dẫn cài đặt + wiring Hilt DI: xem `HILT_INJECTION_GUIDE.md`.
+
 Mục tiêu:
 - Tập trung cấu hình wiring ở một chỗ, tránh khởi tạo thủ công rải rác.
 
