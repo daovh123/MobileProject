@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MobileProject</string>
+    <string name="app_name">PAWGRESS</string>
 
     <string name="login_title">Đăng nhập</string>
     <string name="login_subtitle">Nhập thông tin để tiếp tục</string>

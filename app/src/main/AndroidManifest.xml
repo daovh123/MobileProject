@@ -16,12 +16,7 @@
         android:theme="@style/Theme.MobileProject">
 
         <activity
-            android:name="com.example.mobileproject.presentation.ui.screen.home.HomeActivity"
-            android:exported="false" />
-
-        <activity
-            android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
-            android:theme="@style/Theme.MobileProject.NoActionBar"
+            android:name="com.example.mobileproject.presentation.ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
