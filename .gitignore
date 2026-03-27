@@ -39,3 +39,36 @@ google-services.json
 
 # 7. Local configuration (Dành cho việc cấu hình môi trường riêng)
 .idea/deploymentTargetSelector.xml
+
+# 8. VS Code & Visual Studio
+.vscode/
+.vs/
+*.visual
+
+# 9. Backend (Maven/Spring Boot)
+**/target/
+*.war
+*.ear
+
+# 10. Môi trường & Biến bí mật (Bảo mật tuyệt đối)
+.env
+.env.*
+*.local
+secrets.properties
+apikey.properties
+config.properties
+*.pem
+*.key
+*.cert
+*.cer
+credentials.json
+client_secret.json
+
+# 11. File tạm do Hệ điều hành tự sinh ra
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
