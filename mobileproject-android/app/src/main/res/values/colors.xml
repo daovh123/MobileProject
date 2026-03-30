@@ -8,4 +8,32 @@
     <color name="teal_700">#FF007A50</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Material3 palette (matched to prototype in soulmate_-shared-sanctuary) -->
+    <color name="md3_primary">#FFA03A0F</color>
+    <color name="md3_on_primary">#FFFFFFFF</color>
+    <color name="md3_primary_container">#FFFE7E4F</color>
+    <color name="md3_on_primary_container">#FFFFFFFF</color>
+
+    <color name="md3_secondary">#FF006B1F</color>
+    <color name="md3_on_secondary">#FFFFFFFF</color>
+    <color name="md3_secondary_container">#FF8DF48E</color>
+    <color name="md3_on_secondary_container">#FF22313A</color>
+
+    <color name="md3_tertiary">#FF834C49</color>
+    <color name="md3_on_tertiary">#FFFFFFFF</color>
+    <color name="md3_tertiary_container">#FFFFB7B2</color>
+    <color name="md3_on_tertiary_container">#FF22313A</color>
+
+    <color name="md3_surface">#FFEFF7FF</color>
+    <color name="md3_on_surface">#FF22313A</color>
+    <color name="md3_surface_variant">#FFD7EBFA</color>
+    <color name="md3_on_surface_variant">#FF4E5D68</color>
+    <color name="md3_outline">#FF697984</color>
+
+    <color name="md3_error">#FFB31B25</color>
+    <color name="md3_on_error">#FFFFFFFF</color>
+
+    <!-- Custom component colors -->
+    <color name="bottom_nav_indicator_pink">#FFFF7EB3</color>
 </resources>

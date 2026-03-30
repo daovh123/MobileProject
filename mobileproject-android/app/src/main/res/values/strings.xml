@@ -8,4 +8,11 @@
     <string name="login_button">Đăng nhập</string>
 
     <string name="home_title">Trang chủ</string>
+
+    <string name="page_home">Home</string>
+    <string name="page_wallet">Wallet</string>
+    <string name="page_explore">Explore</string>
+    <string name="page_memories">Memories</string>
+
+    <string name="action_notifications">Notifications</string>
 </resources>

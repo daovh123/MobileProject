@@ -1,13 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="@string/home_title"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5" />
+        android:background="?attr/colorSurface"
+        app:contentInsetEnd="24dp"
+        app:contentInsetStartWithNavigation="24dp"
+        app:menu="@menu/menu_top_app_bar"
+        app:navigationIcon="@drawable/ic_avatar_24"
+        app:navigationIconTint="?attr/colorPrimary"
+        app:title="@string/page_home"
+        app:titleTextColor="?attr/colorPrimary" />
 
-</FrameLayout>
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bottomNavCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.92"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardElevation="12dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MobileProject.BottomNav">
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            style="@style/Widget.MobileProject.BottomNav"
+            android:theme="@style/ThemeOverlay.MobileProject.BottomNav"
+            app:itemIconSize="28dp"
+            app:itemPaddingTop="16dp"
+            app:itemPaddingBottom="16dp"
+            app:itemIconTint="@color/bottom_nav_item_icon_tint"
+            app:labelVisibilityMode="unlabeled"
+            app:menu="@menu/menu_bottom_nav" />
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>
