@@ -15,6 +15,7 @@
         app:contentInsetStartWithNavigation="24dp"
         app:menu="@menu/menu_top_app_bar"
         app:navigationIcon="@drawable/ic_avatar_24"
+        app:navigationContentDescription="@string/cd_open_profile"
         app:navigationIconTint="?attr/colorPrimary"
         app:title="@string/page_home"
         app:titleTextColor="?attr/colorPrimary" />

@@ -20,6 +20,21 @@
             android:exported="false" />
 
         <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectedActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MobileProject.NoActionBar" />
+
+        <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MobileProject.NoActionBar" />
+
+        <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.register.RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MobileProject.NoActionBar" />
+
+        <activity
             android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
             android:theme="@style/Theme.MobileProject.NoActionBar"
             android:exported="true">

@@ -56,8 +56,30 @@
     </style>
 
     <style name="Widget.MobileProject.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <!-- Scale up to match reference -->
-        <item name="android:width">80dp</item>
-        <item name="android:height">40dp</item>
+        <!-- Keep indicator compact relative to nav height -->
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <style name="Widget.MobileProject.AuthTextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+        <item name="boxBackgroundColor">@color/auth_input_bg</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">0dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearanceOverlay.MobileProject.AuthField</item>
+        <item name="hintTextColor">@color/auth_text_secondary</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.MobileProject.AuthField">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Widget.MobileProject.AuthPrimaryButton" parent="Widget.Material3.Button">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+        <item name="backgroundTint">@color/auth_pink</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="elevation">0dp</item>
     </style>
 </resources>

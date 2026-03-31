@@ -2,6 +2,7 @@ package com.example.mobileproject.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mobileproject.core.result.Resource
 import com.example.mobileproject.domain.entity.Product
 import com.example.mobileproject.domain.usecase.GetProductUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,14 +17,19 @@ class ProductViewModel @Inject constructor(
     private val getProductUseCase: GetProductUseCase,
 ) : ViewModel() {
 
-    private val _products = MutableStateFlow<List<Product>>(emptyList())
-    val products: StateFlow<List<Product>> = _products.asStateFlow()
+    private val _products = MutableStateFlow<Resource<List<Product>>>(Resource.Loading)
+    val products: StateFlow<Resource<List<Product>>> = _products.asStateFlow()
 
     init {
+        loadProducts()
+    }
+
+    fun loadProducts() {
         viewModelScope.launch {
+            _products.value = Resource.Loading
             runCatching { getProductUseCase() }
-                .onSuccess { _products.value = it }
-                .onFailure { _products.value = emptyList() }
+                .onSuccess { _products.value = Resource.Success(it) }
+                .onFailure { _products.value = Resource.Error(it) }
         }
     }
 }

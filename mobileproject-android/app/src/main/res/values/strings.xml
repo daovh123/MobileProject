@@ -6,13 +6,60 @@
     <string name="login_username">Tài khoản</string>
     <string name="login_password">Mật khẩu</string>
     <string name="login_button">Đăng nhập</string>
+    <string name="login_welcome_title">Chào mừng trở lại, tình yêu</string>
+    <string name="login_welcome_subtitle">Tiếp tục hành trình chung cùng Co-Wallet &amp; Soul</string>
+    <string name="login_email_label">Địa chỉ Email</string>
+    <string name="login_email_hint">heart@together.com</string>
+    <string name="login_password_label">Mật khẩu</string>
+    <string name="login_password_hint">••••••••</string>
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_sign_up">Đăng ký</string>
+
+    <string name="register_title">Tạo tài khoản</string>
+    <string name="register_subtitle">Bắt đầu hành trình cùng Co-Wallet &amp; Soul</string>
+    <string name="register_name_hint">Họ và tên</string>
+    <string name="register_email_hint">Địa chỉ email</string>
+    <string name="register_gender_label">Giới tính</string>
+    <string name="register_gender_hint">Chọn giới tính</string>
+    <string name="register_gender_male">Nam</string>
+    <string name="register_gender_female">Nữ</string>
+    <string name="register_gender_other">Khác</string>
+    <string name="register_birthdate_hint">Ngày sinh (dd/mm/yyyy)</string>
+    <string name="register_nickname_hint">Biệt danh (tùy chọn)</string>
+    <string name="register_password_hint">Mật khẩu</string>
+    <string name="register_button">Đăng ký</string>
+    <string name="register_have_account">Đã có tài khoản?</string>
+    <string name="register_login">Đăng nhập</string>
+    <string name="couple_connect_title">Kết nối với người thương</string>
+    <string name="couple_connect_subtitle">Bắt đầu hành trình tài chính chung bằng cách ghép tài khoản an toàn.</string>
+    <string name="couple_option_1">TÙY CHỌN 1</string>
+    <string name="couple_option_2">TÙY CHỌN 2</string>
+    <string name="couple_generate_code">Tạo mã cặp</string>
+    <string name="couple_enter_partner_code">Nhập mã đối tác</string>
+    <string name="couple_partner_code_hint">VD. 000-000</string>
+    <string name="couple_connect_profiles">Kết nối hồ sơ</string>
+    <string name="connected_title">Bạn đã kết nối!</string>
+    <string name="connected_subtitle">Nơi lưu giữ kỹ thuật số chung cho mọi khoảnh khắc, to hay nhỏ.</string>
+    <string name="connected_date">12 Tháng 6, 2022</string>
+    <string name="connected_go_home">Về Trang chủ</string>
 
     <string name="home_title">Trang chủ</string>
 
-    <string name="page_home">Home</string>
-    <string name="page_wallet">Wallet</string>
-    <string name="page_explore">Explore</string>
-    <string name="page_memories">Memories</string>
+    <string name="page_home">Trang chủ</string>
+    <string name="page_wallet">Ví</string>
+    <string name="page_explore">Khám phá</string>
+    <string name="page_memories">Kỷ niệm</string>
+    <string name="memories_tagline">Mỗi đồng tiền kể câu chuyện của chúng ta.</string>
+    <string name="memories_recent_moments">Khoảnh khắc gần đây</string>
+    <string name="memories_more_count">+12</string>
+    <string name="memories_partner_info">Thông tin đối tác</string>
 
-    <string name="action_notifications">Notifications</string>
+    <string name="memories_greeting">Xin chào, %1$s!</string>
+
+    <string name="cd_open_profile">Mở hồ sơ</string>
+    <string name="cd_avatar">Ảnh đại diện</string>
+    <string name="cd_favorite">Yêu thích</string>
+
+    <string name="action_notifications">Thông báo</string>
 </resources>

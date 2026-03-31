@@ -9,31 +9,42 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Material3 palette (matched to prototype in soulmate_-shared-sanctuary) -->
-    <color name="md3_primary">#FFA03A0F</color>
+    <!-- Material3 palette tuned for pink-violet theme -->
+    <color name="md3_primary">#FFB0005C</color>
     <color name="md3_on_primary">#FFFFFFFF</color>
-    <color name="md3_primary_container">#FFFE7E4F</color>
-    <color name="md3_on_primary_container">#FFFFFFFF</color>
+    <color name="md3_primary_container">#FFFBCDE2</color>
+    <color name="md3_on_primary_container">#FF3B0020</color>
 
-    <color name="md3_secondary">#FF006B1F</color>
+    <color name="md3_secondary">#FF7B1FA2</color>
     <color name="md3_on_secondary">#FFFFFFFF</color>
-    <color name="md3_secondary_container">#FF8DF48E</color>
-    <color name="md3_on_secondary_container">#FF22313A</color>
+    <color name="md3_secondary_container">#FFEED8FA</color>
+    <color name="md3_on_secondary_container">#FF2F123D</color>
 
-    <color name="md3_tertiary">#FF834C49</color>
+    <color name="md3_tertiary">#FF4B5AB7</color>
     <color name="md3_on_tertiary">#FFFFFFFF</color>
-    <color name="md3_tertiary_container">#FFFFB7B2</color>
-    <color name="md3_on_tertiary_container">#FF22313A</color>
+    <color name="md3_tertiary_container">#FFDDE3FF</color>
+    <color name="md3_on_tertiary_container">#FF101C57</color>
 
-    <color name="md3_surface">#FFEFF7FF</color>
+    <color name="md3_surface">#FFFFFBFE</color>
     <color name="md3_on_surface">#FF22313A</color>
-    <color name="md3_surface_variant">#FFD7EBFA</color>
-    <color name="md3_on_surface_variant">#FF4E5D68</color>
-    <color name="md3_outline">#FF697984</color>
+    <color name="md3_surface_variant">#FFF5EAF2</color>
+    <color name="md3_on_surface_variant">#FF5E5260</color>
+    <color name="md3_outline">#FF8B7A89</color>
 
     <color name="md3_error">#FFB31B25</color>
     <color name="md3_on_error">#FFFFFFFF</color>
 
     <!-- Custom component colors -->
     <color name="bottom_nav_indicator_pink">#FFFF7EB3</color>
+    <color name="auth_pink">#FFE5006D</color>
+    <color name="auth_text_primary">#FF1D1D1F</color>
+    <color name="auth_text_secondary">#FF6E6E73</color>
+    <color name="auth_input_bg">#FFF5F3F5</color>
+    <color name="auth_bg_top">#FFFDF2F8</color>
+    <color name="auth_bg_bottom">#FFF7E6F3</color>
+    <color name="couple_bg_top">#FFF4F8FF</color>
+    <color name="couple_bg_bottom">#FFF6EFF8</color>
+    <color name="couple_card">#FFFFFFFF</color>
+    <color name="couple_code_bg">#FFEAF5FF</color>
+    <color name="couple_soft_panel">#FFF5F1F3</color>
 </resources>
