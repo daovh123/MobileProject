@@ -2,10 +2,14 @@ package com.example.mobileproject.data.repository
 
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.datasource.remote.RemoteDataSource
+import com.example.mobileproject.data.model.auth.AuthResponseDto
+import com.example.mobileproject.data.model.auth.LoginRequestDto
+import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.ProductDto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import retrofit2.Response
 
 class ProductRepositoryImplTest {
 
@@ -16,6 +20,14 @@ class ProductRepositoryImplTest {
                 ProductDto(id = "1", name = "Coffee"),
                 ProductDto(id = "2", name = "Tea"),
             )
+
+            override suspend fun login(request: LoginRequestDto): Response<AuthResponseDto> {
+                return Response.success(AuthResponseDto(false, "unused", null, null, null))
+            }
+
+            override suspend fun register(request: RegisterRequestDto): Response<AuthResponseDto> {
+                return Response.success(AuthResponseDto(false, "unused", null, null, null))
+            }
         }
 
         val remoteDataSource = RemoteDataSource(apiService)

@@ -28,9 +28,16 @@
     <string name="register_birthdate_hint">Ngày sinh (dd/mm/yyyy)</string>
     <string name="register_nickname_hint">Biệt danh (tùy chọn)</string>
     <string name="register_password_hint">Mật khẩu</string>
+    <string name="register_confirm_password_hint">Xác nhận mật khẩu</string>
+    <string name="register_confirm_password_mismatch">Mật khẩu xác nhận không khớp</string>
     <string name="register_button">Đăng ký</string>
     <string name="register_have_account">Đã có tài khoản?</string>
     <string name="register_login">Đăng nhập</string>
+    <string name="auth_required_fields">Vui lòng nhập đầy đủ thông tin</string>
+    <string name="login_after_register_hint">Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.</string>
+    <string name="profile_setup_title">Thông tin cá nhân</string>
+    <string name="profile_setup_subtitle">Điền hồ sơ cá nhân sau khi đăng nhập để tiếp tục.</string>
+    <string name="profile_save_continue">Lưu và tiếp tục</string>
     <string name="couple_connect_title">Kết nối với người thương</string>
     <string name="couple_connect_subtitle">Bắt đầu hành trình tài chính chung bằng cách ghép tài khoản an toàn.</string>
     <string name="couple_option_1">TÙY CHỌN 1</string>

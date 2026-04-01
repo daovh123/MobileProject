@@ -8,6 +8,11 @@ plugins {
 android {
     namespace = "com.example.mobileproject"
 
+    val apiBaseUrl = ((project.findProperty("API_BASE_URL") as? String)
+        ?: "http://10.0.2.2:8080/")
+        .trim()
+        .removeSurrounding("\"")
+
     compileSdk = 36
 
     defaultConfig {
@@ -18,6 +23,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {
@@ -36,6 +42,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -58,6 +65,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
 
     testImplementation(libs.junit)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.dagger:hilt-android:2.59.2")

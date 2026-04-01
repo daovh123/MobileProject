@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -30,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,25 +47,40 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
+import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
+import com.example.mobileproject.presentation.viewmodel.AuthViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_PREFILLED_EMAIL = "extra_prefilled_email"
+        const val EXTRA_REGISTERED_SUCCESS = "extra_registered_success"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableImmersiveMode()
+        val prefilledEmail = intent.getStringExtra(EXTRA_PREFILLED_EMAIL).orEmpty()
+        val showRegistrationSuccess = intent.getBooleanExtra(EXTRA_REGISTERED_SUCCESS, false)
         setContent {
             MaterialTheme {
+                val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
-                    onLogin = {
-                        startActivity(Intent(this, CoupleConnectActivity::class.java))
+                    onLoginSuccess = {
+                        startActivity(Intent(this, PersonalInfoActivity::class.java))
                         finish()
                     },
                     onSignUp = {
                         startActivity(Intent(this, RegisterActivity::class.java))
-                    }
+                    },
+                    prefilledEmail = prefilledEmail,
+                    showRegistrationSuccess = showRegistrationSuccess,
+                    authViewModel = authViewModel,
                 )
             }
         }
@@ -80,11 +97,22 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 private fun LoginScreen(
-    onLogin: () -> Unit,
-    onSignUp: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onSignUp: () -> Unit,
+    prefilledEmail: String,
+    showRegistrationSuccess: Boolean,
+    authViewModel: AuthViewModel,
 ) {
-    var email by remember { mutableStateOf("") }
+    var email by remember(prefilledEmail) { mutableStateOf(prefilledEmail) }
     var password by remember { mutableStateOf("") }
+    val uiState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.authSession) {
+        if (uiState.authSession != null) {
+            onLoginSuccess()
+            authViewModel.consumeAuthSuccess()
+        }
+    }
 
     val primaryText = colorResource(R.color.auth_text_primary)
     val secondaryText = colorResource(R.color.auth_text_secondary)
@@ -140,6 +168,17 @@ private fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
+                    if (showRegistrationSuccess) {
+                        Text(
+                            text = stringResource(R.string.login_after_register_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorResource(R.color.auth_pink),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
                     Text(
                         text = stringResource(R.string.login_email_label),
                         style = MaterialTheme.typography.titleMedium,
@@ -149,7 +188,10 @@ private fun LoginScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = {
+                            email = it
+                            authViewModel.clearError()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.login_email_hint)) },
                         singleLine = true,
@@ -166,7 +208,10 @@ private fun LoginScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            authViewModel.clearError()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.login_password_hint)) },
                         singleLine = true,
@@ -187,14 +232,34 @@ private fun LoginScreen(
                     }
 
                     Button(
-                        onClick = onLogin,
+                        onClick = {
+                            authViewModel.login(
+                                usernameOrEmail = email,
+                                password = password,
+                            )
+                        },
+                        enabled = !uiState.isLoading,
                         colors = ButtonDefaults.buttonColors(containerColor = pink),
                         shape = RoundedCornerShape(18.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
-                        Text(text = stringResource(R.string.login_button), color = Color.White)
+                        Text(
+                            text = if (uiState.isLoading) "Dang dang nhap..." else stringResource(R.string.login_button),
+                            color = Color.White,
+                        )
+                    }
+
+                    if (!uiState.errorMessage.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = uiState.errorMessage ?: "",
+                            color = colorResource(R.color.auth_pink),
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))

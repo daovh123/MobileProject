@@ -13,11 +13,17 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MobileProject">
+        android:theme="@style/Theme.MobileProject"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.home.HomeActivity"
             android:exported="false" />
+
+        <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MobileProject.NoActionBar" />
 
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectedActivity"
