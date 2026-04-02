@@ -2,6 +2,7 @@ package com.example.mobileproject.di
 
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.data.datasource.remote.PlaceApiService
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -32,5 +33,11 @@ object NetworkModule {
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlaceApiService(retrofit: Retrofit): PlaceApiService {
+        return retrofit.create(PlaceApiService::class.java)
     }
 }

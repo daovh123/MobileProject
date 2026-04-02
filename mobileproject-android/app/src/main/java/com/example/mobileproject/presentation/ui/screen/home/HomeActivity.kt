@@ -3,9 +3,7 @@ package com.example.mobileproject.presentation.ui.screen.home
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.viewmodel.ProductViewModel
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreFragment
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesFragment
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsFragment
@@ -31,8 +29,6 @@ class HomeActivity : AppCompatActivity() {
 
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         navItems = createNavItems(accessToken)
-
-        ViewModelProvider(this)[ProductViewModel::class.java]
 
         topAppBar = findViewById(R.id.topAppBar)
         bottomNav = findViewById(R.id.bottomNav)

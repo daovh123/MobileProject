@@ -1,0 +1,31 @@
+package com.example.mobileproject.domain.repository
+
+import com.example.mobileproject.domain.entity.Place
+import com.example.mobileproject.domain.entity.PlaceFilterOptions
+
+interface PlaceRepository {
+    suspend fun searchPlaces(
+        query: String?,
+        province: String?,
+        district: String?,
+        type: String,
+        openNow: Boolean?,
+        minRating: Double?,
+        page: Int,
+        size: Int,
+        sort: String,
+    ): List<Place>
+
+    suspend fun getRandomPlace(
+        query: String?,
+        province: String?,
+        district: String?,
+        type: String,
+        openNow: Boolean?,
+        minRating: Double?,
+    ): Place
+
+    suspend fun getFilterOptions(): PlaceFilterOptions
+
+    suspend fun getVietnamProvinces(): List<String>
+}
