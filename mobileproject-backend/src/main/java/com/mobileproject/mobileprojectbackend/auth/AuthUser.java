@@ -3,6 +3,10 @@ package com.mobileproject.mobileprojectbackend.auth;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import lombok.Getter;
+import lombok.Setter;
+@Getter
+@Setter
 @Document(collection = "users")
 public class AuthUser {
 
@@ -12,6 +16,12 @@ public class AuthUser {
     private String email;
     private String passwordHash;
     private String createdAt;
+    private String fullName;
+    private String nickName;
+    private String birthDate;
+    private String gender;
+    private boolean profileCompleted;
+    private String partnerUserId;
 
     public AuthUser() {
     }
@@ -21,45 +31,7 @@ public class AuthUser {
         this.email = email;
         this.passwordHash = passwordHash;
         this.createdAt = createdAt;
+        this.profileCompleted = false;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
 }

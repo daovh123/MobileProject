@@ -37,14 +37,23 @@ import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 
 class CoupleConnectedActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         enableImmersiveMode()
         setContent {
             MaterialTheme {
                 CoupleConnectedScreen(
                     onGoHome = {
-                        startActivity(Intent(this, HomeActivity::class.java))
+                        startActivity(
+                            Intent(this, HomeActivity::class.java)
+                                .putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, accessToken)
+                        )
                         finish()
                     }
                 )

@@ -38,6 +38,7 @@
     <string name="profile_setup_title">Thông tin cá nhân</string>
     <string name="profile_setup_subtitle">Điền hồ sơ cá nhân sau khi đăng nhập để tiếp tục.</string>
     <string name="profile_save_continue">Lưu và tiếp tục</string>
+    <string name="profile_saving">Đang lưu...</string>
     <string name="couple_connect_title">Kết nối với người thương</string>
     <string name="couple_connect_subtitle">Bắt đầu hành trình tài chính chung bằng cách ghép tài khoản an toàn.</string>
     <string name="couple_option_1">TÙY CHỌN 1</string>
@@ -46,12 +47,34 @@
     <string name="couple_enter_partner_code">Nhập mã đối tác</string>
     <string name="couple_partner_code_hint">VD. 000-000</string>
     <string name="couple_connect_profiles">Kết nối hồ sơ</string>
+    <string name="couple_processing">Đang xử lý...</string>
+    <string name="couple_code_expires_at">Mã này hết hạn lúc: %1$s</string>
+    <string name="couple_waiting_partner_accept">Đã gửi lời mời. Đang chờ đối tác xác nhận.</string>
+    <string name="couple_request_rejected">Đối tác đã từ chối yêu cầu. Bạn có thể gửi lại mã khác.</string>
+    <string name="couple_incoming_request_title">Bạn có lời mời ghép đôi mới</string>
+    <string name="couple_accept">Đồng ý</string>
+    <string name="couple_reject">Từ chối</string>
     <string name="connected_title">Bạn đã kết nối!</string>
     <string name="connected_subtitle">Nơi lưu giữ kỹ thuật số chung cho mọi khoảnh khắc, to hay nhỏ.</string>
     <string name="connected_date">12 Tháng 6, 2022</string>
     <string name="connected_go_home">Về Trang chủ</string>
 
     <string name="home_title">Trang chủ</string>
+    <string name="home_pair_title">Ghép đôi với đối phương</string>
+    <string name="home_pair_subtitle">Nhấn nút bên dưới để mở màn hình ghép đôi bằng mã.</string>
+    <string name="home_pair_button">Ghép đôi ngay</string>
+    <string name="home_pair_loading_button">Đang cập nhật...</string>
+    <string name="home_pair_my_code">Mã của bạn: %1$s</string>
+    <string name="home_pair_connected_title">Hai bạn đã ghép đôi thành công</string>
+    <string name="home_pair_connected_subtitle">Không gian chung đã sẵn sàng để hai bạn đồng hành.</string>
+    <string name="home_pair_connected_badge">TRẠNG THÁI KẾT NỐI</string>
+    <string name="home_pair_partner_name">Đối phương: %1$s</string>
+    <string name="home_pair_partner_unknown">Người ấy</string>
+    <string name="home_pair_connected_note">Từ giờ các khoản chi, kế hoạch và kỷ niệm có thể đi cùng nhau trong một nơi.</string>
+    <string name="home_pair_outgoing_pending">Bạn đã gửi lời mời ghép đôi, đang chờ đối phương xác nhận.</string>
+    <string name="home_pair_outgoing_rejected">Lời mời gần nhất đã bị từ chối. Bạn có thể thử lại với mã khác.</string>
+    <string name="home_pair_code_expiry">Mã ghép đôi của bạn hết hạn lúc: %1$s</string>
+    <string name="home_pair_session_expired">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</string>
 
     <string name="page_home">Trang chủ</string>
     <string name="page_wallet">Ví</string>
@@ -65,8 +88,17 @@
     <string name="memories_greeting">Xin chào, %1$s!</string>
 
     <string name="cd_open_profile">Mở hồ sơ</string>
+    <string name="cd_open_menu">Mở menu</string>
     <string name="cd_avatar">Ảnh đại diện</string>
     <string name="cd_favorite">Yêu thích</string>
 
     <string name="action_notifications">Thông báo</string>
+    <string name="action_logout">Đăng xuất</string>
+    <string name="logout_success">Bạn đã đăng xuất.</string>
+    <string name="settings_title">Cài đặt</string>
+    <string name="settings_account_section_title">Tài khoản</string>
+    <string name="settings_account_section_subtitle">Quản lý phiên đăng nhập và bảo mật tài khoản của bạn.</string>
+    <string name="settings_logout_button">Đăng xuất tài khoản</string>
+    <string name="settings_logout_hint">Bạn sẽ quay về màn hình đăng nhập sau khi đăng xuất.</string>
+    <string name="settings_logout_processing">Đang đăng xuất...</string>
 </resources>

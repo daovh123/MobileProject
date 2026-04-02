@@ -3,6 +3,7 @@ package com.example.mobileproject.data.repository
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.model.auth.AuthResponseDto
 import com.example.mobileproject.data.model.auth.LoginRequestDto
+import com.example.mobileproject.data.model.auth.LogoutResponseDto
 import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.domain.entity.AuthSession
 import com.example.mobileproject.domain.repository.AuthRepository
@@ -35,7 +36,14 @@ class AuthRepositoryImpl @Inject constructor(
         )
         return response.toAuthSessionOrThrow(gson, defaultFailureMessage = "Dang ky that bai")
     }
+
+    override suspend fun logout(token: String) {
+        val response = apiService.logout(authorizationHeader(token))
+        response.toLogoutSuccessOrThrow(gson, defaultFailureMessage = "Dang xuat that bai")
+    }
 }
+
+private fun authorizationHeader(token: String): String = "Bearer ${token.trim()}"
 
 private fun Response<AuthResponseDto>.toAuthSessionOrThrow(
     gson: Gson,
@@ -56,6 +64,8 @@ private fun Response<AuthResponseDto>.toAuthSessionOrThrow(
         token = token,
         username = username,
         email = email,
+        profileCompleted = bodyOrError.profileCompleted ?: false,
+        coupleConnected = bodyOrError.coupleConnected ?: false,
     )
 }
 
@@ -66,3 +76,30 @@ private fun Response<AuthResponseDto>.parseErrorBody(gson: Gson): AuthResponseDt
         }
     }.getOrNull()
 }
+
+private fun Response<LogoutResponseDto>.toLogoutSuccessOrThrow(
+    gson: Gson,
+    defaultFailureMessage: String,
+) {
+    val bodyOrError = body()
+    val message = when {
+        bodyOrError != null -> bodyOrError.message
+        else -> parseErrorMessage(gson) ?: defaultFailureMessage
+    }.ifBlank { defaultFailureMessage }
+
+    if (!isSuccessful || bodyOrError == null || !bodyOrError.success) {
+        throw IllegalStateException(message)
+    }
+}
+
+private fun Response<*>.parseErrorMessage(gson: Gson): String? {
+    return runCatching {
+        errorBody()?.charStream()?.use { reader ->
+            gson.fromJson(reader, MessageErrorDto::class.java).message
+        }
+    }.getOrNull()?.takeIf { !it.isNullOrBlank() }
+}
+
+private data class MessageErrorDto(
+    val message: String? = null,
+)

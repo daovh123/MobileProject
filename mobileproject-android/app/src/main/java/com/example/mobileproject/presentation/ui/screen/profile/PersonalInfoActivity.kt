@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,10 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,19 +43,34 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class PersonalInfoActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         enableImmersiveMode()
         setContent {
             MaterialTheme {
+                val profileViewModel: ProfileViewModel = hiltViewModel()
                 PersonalInfoScreen(
-                    onContinue = {
-                        startActivity(Intent(this, CoupleConnectActivity::class.java))
+                    accessToken = accessToken,
+                    profileViewModel = profileViewModel,
+                    onContinue = { token ->
+                        startActivity(
+                            Intent(this, HomeActivity::class.java)
+                                .putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, token)
+                        )
                         finish()
                     }
                 )
@@ -69,11 +88,24 @@ class PersonalInfoActivity : ComponentActivity() {
 }
 
 @Composable
-private fun PersonalInfoScreen(onContinue: () -> Unit) {
+private fun PersonalInfoScreen(
+    accessToken: String,
+    profileViewModel: ProfileViewModel,
+    onContinue: (String) -> Unit,
+) {
     var fullName by remember { mutableStateOf("") }
     var nickName by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var gender by remember { mutableStateOf<String?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+    val uiState by profileViewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.savedProfile) {
+        if (uiState.savedProfile != null) {
+            onContinue(accessToken)
+            profileViewModel.consumeSaveSuccess()
+        }
+    }
 
     val primaryText = colorResource(R.color.auth_text_primary)
     val secondaryText = colorResource(R.color.auth_text_secondary)
@@ -137,7 +169,8 @@ private fun PersonalInfoScreen(onContinue: () -> Unit) {
                         value = fullName,
                         onValueChange = {
                             fullName = it
-                            errorMessage = null
+                            validationError = null
+                            profileViewModel.clearError()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.register_name_hint)) },
@@ -147,7 +180,11 @@ private fun PersonalInfoScreen(onContinue: () -> Unit) {
 
                     OutlinedTextField(
                         value = nickName,
-                        onValueChange = { nickName = it },
+                        onValueChange = {
+                            nickName = it
+                            validationError = null
+                            profileViewModel.clearError()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.register_nickname_hint)) },
                         singleLine = true,
@@ -156,16 +193,63 @@ private fun PersonalInfoScreen(onContinue: () -> Unit) {
 
                     OutlinedTextField(
                         value = birthDate,
-                        onValueChange = { birthDate = it },
+                        onValueChange = {
+                            birthDate = it
+                            validationError = null
+                            profileViewModel.clearError()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(R.string.register_birthdate_hint)) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp)
                     )
 
+                    Text(
+                        text = stringResource(R.string.register_gender_label),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = primaryText,
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        GenderOptionButton(
+                            label = stringResource(R.string.register_gender_male),
+                            isSelected = gender == "MALE",
+                            onClick = {
+                                gender = "MALE"
+                                validationError = null
+                                profileViewModel.clearError()
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        GenderOptionButton(
+                            label = stringResource(R.string.register_gender_female),
+                            isSelected = gender == "FEMALE",
+                            onClick = {
+                                gender = "FEMALE"
+                                validationError = null
+                                profileViewModel.clearError()
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        GenderOptionButton(
+                            label = stringResource(R.string.register_gender_other),
+                            isSelected = gender == "OTHER",
+                            onClick = {
+                                gender = "OTHER"
+                                validationError = null
+                                profileViewModel.clearError()
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    val errorMessage = validationError ?: uiState.errorMessage
                     if (!errorMessage.isNullOrBlank()) {
                         Text(
-                            text = errorMessage ?: "",
+                            text = errorMessage,
                             color = colorResource(R.color.auth_pink),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
@@ -176,12 +260,20 @@ private fun PersonalInfoScreen(onContinue: () -> Unit) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Button(
                         onClick = {
-                            if (fullName.isBlank()) {
-                                errorMessage = requiredFieldsMessage
+                            if (fullName.isBlank() || birthDate.isBlank() || gender.isNullOrBlank()) {
+                                validationError = requiredFieldsMessage
                             } else {
-                                onContinue()
+                                validationError = null
+                                profileViewModel.saveProfile(
+                                    token = accessToken,
+                                    fullName = fullName,
+                                    nickName = nickName,
+                                    birthDate = birthDate,
+                                    gender = gender ?: "",
+                                )
                             }
                         },
+                        enabled = !uiState.isLoading,
                         colors = ButtonDefaults.buttonColors(containerColor = pink),
                         shape = RoundedCornerShape(18.dp),
                         modifier = Modifier
@@ -189,12 +281,37 @@ private fun PersonalInfoScreen(onContinue: () -> Unit) {
                             .height(56.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.profile_save_continue),
+                            text = if (uiState.isLoading) {
+                                stringResource(R.string.profile_saving)
+                            } else {
+                                stringResource(R.string.profile_save_continue)
+                            },
                             color = Color.White,
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GenderOptionButton(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pink = colorResource(R.color.auth_pink)
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (isSelected) pink.copy(alpha = 0.14f) else Color.Transparent,
+            contentColor = if (isSelected) pink else Color.Gray,
+        ),
+    ) {
+        Text(text = label)
     }
 }

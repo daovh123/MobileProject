@@ -49,6 +49,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
+import com.example.mobileproject.domain.entity.AuthSession
+import com.example.mobileproject.domain.entity.PostLoginDestination
+import com.example.mobileproject.domain.entity.resolvePostLoginDestination
+import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
@@ -71,8 +75,15 @@ class LoginActivity : ComponentActivity() {
             MaterialTheme {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
-                    onLoginSuccess = {
-                        startActivity(Intent(this, PersonalInfoActivity::class.java))
+                    onLoginSuccess = { session ->
+                        val intent = when (session.resolvePostLoginDestination()) {
+                            PostLoginDestination.PROFILE -> Intent(this, PersonalInfoActivity::class.java)
+                            PostLoginDestination.HOME -> Intent(this, HomeActivity::class.java)
+                        }.apply {
+                            putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, session.token)
+                            putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, session.token)
+                        }
+                        startActivity(intent)
                         finish()
                     },
                     onSignUp = {
@@ -97,7 +108,7 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 private fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (AuthSession) -> Unit,
     onSignUp: () -> Unit,
     prefilledEmail: String,
     showRegistrationSuccess: Boolean,
@@ -108,8 +119,9 @@ private fun LoginScreen(
     val uiState by authViewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.authSession) {
-        if (uiState.authSession != null) {
-            onLoginSuccess()
+        val session = uiState.authSession
+        if (session != null) {
+            onLoginSuccess(session)
             authViewModel.consumeAuthSuccess()
         }
     }

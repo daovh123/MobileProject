@@ -4,7 +4,14 @@ import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.datasource.remote.RemoteDataSource
 import com.example.mobileproject.data.model.auth.AuthResponseDto
 import com.example.mobileproject.data.model.auth.LoginRequestDto
+import com.example.mobileproject.data.model.auth.LogoutResponseDto
 import com.example.mobileproject.data.model.auth.RegisterRequestDto
+import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
+import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
+import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
+import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
+import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
+import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.ProductDto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -27,6 +34,53 @@ class ProductRepositoryImplTest {
 
             override suspend fun register(request: RegisterRequestDto): Response<AuthResponseDto> {
                 return Response.success(AuthResponseDto(false, "unused", null, null, null))
+            }
+
+            override suspend fun logout(authorization: String): Response<LogoutResponseDto> {
+                return Response.success(LogoutResponseDto(false, "unused"))
+            }
+
+            override suspend fun upsertProfile(
+                authorization: String,
+                request: ProfileUpsertRequestDto,
+            ): Response<ProfileResponseDto> {
+                return Response.success(ProfileResponseDto(false, "unused", null, null, null, null, null, false, false))
+            }
+
+            override suspend fun getCoupleStatus(authorization: String): Response<CoupleStatusResponseDto> {
+                return Response.success(
+                    CoupleStatusResponseDto(
+                        success = false,
+                        message = "unused",
+                        profileCompleted = false,
+                        paired = false,
+                        partnerUsername = null,
+                        myCoupleCode = null,
+                        incomingRequestId = null,
+                        incomingRequesterUsername = null,
+                        incomingRequesterDisplayName = null,
+                        incomingCreatedAt = null,
+                        outgoingRequestId = null,
+                        outgoingRecipientUsername = null,
+                        outgoingStatus = null,
+                        outgoingUpdatedAt = null,
+                    )
+                )
+            }
+
+            override suspend fun sendCoupleRequest(
+                authorization: String,
+                request: CoupleRequestCreateRequestDto,
+            ): Response<CoupleRequestActionResponseDto> {
+                return Response.success(CoupleRequestActionResponseDto(false, "unused", null, null, null, null))
+            }
+
+            override suspend fun decideCoupleRequest(
+                authorization: String,
+                requestId: String,
+                request: CoupleRequestDecisionRequestDto,
+            ): Response<CoupleRequestActionResponseDto> {
+                return Response.success(CoupleRequestActionResponseDto(false, "unused", null, null, null, null))
             }
         }
 

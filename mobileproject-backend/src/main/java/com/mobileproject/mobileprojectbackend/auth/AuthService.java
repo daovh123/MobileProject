@@ -2,6 +2,7 @@ package com.mobileproject.mobileprojectbackend.auth;
 
 import com.mobileproject.mobileprojectbackend.auth.dto.AuthResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.LoginRequest;
+import com.mobileproject.mobileprojectbackend.auth.dto.LogoutResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,17 +10,20 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class AuthService {
 
     private final AuthUserRepository authUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthTokenService authTokenService;
 
-    public AuthService(AuthUserRepository authUserRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(AuthUserRepository authUserRepository,
+                       PasswordEncoder passwordEncoder,
+                       AuthTokenService authTokenService) {
         this.authUserRepository = authUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authTokenService = authTokenService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -46,7 +50,9 @@ public class AuthService {
                 "Register successful",
                 issueDevToken(usernameKey),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.isProfileCompleted(),
+                isCoupleConnected(user)
         );
     }
 
@@ -68,8 +74,18 @@ public class AuthService {
                 "Login successful",
                 issueDevToken(user.getUsername()),
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.isProfileCompleted(),
+                isCoupleConnected(user)
         );
+    }
+
+    public LogoutResponse logout(String authorizationHeader) {
+        boolean revoked = authTokenService.revokeToken(authorizationHeader);
+        if (!revoked) {
+            return LogoutResponse.failure("Missing or invalid access token");
+        }
+        return LogoutResponse.success("Logout successful");
     }
 
     private String normalize(String value) {
@@ -77,6 +93,10 @@ public class AuthService {
     }
 
     private String issueDevToken(String username) {
-        return "dev-" + username + "-" + UUID.randomUUID();
+        return authTokenService.issueToken(username);
+    }
+
+    private boolean isCoupleConnected(AuthUser user) {
+        return user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank();
     }
 }

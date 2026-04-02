@@ -17,4 +17,11 @@ data class AuthResponseDto(
     val token: String?,
     val username: String?,
     val email: String?,
+    val profileCompleted: Boolean? = null,
+    val coupleConnected: Boolean? = null,
+)
+
+data class LogoutResponseDto(
+    val success: Boolean,
+    val message: String,
 )

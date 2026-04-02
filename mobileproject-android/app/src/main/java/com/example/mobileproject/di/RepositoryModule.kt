@@ -1,8 +1,10 @@
 package com.example.mobileproject.di
 
 import com.example.mobileproject.data.repository.AuthRepositoryImpl
+import com.example.mobileproject.data.repository.OnboardingRepositoryImpl
 import com.example.mobileproject.data.repository.ProductRepositoryImpl
 import com.example.mobileproject.domain.repository.AuthRepository
+import com.example.mobileproject.domain.repository.OnboardingRepository
 import com.example.mobileproject.domain.repository.ProductRepository
 import dagger.Binds
 import dagger.Module
@@ -19,6 +21,12 @@ abstract class RepositoryModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl,
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOnboardingRepository(
+        impl: OnboardingRepositoryImpl,
+    ): OnboardingRepository
 
     @Binds
     @Singleton

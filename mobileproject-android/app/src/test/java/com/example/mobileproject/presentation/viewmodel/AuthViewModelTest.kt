@@ -3,6 +3,7 @@ package com.example.mobileproject.presentation.viewmodel
 import com.example.mobileproject.domain.entity.AuthSession
 import com.example.mobileproject.domain.repository.AuthRepository
 import com.example.mobileproject.domain.usecase.LoginUseCase
+import com.example.mobileproject.domain.usecase.LogoutUseCase
 import com.example.mobileproject.domain.usecase.RegisterUseCase
 import com.example.mobileproject.testutil.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,6 +29,7 @@ class AuthViewModelTest {
         val viewModel = AuthViewModel(
             loginUseCase = LoginUseCase(repository),
             registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
         )
 
         viewModel.login("", "")
@@ -45,12 +48,15 @@ class AuthViewModelTest {
                     token = "token-abc",
                     username = "alice",
                     email = "alice@example.com",
+                    profileCompleted = false,
+                    coupleConnected = false,
                 )
             )
         }
         val viewModel = AuthViewModel(
             loginUseCase = LoginUseCase(repository),
             registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
         )
 
         viewModel.login("alice@example.com", "secret")
@@ -71,6 +77,7 @@ class AuthViewModelTest {
         val viewModel = AuthViewModel(
             loginUseCase = LoginUseCase(repository),
             registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
         )
 
         viewModel.register("alice", "alice@example.com", "secret")
@@ -82,10 +89,31 @@ class AuthViewModelTest {
         assertNull(state.authSession)
     }
 
+    @Test
+    fun `logout success sets logoutCompleted`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            logoutResult = Result.success(Unit)
+        }
+        val viewModel = AuthViewModel(
+            loginUseCase = LoginUseCase(repository),
+            registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
+        )
+
+        viewModel.logout("token-1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage)
+        assertTrue(state.logoutCompleted)
+    }
+
     private class FakeAuthRepository : AuthRepository {
 
         var loginResult: Result<AuthSession> = Result.failure(IllegalStateException("Login failed"))
         var registerResult: Result<AuthSession> = Result.failure(IllegalStateException("Register failed"))
+        var logoutResult: Result<Unit> = Result.success(Unit)
 
         override suspend fun login(usernameOrEmail: String, password: String): AuthSession {
             return loginResult.getOrThrow()
@@ -93,6 +121,10 @@ class AuthViewModelTest {
 
         override suspend fun register(username: String, email: String, password: String): AuthSession {
             return registerResult.getOrThrow()
+        }
+
+        override suspend fun logout(token: String) {
+            logoutResult.getOrThrow()
         }
     }
 }

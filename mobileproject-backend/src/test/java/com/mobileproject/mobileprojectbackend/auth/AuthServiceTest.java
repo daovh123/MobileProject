@@ -2,6 +2,7 @@ package com.mobileproject.mobileprojectbackend.auth;
 
 import com.mobileproject.mobileprojectbackend.auth.dto.AuthResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.LoginRequest;
+import com.mobileproject.mobileprojectbackend.auth.dto.LogoutResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.RegisterRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private AuthTokenService authTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -41,12 +45,15 @@ class AuthServiceTest {
         when(authUserRepository.existsByUsername("demo")).thenReturn(false);
         when(authUserRepository.existsByEmail("demo@example.com")).thenReturn(false);
         when(passwordEncoder.encode("123456")).thenReturn("hashed-password");
+        when(authTokenService.issueToken("demo")).thenReturn("token-demo");
 
         AuthResponse response = authService.register(request);
 
         assertTrue(response.success());
         assertEquals("demo", response.username());
         assertEquals("demo@example.com", response.email());
+        assertFalse(response.profileCompleted());
+        assertFalse(response.coupleConnected());
 
         ArgumentCaptor<AuthUser> userCaptor = ArgumentCaptor.forClass(AuthUser.class);
         verify(authUserRepository).save(userCaptor.capture());
@@ -79,11 +86,34 @@ class AuthServiceTest {
         when(authUserRepository.findByUsername("demo@example.com")).thenReturn(Optional.empty());
         when(authUserRepository.findByEmail("demo@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(eq("123456"), eq("hashed-password"))).thenReturn(true);
+        when(authTokenService.issueToken("demo")).thenReturn("token-demo");
 
         AuthResponse response = authService.login(request);
 
         assertTrue(response.success());
         assertEquals("demo", response.username());
         assertEquals("demo@example.com", response.email());
+        assertFalse(response.profileCompleted());
+        assertFalse(response.coupleConnected());
+    }
+
+    @Test
+    void logoutWithValidTokenReturnsSuccess() {
+        when(authTokenService.revokeToken("Bearer token-demo")).thenReturn(true);
+
+        LogoutResponse response = authService.logout("Bearer token-demo");
+
+        assertTrue(response.success());
+        assertEquals("Logout successful", response.message());
+    }
+
+    @Test
+    void logoutWithInvalidTokenReturnsFailure() {
+        when(authTokenService.revokeToken("Bearer invalid")).thenReturn(false);
+
+        LogoutResponse response = authService.logout("Bearer invalid");
+
+        assertFalse(response.success());
+        assertEquals("Missing or invalid access token", response.message());
     }
 }

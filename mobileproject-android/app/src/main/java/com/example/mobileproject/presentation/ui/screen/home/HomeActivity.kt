@@ -8,6 +8,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.presentation.viewmodel.ProductViewModel
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreFragment
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesFragment
+import com.example.mobileproject.presentation.ui.screen.settings.SettingsFragment
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletFragment
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -19,44 +20,28 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var topAppBar: MaterialToolbar
     private lateinit var bottomNav: BottomNavigationView
+    private lateinit var navItems: Map<Int, NavItem>
 
     private var currentMenuItemId: Int = R.id.nav_home
-
-    private val navItems: Map<Int, NavItem> = mapOf(
-        R.id.nav_home to NavItem(
-            fragmentTag = "home",
-            titleRes = R.string.page_home,
-            fragmentProvider = { HomeFragment() },
-        ),
-        R.id.nav_wallet to NavItem(
-            fragmentTag = "wallet",
-            titleRes = R.string.page_wallet,
-            fragmentProvider = { WalletFragment() },
-        ),
-        R.id.nav_explore to NavItem(
-            fragmentTag = "explore",
-            titleRes = R.string.page_explore,
-            fragmentProvider = { ExploreFragment() },
-        ),
-        R.id.nav_memories to NavItem(
-            fragmentTag = "memories",
-            titleRes = R.string.page_memories,
-            fragmentProvider = { MemoriesFragment() },
-        ),
-    )
+    private var accessToken: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+
+        accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
+        navItems = createNavItems(accessToken)
 
         ViewModelProvider(this)[ProductViewModel::class.java]
 
         topAppBar = findViewById(R.id.topAppBar)
         bottomNav = findViewById(R.id.bottomNav)
 
-        setSupportActionBar(topAppBar)
+        topAppBar.menu.clear()
+        topAppBar.inflateMenu(R.menu.menu_top_app_bar)
 
         topAppBar.setNavigationOnClickListener {
+            bottomNav.selectedItemId = R.id.nav_settings
         }
 
         topAppBar.setOnMenuItemClickListener { item ->
@@ -116,7 +101,36 @@ class HomeActivity : AppCompatActivity() {
         val fragmentProvider: () -> Fragment,
     )
 
-    private companion object {
+    private fun createNavItems(accessToken: String): Map<Int, NavItem> = mapOf(
+        R.id.nav_home to NavItem(
+            fragmentTag = "home",
+            titleRes = R.string.page_home,
+            fragmentProvider = { HomeFragment.newInstance(accessToken) },
+        ),
+        R.id.nav_wallet to NavItem(
+            fragmentTag = "wallet",
+            titleRes = R.string.page_wallet,
+            fragmentProvider = { WalletFragment() },
+        ),
+        R.id.nav_explore to NavItem(
+            fragmentTag = "explore",
+            titleRes = R.string.page_explore,
+            fragmentProvider = { ExploreFragment() },
+        ),
+        R.id.nav_memories to NavItem(
+            fragmentTag = "memories",
+            titleRes = R.string.page_memories,
+            fragmentProvider = { MemoriesFragment() },
+        ),
+        R.id.nav_settings to NavItem(
+            fragmentTag = "settings",
+            titleRes = R.string.settings_title,
+            fragmentProvider = { SettingsFragment.newInstance(accessToken) },
+        ),
+    )
+
+    companion object {
+        const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
         const val KEY_SELECTED_NAV_ITEM_ID: String = "selected_nav_item_id"
     }
 }
