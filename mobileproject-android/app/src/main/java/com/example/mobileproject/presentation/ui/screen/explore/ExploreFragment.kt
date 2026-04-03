@@ -1,14 +1,20 @@
 package com.example.mobileproject.presentation.ui.screen.explore
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -17,6 +23,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import coil.load
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.presentation.ui.components.place.PlaceAdapter
@@ -31,13 +38,63 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @AndroidEntryPoint
 class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
+    private data class AreaOption(
+        val labelResId: Int,
+        val query: String,
+    )
+
     private lateinit var exploreViewModel: ExploreViewModel
+    private val fusedLocationClient by lazy { LocationServices.getFusedLocationProviderClient(requireActivity()) }
+
+    private var currentLocationLat: Double? = null
+    private var currentLocationLng: Double? = null
+    private var lastHandledRandomSuggestionToken: Long = -1
+
+    private val predefinedAreaOptions = listOf(
+        AreaOption(R.string.explore_area_ha_noi, "ha noi"),
+        AreaOption(R.string.explore_area_ho_chi_minh, "ho chi minh"),
+        AreaOption(R.string.explore_area_da_nang, "da nang"),
+        AreaOption(R.string.explore_area_can_tho, "can tho"),
+        AreaOption(R.string.explore_area_hai_phong, "hai phong"),
+        AreaOption(R.string.explore_area_nha_trang, "nha trang"),
+        AreaOption(R.string.explore_area_hue, "hue"),
+        AreaOption(R.string.explore_area_vung_tau, "vung tau"),
+        AreaOption(R.string.explore_area_da_lat, "da lat"),
+        AreaOption(R.string.explore_area_quy_nhon, "quy nhon"),
+        AreaOption(R.string.explore_area_bien_hoa, "bien hoa"),
+        AreaOption(R.string.explore_area_buon_ma_thuot, "buon ma thuot"),
+        AreaOption(R.string.explore_area_phan_thiet, "phan thiet"),
+        AreaOption(R.string.explore_area_long_xuyen, "long xuyen"),
+        AreaOption(R.string.explore_area_thai_nguyen, "thai nguyen"),
+        AreaOption(R.string.explore_area_nam_dinh, "nam dinh"),
+    )
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            fetchCurrentLocation()
+        } else {
+            exploreViewModel.onCurrentLocationUnavailable(getString(R.string.explore_location_permission_denied))
+            view?.findViewById<Chip>(R.id.chipNearMe)?.isChecked = false
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.explore_location_permission_denied),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
     private val placeAdapter = PlaceAdapter { place ->
         showPlaceDetail(place)
     }
@@ -53,12 +110,13 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val searchButton = view.findViewById<MaterialButton>(R.id.btnExploreSearch)
         val areaInput = view.findViewById<AutoCompleteTextView>(R.id.actExploreArea)
         val randomButton = view.findViewById<MaterialButton>(R.id.btnExploreRandom)
+        val filterToggleButton = view.findViewById<MaterialButton>(R.id.btnExploreFilterToggle)
+        val advancedFiltersLayout = view.findViewById<View>(R.id.llExploreAdvancedFilters)
         val typeGroup = view.findViewById<ChipGroup>(R.id.cgExploreType)
         val typeAllChip = view.findViewById<Chip>(R.id.chipTypeAll)
         val typeFoodChip = view.findViewById<Chip>(R.id.chipTypeFood)
         val typeDrinkChip = view.findViewById<Chip>(R.id.chipTypeDrink)
         val nearMeChip = view.findViewById<Chip>(R.id.chipNearMe)
-        val openNowChip = view.findViewById<Chip>(R.id.chipOpenNow)
         val ratingInput = view.findViewById<AutoCompleteTextView>(R.id.actExploreMinRating)
         val radiusInput = view.findViewById<TextInputEditText>(R.id.etExploreRadius)
         val randomText = view.findViewById<MaterialTextView>(R.id.tvExploreRandomResult)
@@ -76,6 +134,37 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             mutableListOf(),
         )
         areaInput.setAdapter(areaAdapter)
+        syncAreaSuggestions(emptyList())
+        areaInput.keyListener = null
+        areaInput.dropDownAnchor = areaInput.id
+        areaInput.dropDownHorizontalOffset = 0
+        areaInput.setOnClickListener {
+            refreshDropdownBounds(areaInput)
+            areaInput.showDropDown()
+        }
+        areaInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                refreshDropdownBounds(areaInput)
+                areaInput.showDropDown()
+            }
+        }
+        areaInput.setOnItemClickListener { _, _, position, _ ->
+            val selected = areaAdapter.getItem(position).orEmpty()
+            exploreViewModel.onProvinceChanged(normalizeProvinceSelection(selected))
+        }
+
+        filterToggleButton.setOnClickListener {
+            setAdvancedFiltersExpanded(
+                expanded = !advancedFiltersLayout.isVisible,
+                advancedFiltersLayout = advancedFiltersLayout,
+                filterToggleButton = filterToggleButton,
+            )
+        }
+        setAdvancedFiltersExpanded(
+            expanded = false,
+            advancedFiltersLayout = advancedFiltersLayout,
+            filterToggleButton = filterToggleButton,
+        )
 
         ratingAdapter = ArrayAdapter(
             requireContext(),
@@ -83,6 +172,19 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             buildRatingOptions(),
         )
         ratingInput.setAdapter(ratingAdapter)
+        ratingInput.keyListener = null
+        ratingInput.dropDownAnchor = ratingInput.id
+        ratingInput.dropDownHorizontalOffset = 0
+        ratingInput.setOnClickListener {
+            refreshDropdownBounds(ratingInput)
+            ratingInput.showDropDown()
+        }
+        ratingInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                refreshDropdownBounds(ratingInput)
+                ratingInput.showDropDown()
+            }
+        }
         ratingInput.setText(getString(R.string.explore_rating_all_option), false)
 
         searchButton.setOnClickListener {
@@ -104,13 +206,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             }
         }
 
-        areaInput.doAfterTextChanged {
-            exploreViewModel.onProvinceChanged(it?.toString().orEmpty())
-        }
-
         randomButton.setOnClickListener {
             exploreViewModel.onQueryChanged(searchInput.text?.toString().orEmpty())
-            exploreViewModel.onProvinceChanged(areaInput.text?.toString().orEmpty())
+            exploreViewModel.onProvinceChanged(normalizeProvinceSelection(areaInput.text?.toString().orEmpty()))
             exploreViewModel.randomPlace()
         }
 
@@ -125,10 +223,14 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
         nearMeChip.setOnCheckedChangeListener { _, isChecked ->
             exploreViewModel.onNearMeChanged(isChecked)
-        }
-
-        openNowChip.setOnCheckedChangeListener { _, isChecked ->
-            exploreViewModel.onOpenNowChanged(isChecked)
+            if (isChecked) {
+                setAdvancedFiltersExpanded(
+                    expanded = true,
+                    advancedFiltersLayout = advancedFiltersLayout,
+                    filterToggleButton = filterToggleButton,
+                )
+                ensureCurrentLocation()
+            }
         }
 
         ratingInput.setOnItemClickListener { _, _, position, _ ->
@@ -156,7 +258,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                         typeFoodChip = typeFoodChip,
                         typeDrinkChip = typeDrinkChip,
                         nearMeChip = nearMeChip,
-                        openNowChip = openNowChip,
                         progressBar = progressBar,
                         messageText = messageText,
                         retryButton = retryButton,
@@ -168,7 +269,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
     private fun submitSearch(query: String, province: String) {
         exploreViewModel.onQueryChanged(query)
-        exploreViewModel.onProvinceChanged(province)
+        exploreViewModel.onProvinceChanged(normalizeProvinceSelection(province))
         exploreViewModel.search()
     }
 
@@ -182,7 +283,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         typeFoodChip: Chip,
         typeDrinkChip: Chip,
         nearMeChip: Chip,
-        openNowChip: Chip,
         progressBar: LinearProgressIndicator,
         messageText: MaterialTextView,
         retryButton: MaterialButton,
@@ -192,8 +292,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
         syncAreaSuggestions(state.availableProvinces)
 
-        if (!areaInput.hasFocus() && areaInput.text?.toString().orEmpty() != state.selectedProvince) {
-            areaInput.setText(state.selectedProvince, false)
+        val selectedProvinceLabel = provinceLabelForQuery(state.selectedProvince)
+        if (!areaInput.hasFocus() && areaInput.text?.toString().orEmpty() != selectedProvinceLabel) {
+            areaInput.setText(selectedProvinceLabel, false)
         }
 
         val isAll = state.selectedType == ExplorePlaceType.ALL
@@ -210,9 +311,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         }
         if (nearMeChip.isChecked != state.nearMeOnly) {
             nearMeChip.isChecked = state.nearMeOnly
-        }
-        if (openNowChip.isChecked != state.openNowOnly) {
-            openNowChip.isChecked = state.openNowOnly
         }
         val minRatingLabel = ratingLabel(state.selectedMinRating)
         if (!ratingInput.hasFocus() && ratingInput.text?.toString().orEmpty() != minRatingLabel) {
@@ -238,6 +336,11 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 valueOrUpdating(randomSuggestion.name),
                 areaLabel,
             )
+
+            if (state.randomSuggestionToken != lastHandledRandomSuggestionToken) {
+                lastHandledRandomSuggestionToken = state.randomSuggestionToken
+                showPlaceDetail(randomSuggestion)
+            }
         }
 
         if (state.isLoading || state.isRandomLoading) {
@@ -265,19 +368,122 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         retryButton.isVisible = false
     }
 
-    private fun syncAreaSuggestions(areas: List<String>) {
+    private fun syncAreaSuggestions(@Suppress("UNUSED_PARAMETER") areas: List<String>) {
+        val normalizedAreas = buildAreaDisplayOptions()
         val current = (0 until areaAdapter.count).mapNotNull { areaAdapter.getItem(it) }
-        if (current == areas) {
+        if (current == normalizedAreas) {
             return
         }
         areaAdapter.clear()
-        areaAdapter.addAll(areas)
+        areaAdapter.addAll(normalizedAreas)
         areaAdapter.notifyDataSetChanged()
+    }
+
+    private fun normalizeProvinceSelection(raw: String): String {
+        val value = raw.trim()
+        if (value.isBlank()) {
+            return ""
+        }
+        if (value == getString(R.string.explore_all_areas_option)) {
+            return ""
+        }
+
+        val normalizedSelection = value.lowercase(Locale.ROOT)
+        return predefinedAreaOptions.firstOrNull { getString(it.labelResId) == value }?.query
+            ?: normalizedSelection
+    }
+
+    private fun provinceLabelForQuery(query: String): String {
+        if (query.isBlank()) {
+            return getString(R.string.explore_all_areas_option)
+        }
+
+        val normalizedQuery = query.lowercase(Locale.ROOT)
+        return predefinedAreaOptions.firstOrNull { it.query == normalizedQuery }
+            ?.let { getString(it.labelResId) }
+            ?: query
+    }
+
+    private fun buildAreaDisplayOptions(): List<String> {
+        return buildList {
+            add(getString(R.string.explore_all_areas_option))
+            predefinedAreaOptions.forEach { option ->
+                add(getString(option.labelResId))
+            }
+        }
+    }
+
+    private fun setAdvancedFiltersExpanded(
+        expanded: Boolean,
+        advancedFiltersLayout: View,
+        filterToggleButton: MaterialButton,
+    ) {
+        advancedFiltersLayout.isVisible = expanded
+        if (expanded) {
+            view?.findViewById<AutoCompleteTextView>(R.id.actExploreArea)?.let(::refreshDropdownBounds)
+            view?.findViewById<AutoCompleteTextView>(R.id.actExploreMinRating)?.let(::refreshDropdownBounds)
+        }
+        filterToggleButton.text = if (expanded) {
+            getString(R.string.explore_filter_toggle_hide)
+        } else {
+            getString(R.string.explore_filter_toggle_show)
+        }
+    }
+
+    private fun refreshDropdownBounds(input: AutoCompleteTextView) {
+        val inputWidth = input.width
+        val parentWidth = (input.parent as? View)?.width ?: 0
+        val targetWidth = when {
+            inputWidth > 0 -> inputWidth
+            parentWidth > 0 -> parentWidth
+            else -> ViewGroup.LayoutParams.WRAP_CONTENT
+        }
+
+        input.dropDownWidth = targetWidth
+        input.dropDownHorizontalOffset = 0
+    }
+
+    private fun ensureCurrentLocation() {
+        val permissionState = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        )
+
+        if (permissionState == PackageManager.PERMISSION_GRANTED) {
+            fetchCurrentLocation()
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    private fun fetchCurrentLocation() {
+        val cancellationTokenSource = CancellationTokenSource()
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
+            .addOnSuccessListener { location ->
+                if (location == null) {
+                    onLocationUnavailable(getString(R.string.explore_location_unavailable))
+                    return@addOnSuccessListener
+                }
+
+                currentLocationLat = location.latitude
+                currentLocationLng = location.longitude
+                exploreViewModel.onCurrentLocationUpdated(location.latitude, location.longitude)
+            }
+            .addOnFailureListener {
+                onLocationUnavailable(getString(R.string.explore_location_unavailable))
+            }
+    }
+
+    private fun onLocationUnavailable(message: String) {
+        currentLocationLat = null
+        currentLocationLng = null
+        exploreViewModel.onCurrentLocationUnavailable(message)
+        view?.findViewById<Chip>(R.id.chipNearMe)?.isChecked = false
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     private fun buildRatingOptions(): List<String> {
         return listOf(
-            getString(R.string.explore_rating_all_option),
             getString(R.string.explore_rating_1_option),
             getString(R.string.explore_rating_2_option),
             getString(R.string.explore_rating_3_option),
@@ -288,11 +494,11 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
     private fun minRatingFromPosition(position: Int): Int? {
         return when (position) {
-            1 -> 1
-            2 -> 2
-            3 -> 3
-            4 -> 4
-            5 -> 5
+            0 -> 1
+            1 -> 2
+            2 -> 3
+            3 -> 4
+            4 -> 5
             else -> null
         }
     }
@@ -314,6 +520,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         dialog.setContentView(dialogView)
 
         val closeButton = dialogView.findViewById<ImageButton>(R.id.btnPlaceDetailClose)
+        val imageView = dialogView.findViewById<ImageView>(R.id.ivPlaceDetailImage)
         val titleText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailTitle)
         val metaText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailMeta)
         val openingText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailOpening)
@@ -334,9 +541,15 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             valueOrUpdating(place.effectiveTag),
             location,
         )
+        imageView.load(place.imageUrl?.takeIf { it.isNotBlank() }) {
+            crossfade(true)
+            placeholder(R.drawable.bg_place_image_placeholder)
+            error(R.drawable.bg_place_image_placeholder)
+            fallback(R.drawable.bg_place_image_placeholder)
+        }
         openingText.text = getString(
             R.string.explore_detail_opening_badge_format,
-            valueOrUpdating(place.openingHours),
+            valueOrUpdating(place.openHours),
         )
         priceText.text = getString(
             R.string.explore_detail_price_badge_format,
@@ -351,6 +564,10 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         coordinatesText.text = detailLine(
             R.string.explore_detail_coordinates,
             coordinatesOrUpdating(place.lat, place.lng),
+        )
+        val currentLocationValue = coordinatesOrUpdating(currentLocationLat, currentLocationLng)
+        coordinatesText.append(
+            "\n" + detailLine(R.string.explore_detail_current_location, currentLocationValue),
         )
 
         val mapsUrl = resolveGoogleMapsUrl(place)
@@ -419,13 +636,23 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     }
 
     private fun resolveGoogleMapsUrl(place: Place): String? {
-        val directUrl = normalizedValue(place.googleMapsUrl)
-        if (directUrl != null) {
-            return directUrl
+        val origin = if (currentLocationLat != null && currentLocationLng != null) {
+            "${currentLocationLat},${currentLocationLng}"
+        } else {
+            null
         }
 
         if (place.lat != null && place.lng != null) {
-            return "https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}"
+            return if (origin != null) {
+                "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${place.lat},${place.lng}&travelmode=driving"
+            } else {
+                "https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}"
+            }
+        }
+
+        val directUrl = normalizedValue(place.googleMapsUrl)
+        if (directUrl != null && origin == null) {
+            return directUrl
         }
 
         val query = listOf(
@@ -439,7 +666,11 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             return null
         }
 
-        return "https://www.google.com/maps/search/?api=1&query=${Uri.encode(query)}"
+        return if (origin != null) {
+            "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${Uri.encode(query)}&travelmode=driving"
+        } else {
+            "https://www.google.com/maps/search/?api=1&query=${Uri.encode(query)}"
+        }
     }
 
     private fun openGoogleMaps(url: String) {

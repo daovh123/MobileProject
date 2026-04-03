@@ -19,7 +19,7 @@ fun PlaceDto.toDomain(): Place {
         mealType = mealType,
         rating = rating,
         reviewCount = reviewCount,
-        openingHours = openingHours,
+        openHours = openHours,
         priceRange = priceRange,
         imageUrl = imageUrl,
         googleMapsUrl = googleMapsUrl,

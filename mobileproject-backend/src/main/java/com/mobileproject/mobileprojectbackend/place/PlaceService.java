@@ -9,10 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,10 +18,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,11 +29,11 @@ public class PlaceService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
-    private static final Pattern OPEN_TIME_PATTERN = Pattern.compile("^(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})$");
 
     private final PlaceRepository placeRepository;
+    private final Object cacheLock = new Object();
+
+    private volatile CachedPlaceData cachedPlaceData;
 
     public PlaceService(PlaceRepository placeRepository) {
         this.placeRepository = placeRepository;
@@ -59,11 +56,9 @@ public class PlaceService {
                 null,
                 null,
                 null,
-                null,
                 "trending",
                 page,
-                size
-        );
+                size);
         return search(request);
     }
 
@@ -79,14 +74,15 @@ public class PlaceService {
     }
 
     public PlaceDto findById(String id) {
-        Place place = placeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found"));
-        boolean openNow = isOpenNow(place, LocalTime.now(VIETNAM_ZONE));
-        return toDto(place, openNow, null);
+        Place place = getCachedPlaceData().placeById().get(id);
+        if (place == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found");
+        }
+        return toDto(place, null);
     }
 
     public PlaceFeatureSummaryResponse getFeatureSummary() {
-        List<Place> places = placeRepository.findAll();
+        List<Place> places = getCachedPlaceData().places();
 
         long totalPlaces = places.size();
         long totalFoodPlaces = places.stream().filter(place -> Boolean.TRUE.equals(place.getIsFood())).count();
@@ -98,13 +94,12 @@ public class PlaceService {
 
         List<PlaceFeatureSummaryResponse.CountItem> topProvinces = topCounts(
                 places.stream().map(Place::getProvince).toList(),
-                10
-        );
+                10);
 
         List<PlaceFeatureSummaryResponse.CountItem> topDistricts = topCounts(
-                places.stream().flatMap(place -> Stream.of(place.getNormalizedDistrict(), place.getDistrict())).toList(),
-                15
-        );
+                places.stream().flatMap(place -> Stream.of(place.getNormalizedDistrict(), place.getDistrict()))
+                        .toList(),
+                15);
 
         List<String> topTags = places.stream()
                 .flatMap(place -> Stream.of(place.getEffectiveTag(), place.getCategory(), place.getMealType()))
@@ -126,43 +121,69 @@ public class PlaceService {
                 totalPlacesWithCoordinates,
                 topProvinces,
                 topDistricts,
-                topTags
-        );
+                topTags);
     }
 
-        public PlaceFilterOptionsResponse getFilterOptions() {
-        List<Place> places = placeRepository.findAll();
+    public PlaceFilterOptionsResponse getFilterOptions() {
+        List<Place> places = getCachedPlaceData().places();
 
         List<String> districts = collectDistinctValues(
-            places.stream().flatMap(place -> Stream.of(place.getNormalizedDistrict(), place.getDistrict())).toList(),
-            300
-        );
+                places.stream().flatMap(place -> Stream.of(place.getNormalizedDistrict(), place.getDistrict()))
+                        .toList(),
+                300);
         List<String> provinces = collectDistinctValues(
-            places.stream().map(Place::getProvince).toList(),
-            120
-        );
+                places.stream().map(Place::getProvince).toList(),
+                120);
 
         return new PlaceFilterOptionsResponse(districts, provinces);
-        }
+    }
 
     private List<PlaceView> filterPlaces(SearchCriteria criteria) {
-        LocalTime now = LocalTime.now(VIETNAM_ZONE);
-
-        return placeRepository.findAll().stream()
-                .map(place -> toPlaceView(place, criteria.nearLat(), criteria.nearLng(), now))
+        return getCachedPlaceData().places().stream()
+                .map(place -> toPlaceView(place, criteria.nearLat(), criteria.nearLng()))
                 .filter(view -> matchesQuery(view.place(), criteria.query()))
                 .filter(view -> matchesProvince(view.place(), criteria.province()))
                 .filter(view -> matchesDistrict(view.place(), criteria.district()))
                 .filter(view -> matchesType(view.place(), criteria.type()))
                 .filter(view -> matchesMinRating(view.place(), criteria.minRating()))
-                .filter(view -> matchesOpenNow(view, criteria.openNow()))
                 .filter(view -> matchesRadius(view, criteria.radiusKm()))
                 .toList();
     }
 
+    private CachedPlaceData getCachedPlaceData() {
+        CachedPlaceData snapshot = cachedPlaceData;
+        if (snapshot == null || snapshot.places().isEmpty()) {
+            synchronized (cacheLock) {
+                snapshot = cachedPlaceData;
+                if (snapshot == null || snapshot.places().isEmpty()) {
+                    cachedPlaceData = loadCacheData();
+                    snapshot = cachedPlaceData;
+                }
+            }
+        }
+        return snapshot;
+    }
+
+    private CachedPlaceData loadCacheData() {
+        List<Place> places = List.copyOf(placeRepository.findAll());
+        Map<String, Place> placeById = places.stream()
+                .filter(place -> place.getId() != null)
+                .collect(Collectors.toMap(
+                        Place::getId,
+                        Function.identity(),
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+        return new CachedPlaceData(places, Map.copyOf(placeById));
+    }
+
     private List<PlaceView> sortPlaces(List<PlaceView> places, String sort) {
+        if ("ratingmix".equals(sort)) {
+            return sortByRatingMix(places);
+        }
+
         Comparator<PlaceView> comparator = switch (sort) {
             case "rating" -> ratingComparator();
+            case "ratingasc" -> ratingComparatorAscending();
             case "distance" -> distanceComparator();
             default -> trendingComparator();
         };
@@ -199,8 +220,9 @@ public class PlaceService {
         }
 
         String sort = normalizeFilterValue(request.sort(), "trending");
-        if (!Set.of("trending", "rating", "distance").contains(sort)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort value. Use trending, rating, or distance");
+        if (!Set.of("trending", "rating", "ratingasc", "ratingmix", "distance").contains(sort)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid sort value. Use trending, rating, ratingAsc, ratingMix, or distance");
         }
 
         Double minRating = request.minRating();
@@ -236,27 +258,24 @@ public class PlaceService {
                 normalizeNullable(request.district()),
                 type,
                 minRating,
-                Boolean.TRUE.equals(request.openNow()),
                 nearLat,
                 nearLng,
                 radiusKm,
                 sort,
                 safePage,
-                safeSize
-        );
+                safeSize);
     }
 
-    private PlaceView toPlaceView(Place place, Double nearLat, Double nearLng, LocalTime now) {
+    private PlaceView toPlaceView(Place place, Double nearLat, Double nearLng) {
         Double distanceKm = calculateDistanceKm(nearLat, nearLng, place);
-        boolean openNow = isOpenNow(place, now);
-        return new PlaceView(place, distanceKm, openNow);
+        return new PlaceView(place, distanceKm);
     }
 
     private PlaceDto toDto(PlaceView view) {
-        return toDto(view.place(), view.openNow(), view.distanceKm());
+        return toDto(view.place(), view.distanceKm());
     }
 
-    private PlaceDto toDto(Place place, boolean openNow, Double distanceKm) {
+    private PlaceDto toDto(Place place, Double distanceKm) {
         return new PlaceDto(
                 place.getId(),
                 place.getName(),
@@ -266,9 +285,9 @@ public class PlaceService {
                 place.getMealType(),
                 place.getRating(),
                 place.getReviewCount(),
-                place.getOpeningHours(),
+                place.getOpenHours(),
                 place.getPriceRange(),
-                place.getImageUrl(),
+                PlaceImageUrlNormalizer.normalize(place.getImageUrl()),
                 Boolean.TRUE.equals(place.getIsPinned()),
                 place.getGoogleMapsUrl(),
                 place.getLat(),
@@ -278,10 +297,7 @@ public class PlaceService {
                 place.getEffectiveTag(),
                 Boolean.TRUE.equals(place.getIsFood()),
                 Boolean.TRUE.equals(place.getIsDrink()),
-                place.getOpenTime(),
-                openNow,
-                roundDistance(distanceKm)
-        );
+                roundDistance(distanceKm));
     }
 
     private List<PlaceFeatureSummaryResponse.CountItem> topCounts(List<String> values, int limit) {
@@ -297,19 +313,19 @@ public class PlaceService {
                 .toList();
     }
 
-            private List<String> collectDistinctValues(List<String> values, int limit) {
-            Map<String, String> normalizedValueMap = new LinkedHashMap<>();
+    private List<String> collectDistinctValues(List<String> values, int limit) {
+        Map<String, String> normalizedValueMap = new LinkedHashMap<>();
 
-            values.stream()
+        values.stream()
                 .map(this::trimToNull)
                 .filter(Objects::nonNull)
                 .forEach(value -> normalizedValueMap.putIfAbsent(value.toLowerCase(Locale.ROOT), value));
 
-            return normalizedValueMap.values().stream()
+        return normalizedValueMap.values().stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .limit(limit)
                 .toList();
-            }
+    }
 
     private Comparator<PlaceView> trendingComparator() {
         return Comparator
@@ -323,7 +339,17 @@ public class PlaceService {
         return Comparator
                 .comparing((PlaceView view) -> defaultDouble(view.place().getRating()), Comparator.reverseOrder())
                 .thenComparing((PlaceView view) -> defaultInt(view.place().getReviewCount()), Comparator.reverseOrder())
-                .thenComparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned())).reversed()
+                .thenComparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned()),
+                        Comparator.reverseOrder())
+                .thenComparing(view -> normalizeFilterValue(view.place().getName(), ""));
+    }
+
+    private Comparator<PlaceView> ratingComparatorAscending() {
+        return Comparator
+                .comparing((PlaceView view) -> defaultDouble(view.place().getRating()))
+                .thenComparing((PlaceView view) -> defaultInt(view.place().getReviewCount()), Comparator.reverseOrder())
+                .thenComparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned()),
+                        Comparator.reverseOrder())
                 .thenComparing(view -> normalizeFilterValue(view.place().getName(), ""));
     }
 
@@ -331,6 +357,47 @@ public class PlaceService {
         return Comparator
                 .comparing((PlaceView view) -> view.distanceKm() == null ? Double.MAX_VALUE : view.distanceKm())
                 .thenComparing(trendingComparator());
+    }
+
+    private List<PlaceView> sortByRatingMix(List<PlaceView> places) {
+        Map<Double, List<PlaceView>> byBucket = places.stream()
+                .collect(Collectors.groupingBy(
+                        view -> ratingBucket(view.place().getRating()),
+                        TreeMap::new,
+                        Collectors.toList()));
+
+        Comparator<PlaceView> withinBucketComparator = Comparator
+                .comparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned())).reversed()
+                .thenComparing((PlaceView view) -> defaultInt(view.place().getReviewCount()), Comparator.reverseOrder())
+                .thenComparing(view -> normalizeFilterValue(view.place().getName(), ""));
+
+        byBucket.values().forEach(bucket -> bucket.sort(withinBucketComparator));
+
+        List<Double> buckets = new ArrayList<>(byBucket.keySet());
+        List<PlaceView> mixed = new ArrayList<>(places.size());
+
+        int index = 0;
+        boolean added;
+        do {
+            added = false;
+            for (Double bucket : buckets) {
+                List<PlaceView> values = byBucket.get(bucket);
+                if (index < values.size()) {
+                    mixed.add(values.get(index));
+                    added = true;
+                }
+            }
+            index++;
+        } while (added);
+
+        return mixed;
+    }
+
+    private Double ratingBucket(Double rating) {
+        if (rating == null) {
+            return -1.0;
+        }
+        return Math.floor(rating * 10.0) / 10.0;
     }
 
     private boolean matchesQuery(Place place, String query) {
@@ -348,7 +415,9 @@ public class PlaceService {
         if (province == null) {
             return true;
         }
-        return containsLowerCase(place.getProvince(), province);
+        return containsLowerCase(place.getProvince(), province)
+                || containsLowerCase(place.getDistrict(), province)
+                || containsLowerCase(place.getNormalizedDistrict(), province);
     }
 
     private boolean matchesDistrict(Place place, String district) {
@@ -372,11 +441,10 @@ public class PlaceService {
             return true;
         }
         Double rating = place.getRating();
-        return rating != null && rating >= minRating;
-    }
-
-    private boolean matchesOpenNow(PlaceView view, boolean openNowFilter) {
-        return !openNowFilter || view.openNow();
+        if (rating == null) {
+            return false;
+        }
+        return rating >= minRating;
     }
 
     private boolean matchesRadius(PlaceView view, Double radiusKm) {
@@ -387,36 +455,33 @@ public class PlaceService {
     }
 
     private boolean containsLowerCase(String source, String expectedLowerCase) {
-        return source != null && source.toLowerCase(Locale.ROOT).contains(expectedLowerCase);
+        if (source == null || expectedLowerCase == null) {
+            return false;
+        }
+
+        String normalizedSource = normalizeForSearch(source);
+        String normalizedExpected = normalizeForSearch(expectedLowerCase);
+        return normalizedSource != null
+                && normalizedExpected != null
+                && normalizedSource.contains(normalizedExpected);
     }
 
-    private boolean isOpenNow(Place place, LocalTime now) {
-        String rawRange = firstNotBlank(place.getOpenTime(), place.getOpeningHours());
-        if (rawRange == null) {
-            return false;
+    private String normalizeForSearch(String value) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            return null;
         }
 
-        Matcher matcher = OPEN_TIME_PATTERN.matcher(rawRange.trim());
-        if (!matcher.matches()) {
-            return false;
-        }
+        String folded = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'd')
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
 
-        try {
-            LocalTime start = LocalTime.parse(matcher.group(1), TIME_FORMATTER);
-            LocalTime end = LocalTime.parse(matcher.group(2), TIME_FORMATTER);
-
-            if (start.equals(end)) {
-                return true;
-            }
-
-            if (end.isAfter(start)) {
-                return !now.isBefore(start) && now.isBefore(end);
-            }
-
-            return !now.isBefore(start) || now.isBefore(end);
-        } catch (DateTimeParseException exception) {
-            return false;
-        }
+        return folded.isBlank() ? null : folded;
     }
 
     private Double calculateDistanceKm(Double nearLat, Double nearLng, Place place) {
@@ -471,14 +536,6 @@ public class PlaceService {
         return normalized == null ? fallback : normalized;
     }
 
-    private String firstNotBlank(String first, String second) {
-        String normalizedFirst = normalizeNullable(first);
-        if (normalizedFirst != null) {
-            return normalizedFirst;
-        }
-        return normalizeNullable(second);
-    }
-
     private String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -493,16 +550,17 @@ public class PlaceService {
             String district,
             String type,
             Double minRating,
-            boolean openNow,
             Double nearLat,
             Double nearLng,
             Double radiusKm,
             String sort,
             int page,
-            int size
-    ) {
+            int size) {
     }
 
-    private record PlaceView(Place place, Double distanceKm, boolean openNow) {
+    private record PlaceView(Place place, Double distanceKm) {
+    }
+
+    private record CachedPlaceData(List<Place> places, Map<String, Place> placeById) {
     }
 }

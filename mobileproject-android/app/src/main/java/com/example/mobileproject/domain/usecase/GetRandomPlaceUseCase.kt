@@ -12,16 +12,20 @@ class GetRandomPlaceUseCase @Inject constructor(
         province: String?,
         district: String?,
         type: String,
-        openNow: Boolean?,
         minRating: Double?,
+        nearLat: Double? = null,
+        nearLng: Double? = null,
+        radiusKm: Double? = null,
     ): Place {
         return placeRepository.getRandomPlace(
             query = query,
             province = province,
             district = district,
             type = type,
-            openNow = openNow,
             minRating = minRating,
+            nearLat = nearLat,
+            nearLng = nearLng,
+            radiusKm = radiusKm,
         )
     }
 }

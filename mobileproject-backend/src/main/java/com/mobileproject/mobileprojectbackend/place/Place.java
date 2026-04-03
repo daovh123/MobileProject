@@ -19,7 +19,7 @@ public class Place {
     private String mealType;
     private Double rating;
     private Integer reviewCount;
-    private String openingHours;
+    private String openHours;
     private String priceRange;
     private String imageUrl;
     private Boolean isPinned;
@@ -32,5 +32,4 @@ public class Place {
     private String searchString;
     private Boolean isFood;
     private Boolean isDrink;
-    private String openTime;
 }

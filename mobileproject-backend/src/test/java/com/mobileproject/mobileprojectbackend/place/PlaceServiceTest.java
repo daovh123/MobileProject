@@ -19,99 +19,103 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PlaceServiceTest {
 
-    @Mock
-    private PlaceRepository placeRepository;
+        @Mock
+        private PlaceRepository placeRepository;
 
-    @Test
-    void searchShouldFilterByQueryTypeAndRating() {
-        PlaceService placeService = new PlaceService(placeRepository);
-        when(placeRepository.findAll()).thenReturn(List.of(
-                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true, 10.76, 106.69, "pho ong cat quan 1"),
-                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false, 10.78, 106.68, "coffee date quan 3"),
-                place("p3", "Bun Bo", "TP. Ho Chi Minh", "Quan 1", true, false, 3.9, 100, false, 10.75, 106.66, "bun bo quan 1")
-        ));
+        @Test
+        void searchShouldFilterByQueryTypeAndRating() {
+                PlaceService placeService = new PlaceService(placeRepository);
+                when(placeRepository.findAll()).thenReturn(List.of(
+                                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true,
+                                                10.76, 106.69, "pho ong cat quan 1"),
+                                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false,
+                                                10.78, 106.68, "coffee date quan 3"),
+                                place("p3", "Bun Bo", "TP. Ho Chi Minh", "Quan 1", true, false, 3.9, 100, false, 10.75,
+                                                106.66, "bun bo quan 1")));
 
-        PlaceSearchRequest request = new PlaceSearchRequest(
-                "pho",
-                null,
-                null,
-                "food",
-                4.0,
-                false,
-                null,
-                null,
-                null,
-                "trending",
-                0,
-                20
-        );
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                "pho",
+                                null,
+                                null,
+                                "food",
+                                4.0,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                20);
 
-        PlaceSearchResponse response = placeService.search(request);
+                PlaceSearchResponse response = placeService.search(request);
 
-        assertEquals(1, response.total());
-        assertEquals("p1", response.items().getFirst().id());
-    }
+                assertEquals(1, response.total());
+                assertEquals("p1", response.items().getFirst().id());
+        }
 
-    @Test
-    void randomShouldRespectTypeFilter() {
-        PlaceService placeService = new PlaceService(placeRepository);
-        when(placeRepository.findAll()).thenReturn(List.of(
-                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true, 10.76, 106.69, "pho ong cat"),
-                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false, 10.78, 106.68, "coffee date")
-        ));
+        @Test
+        void randomShouldRespectTypeFilter() {
+                PlaceService placeService = new PlaceService(placeRepository);
+                when(placeRepository.findAll()).thenReturn(List.of(
+                                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true,
+                                                10.76, 106.69, "pho ong cat"),
+                                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false,
+                                                10.78, 106.68, "coffee date")));
 
-        PlaceSearchRequest request = new PlaceSearchRequest(
-                null,
-                null,
-                null,
-                "drink",
-                null,
-                false,
-                null,
-                null,
-                null,
-                "trending",
-                0,
-                1
-        );
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "drink",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                1);
 
-        PlaceDto response = placeService.random(request);
+                PlaceDto response = placeService.random(request);
 
-        assertEquals("p2", response.id());
-        assertTrue(response.drink());
-        assertFalse(response.food());
-    }
+                assertEquals("p2", response.id());
+                assertTrue(response.drink());
+                assertFalse(response.food());
+        }
 
-    @Test
-    void featureSummaryShouldAggregateCounts() {
-        PlaceService placeService = new PlaceService(placeRepository);
-        when(placeRepository.findAll()).thenReturn(List.of(
-                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true, 10.76, 106.69, "pho ong cat"),
-                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false, 10.78, 106.68, "coffee date"),
-                place("p3", "Bun Dau", "Ha Noi", "Hoan Kiem", true, false, 4.2, 120, false, null, null, "bun dau")
-        ));
+        @Test
+        void featureSummaryShouldAggregateCounts() {
+                PlaceService placeService = new PlaceService(placeRepository);
+                when(placeRepository.findAll()).thenReturn(List.of(
+                                place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true,
+                                                10.76, 106.69, "pho ong cat"),
+                                place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false,
+                                                10.78, 106.68, "coffee date"),
+                                place("p3", "Bun Dau", "Ha Noi", "Hoan Kiem", true, false, 4.2, 120, false, null, null,
+                                                "bun dau")));
 
-        PlaceFeatureSummaryResponse response = placeService.getFeatureSummary();
+                PlaceFeatureSummaryResponse response = placeService.getFeatureSummary();
 
-        assertEquals(3, response.totalPlaces());
-        assertEquals(2, response.totalFoodPlaces());
-        assertEquals(1, response.totalDrinkPlaces());
-        assertEquals(1, response.totalPinnedPlaces());
-        assertEquals(2, response.totalPlacesWithCoordinates());
-        assertEquals("tp. ho chi minh", response.topProvinces().getFirst().name());
-    }
+                assertEquals(3, response.totalPlaces());
+                assertEquals(2, response.totalFoodPlaces());
+                assertEquals(1, response.totalDrinkPlaces());
+                assertEquals(1, response.totalPinnedPlaces());
+                assertEquals(2, response.totalPlacesWithCoordinates());
+                assertEquals("tp. ho chi minh", response.topProvinces().getFirst().name());
+        }
 
         @Test
         void filterOptionsShouldReturnDistinctDistrictsAndProvinces() {
                 PlaceService placeService = new PlaceService(placeRepository);
 
-                Place place1 = place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true, 10.76, 106.69, "pho");
+                Place place1 = place("p1", "Pho Ong Cat", "TP. Ho Chi Minh", "Quan 1", true, false, 4.6, 500, true,
+                                10.76, 106.69, "pho");
                 place1.setNormalizedDistrict("Q. 1");
 
-                Place place2 = place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false, 10.78, 106.68, "coffee");
+                Place place2 = place("p2", "Coffee Date", "TP. Ho Chi Minh", "Quan 3", false, true, 4.8, 220, false,
+                                10.78, 106.68, "coffee");
                 place2.setNormalizedDistrict("Q. 3");
 
-                Place place3 = place("p3", "Bun Dau", "Ha Noi", "Hoan Kiem", true, false, 4.2, 120, false, null, null, "bun dau");
+                Place place3 = place("p3", "Bun Dau", "Ha Noi", "Hoan Kiem", true, false, 4.2, 120, false, null, null,
+                                "bun dau");
                 place3.setNormalizedDistrict("Q. Hoan Kiem");
 
                 when(placeRepository.findAll()).thenReturn(List.of(place1, place2, place3));
@@ -124,7 +128,141 @@ class PlaceServiceTest {
                 assertTrue(response.provinces().contains("Ha Noi"));
         }
 
-    private Place place(String id,
+        @Test
+        void searchShouldFilterByAreaUsingDistrictWhenProvinceDoesNotMatch() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place placeInDistrict = place("p1", "Coffee Bien Hoa", "Dong Nai", "Bien Hoa", false, true,
+                                4.4, 120, false, 10.95, 106.82, "coffee bien hoa");
+                placeInDistrict.setNormalizedDistrict("Thanh pho Bien Hoa");
+
+                Place placeOtherArea = place("p2", "Coffee Thu Duc", "TP. Ho Chi Minh", "Thu Duc", false, true,
+                                4.6, 150, false, 10.85, 106.75, "coffee thu duc");
+
+                when(placeRepository.findAll()).thenReturn(List.of(placeInDistrict, placeOtherArea));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                "bien hoa",
+                                null,
+                                "all",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(1, response.total());
+                assertEquals("p1", response.items().getFirst().id());
+        }
+
+        @Test
+        void searchShouldMatchProvinceIgnoringVietnameseDiacritics() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place hanoiPlace = place("p1", "Pho Ha Noi", "Hà Nội", "Đống Đa", true, false,
+                                4.5, 240, false, 21.03, 105.83, "pho ha noi");
+                Place otherPlace = place("p2", "Pho Sai Gon", "TP. Ho Chi Minh", "Quan 1", true, false,
+                                4.6, 300, false, 10.77, 106.69, "pho sai gon");
+
+                when(placeRepository.findAll()).thenReturn(List.of(hanoiPlace, otherPlace));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                "ha noi",
+                                null,
+                                "all",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(1, response.total());
+                assertEquals("p1", response.items().getFirst().id());
+        }
+
+        @Test
+        void searchShouldIncludeRatingEqualToThresholdForPlusRatingOptions() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place ratingFour = place("p1", "Place 4.0", "TP. Ho Chi Minh", "Quan 1", true, false,
+                                4.0, 100, false, 10.77, 106.69, "place 4");
+                Place ratingFive = place("p2", "Place 5.0", "TP. Ho Chi Minh", "Quan 3", true, false,
+                                5.0, 80, false, 10.78, 106.68, "place 5");
+                Place ratingLower = place("p3", "Place 3.9", "TP. Ho Chi Minh", "Quan 7", true, false,
+                                3.9, 120, false, 10.73, 106.71, "place 3.9");
+
+                when(placeRepository.findAll()).thenReturn(List.of(ratingFour, ratingFive, ratingLower));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                4.0,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(2, response.total());
+        }
+
+        @Test
+        void searchShouldDistributeResultsWhenRatingMixIsRequested() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place ratingFortyOne = place("p1", "Place 4.1", "TP. Ho Chi Minh", "Quan 1", true, false,
+                                4.1, 140, false, 10.77, 106.69, "place 4.1");
+                Place ratingFortyOneSecond = place("p4", "Place 4.1 second", "TP. Ho Chi Minh", "Quan 5", true, false,
+                                4.1, 120, false, 10.75, 106.67, "place 4.1 second");
+                Place ratingFortyNine = place("p2", "Place 4.9", "TP. Ho Chi Minh", "Quan 3", true, false,
+                                4.9, 80, false, 10.78, 106.68, "place 4.9");
+                Place ratingFive = place("p3", "Place 5.0", "TP. Ho Chi Minh", "Quan 7", true, false,
+                                5.0, 120, false, 10.73, 106.71, "place 5.0");
+
+                when(placeRepository.findAll()).thenReturn(List.of(
+                                ratingFortyOne,
+                                ratingFortyOneSecond,
+                                ratingFortyNine,
+                                ratingFive));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                4.0,
+                                null,
+                                null,
+                                null,
+                                "ratingMix",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(4, response.total());
+                assertEquals("p1", response.items().get(0).id());
+                assertEquals("p2", response.items().get(1).id());
+                assertEquals("p3", response.items().get(2).id());
+                assertEquals("p4", response.items().get(3).id());
+        }
+
+        private Place place(String id,
                         String name,
                         String province,
                         String district,
@@ -136,21 +274,21 @@ class PlaceServiceTest {
                         Double lat,
                         Double lng,
                         String searchString) {
-        Place place = new Place();
-        place.setId(id);
-        place.setName(name);
-        place.setProvince(province);
-        place.setDistrict(district);
-        place.setNormalizedDistrict(district);
-        place.setIsFood(isFood);
-        place.setIsDrink(isDrink);
-        place.setRating(rating);
-        place.setReviewCount(reviewCount);
-        place.setIsPinned(isPinned);
-        place.setLat(lat);
-        place.setLng(lng);
-        place.setSearchString(searchString);
-        place.setEffectiveTag("tag");
-        return place;
-    }
+                Place place = new Place();
+                place.setId(id);
+                place.setName(name);
+                place.setProvince(province);
+                place.setDistrict(district);
+                place.setNormalizedDistrict(district);
+                place.setIsFood(isFood);
+                place.setIsDrink(isDrink);
+                place.setRating(rating);
+                place.setReviewCount(reviewCount);
+                place.setIsPinned(isPinned);
+                place.setLat(lat);
+                place.setLng(lng);
+                place.setSearchString(searchString);
+                place.setEffectiveTag("tag");
+                return place;
+        }
 }

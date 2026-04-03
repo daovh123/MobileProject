@@ -15,8 +15,10 @@ interface PlaceApiService {
         @Query("province") province: String?,
         @Query("district") district: String?,
         @Query("type") type: String,
-        @Query("openNow") openNow: Boolean?,
         @Query("minRating") minRating: Double?,
+        @Query("nearLat") nearLat: Double?,
+        @Query("nearLng") nearLng: Double?,
+        @Query("radiusKm") radiusKm: Double?,
         @Query("page") page: Int,
         @Query("size") size: Int,
         @Query("sort") sort: String,
@@ -28,8 +30,10 @@ interface PlaceApiService {
         @Query("province") province: String?,
         @Query("district") district: String?,
         @Query("type") type: String,
-        @Query("openNow") openNow: Boolean?,
         @Query("minRating") minRating: Double?,
+        @Query("nearLat") nearLat: Double?,
+        @Query("nearLng") nearLng: Double?,
+        @Query("radiusKm") radiusKm: Double?,
     ): PlaceDto
 
     @GET("api/places/filter-options")

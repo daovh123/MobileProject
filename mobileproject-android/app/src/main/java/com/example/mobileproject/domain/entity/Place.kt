@@ -11,7 +11,7 @@ data class Place(
     val mealType: String?,
     val rating: Double?,
     val reviewCount: Int?,
-    val openingHours: String?,
+    val openHours: String?,
     val priceRange: String?,
     val imageUrl: String?,
     val googleMapsUrl: String?,

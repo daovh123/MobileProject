@@ -9,8 +9,10 @@ interface PlaceRepository {
         province: String?,
         district: String?,
         type: String,
-        openNow: Boolean?,
         minRating: Double?,
+        nearLat: Double?,
+        nearLng: Double?,
+        radiusKm: Double?,
         page: Int,
         size: Int,
         sort: String,
@@ -21,8 +23,10 @@ interface PlaceRepository {
         province: String?,
         district: String?,
         type: String,
-        openNow: Boolean?,
         minRating: Double?,
+        nearLat: Double?,
+        nearLng: Double?,
+        radiusKm: Double?,
     ): Place
 
     suspend fun getFilterOptions(): PlaceFilterOptions

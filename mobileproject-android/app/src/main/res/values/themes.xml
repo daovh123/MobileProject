@@ -38,12 +38,17 @@
     <style name="ShapeAppearanceOverlay.MobileProject.BottomNav">
         <item name="cornerFamilyTopLeft">rounded</item>
         <item name="cornerFamilyTopRight">rounded</item>
-        <item name="cornerSizeTopLeft">32dp</item>
-        <item name="cornerSizeTopRight">32dp</item>
+        <item name="cornerSizeTopLeft">30dp</item>
+        <item name="cornerSizeTopRight">30dp</item>
         <item name="cornerFamilyBottomLeft">rounded</item>
         <item name="cornerFamilyBottomRight">rounded</item>
-        <item name="cornerSizeBottomLeft">0dp</item>
-        <item name="cornerSizeBottomRight">0dp</item>
+        <item name="cornerSizeBottomLeft">30dp</item>
+        <item name="cornerSizeBottomRight">30dp</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.MobileProject.Pill">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">999dp</item>
     </style>
 
     <style name="ThemeOverlay.MobileProject.BottomNav" parent="">
@@ -56,9 +61,70 @@
     </style>
 
     <style name="Widget.MobileProject.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <!-- Keep indicator compact relative to nav height -->
-        <item name="android:width">64dp</item>
-        <item name="android:height">32dp</item>
+        <item name="android:width">74dp</item>
+        <item name="android:height">36dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearanceOverlay.MobileProject.Pill</item>
+    </style>
+
+    <style name="TextAppearance.MobileProject.GoogleSans.Headline" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textSize">30sp</item>
+        <item name="android:lineHeight">36sp</item>
+    </style>
+
+    <style name="TextAppearance.MobileProject.GoogleSans.Title" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <style name="TextAppearance.MobileProject.GoogleSans.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="TextAppearance.MobileProject.GoogleSans.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Widget.MobileProject.Explore.DockedSearch" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">20dp</item>
+        <item name="boxCornerRadiusTopEnd">20dp</item>
+        <item name="boxCornerRadiusBottomStart">20dp</item>
+        <item name="boxCornerRadiusBottomEnd">20dp</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="boxBackgroundColor">?attr/colorSurface</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Widget.MobileProject.Explore.FilterInput" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="boxStrokeColor">?attr/colorOutline</item>
+        <item name="boxBackgroundColor">?attr/colorSurface</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Widget.MobileProject.Explore.FilterChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipMinHeight">34dp</item>
+        <item name="chipCornerRadius">17dp</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipBackgroundColor">@color/explore_filter_chip_bg</item>
+        <item name="chipStrokeColor">@color/explore_filter_chip_stroke</item>
+        <item name="android:textColor">@color/explore_filter_chip_text</item>
+        <item name="android:textAppearance">@style/TextAppearance.MobileProject.GoogleSans.Label</item>
+        <item name="checkedIconVisible">false</item>
     </style>
 
     <style name="Widget.MobileProject.AuthTextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox.Dense">

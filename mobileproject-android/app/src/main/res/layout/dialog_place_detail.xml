@@ -17,8 +17,24 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="170dp"
-            android:background="@drawable/bg_place_detail_header"
             android:padding="18dp">
+
+            <ImageView
+                android:id="@+id/ivPlaceDetailImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/bg_place_image_placeholder" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_place_detail_header" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_place_detail_image_scrim" />
 
             <ImageButton
                 android:id="@+id/btnPlaceDetailClose"

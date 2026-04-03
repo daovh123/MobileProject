@@ -23,7 +23,7 @@ class SearchPlacesUseCaseTest {
                 mealType = "Bua toi",
                 rating = 4.6,
                 reviewCount = 5002,
-                openingHours = "07:00 - 22:00",
+                openHours = "07:00 - 22:00",
                 priceRange = "100000-200000",
                 imageUrl = null,
                 googleMapsUrl = null,
@@ -36,7 +36,6 @@ class SearchPlacesUseCaseTest {
         var capturedProvince: String? = null
         var capturedDistrict: String? = null
         var capturedType = ""
-        var capturedOpenNow: Boolean? = null
         var capturedMinRating: Double? = null
         var capturedPage = -1
         var capturedSize = -1
@@ -48,8 +47,10 @@ class SearchPlacesUseCaseTest {
                 province: String?,
                 district: String?,
                 type: String,
-                openNow: Boolean?,
                 minRating: Double?,
+                nearLat: Double?,
+                nearLng: Double?,
+                radiusKm: Double?,
                 page: Int,
                 size: Int,
                 sort: String,
@@ -58,7 +59,6 @@ class SearchPlacesUseCaseTest {
                 capturedProvince = province
                 capturedDistrict = district
                 capturedType = type
-                capturedOpenNow = openNow
                 capturedMinRating = minRating
                 capturedPage = page
                 capturedSize = size
@@ -71,8 +71,10 @@ class SearchPlacesUseCaseTest {
                 province: String?,
                 district: String?,
                 type: String,
-                openNow: Boolean?,
                 minRating: Double?,
+                nearLat: Double?,
+                nearLng: Double?,
+                radiusKm: Double?,
             ): Place {
                 return expected.first()
             }
@@ -92,7 +94,6 @@ class SearchPlacesUseCaseTest {
             province = "TP. Ho Chi Minh",
             district = "Q. 1",
             type = "food",
-            openNow = true,
             minRating = 4.0,
             page = 1,
             size = 10,
@@ -104,7 +105,6 @@ class SearchPlacesUseCaseTest {
         assertEquals("TP. Ho Chi Minh", capturedProvince)
         assertEquals("Q. 1", capturedDistrict)
         assertEquals("food", capturedType)
-        assertEquals(true, capturedOpenNow)
         assertEquals(4.0, capturedMinRating)
         assertEquals(1, capturedPage)
         assertEquals(10, capturedSize)

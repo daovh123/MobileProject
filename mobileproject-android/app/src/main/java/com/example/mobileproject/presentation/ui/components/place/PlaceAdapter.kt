@@ -6,8 +6,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
+import android.widget.ImageView
 import com.google.android.material.textview.MaterialTextView
 
 class PlaceAdapter(
@@ -33,6 +35,7 @@ class PlaceAdapter(
         private val addressText: MaterialTextView = itemView.findViewById(R.id.tvPlaceAddress)
         private val ratingText: MaterialTextView = itemView.findViewById(R.id.tvPlaceRating)
         private val openingHoursText: MaterialTextView = itemView.findViewById(R.id.tvPlaceOpeningHours)
+        private val imageView: ImageView = itemView.findViewById(R.id.ivPlaceImage)
 
         fun bind(place: Place) {
             val context = itemView.context
@@ -45,10 +48,18 @@ class PlaceAdapter(
             ratingText.text = if (place.rating != null && place.reviewCount != null) {
                 context.getString(R.string.explore_rating_format, place.rating, place.reviewCount)
             } else {
-                fallback
+                context.getString(R.string.explore_rating_unknown)
             }
 
-            openingHoursText.text = place.openingHours?.takeIf { it.isNotBlank() } ?: fallback
+            openingHoursText.text = place.openHours?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.explore_open_hours_unknown)
+
+            imageView.load(place.imageUrl?.takeIf { it.isNotBlank() }) {
+                crossfade(true)
+                placeholder(R.drawable.bg_place_image_placeholder)
+                error(R.drawable.bg_place_image_placeholder)
+                fallback(R.drawable.bg_place_image_placeholder)
+            }
         }
     }
 

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image URL Convert Preview</title>
+  <style>
+    :root {
+      --bg: #f5eff4;
+      --card: #ffffff;
+      --ink: #1f2f3a;
+      --muted: #6e5f70;
+      --brand: #b0005c;
+      --brand-2: #5a4fcf;
+      --ok: #1f9d5e;
+      --warn: #b03a48;
+      --line: #d7c8d5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 15% 10%, #ffe7f2 0%, transparent 32%),
+        radial-gradient(circle at 85% 0%, #e7edff 0%, transparent 35%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 6px 18px rgba(35, 22, 44, 0.06);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      color: var(--brand);
+    }
+
+    p.sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      font: inherit;
+      line-height: 1.4;
+      background: #fff;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    button.raw {
+      background: #e9ddff;
+      color: #3d2f62;
+    }
+
+    button.convert {
+      background: linear-gradient(135deg, var(--brand-2), var(--brand));
+      color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 14px;
+    }
+
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .img-wrap {
+      height: 170px;
+      background: linear-gradient(135deg, #f5d8eb, #d7e3ff);
+      display: grid;
+      place-items: center;
+    }
+
+    .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .body {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .url {
+      font-size: 13px;
+      word-break: break-all;
+      color: #3e3644;
+    }
+
+    .status-ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .status-warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <section class="card">
+      <h1>Image URL Before/After Convert</h1>
+      <p class="sub">Dán mỗi URL một dòng, bấm xem trước link gốc, sau đó bấm convert để so sánh.</p>
+      <textarea id="inputUrls">https://lh3.googleusercontent.com/p/AF1QipPmqjm6qphxbYznV1RiUb6eC80qEsXVecQxtgNj=w1920-h1080
+https://maps.app.goo.gl/N4X9iSFLg5tRCM1P9
+N/A
+//lh3.googleusercontent.com/p/AF1QipTest=w1920-h1080
+www.example.com/photo.jpg</textarea>
+      <div class="actions">
+        <button class="raw" id="btnRaw">Xem trước link gốc</button>
+        <button class="convert" id="btnConvert">Convert và xem sau xử lý</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="preview" class="grid"></div>
+    </section>
+  </div>
+
+  <script>
+    const preview = document.getElementById('preview');
+    const inputUrls = document.getElementById('inputUrls');
+
+    const INVALID = new Set(['n/a', 'na', 'none', 'null', '-', '_', 'n.a']);
+
+    function normalize(raw) {
+      if (!raw) return null;
+      let candidate = raw.trim();
+      if (!candidate) return null;
+
+      let lower = candidate.toLowerCase();
+      if (INVALID.has(lower)) return null;
+
+      if (candidate.startsWith('//')) {
+        candidate = `https:${candidate}`;
+        lower = candidate.toLowerCase();
+      } else if (lower.startsWith('www.')) {
+        candidate = `https://${candidate}`;
+        lower = candidate.toLowerCase();
+      } else if (!(lower.startsWith('http://') || lower.startsWith('https://'))) {
+        return null;
+      }
+
+      let url;
+      try {
+        url = new URL(candidate);
+      } catch {
+        return null;
+      }
+
+      const host = url.hostname.toLowerCase();
+      const path = (url.pathname || '').toLowerCase();
+
+      if (host === 'maps.app.goo.gl') return null;
+      if ((host === 'goo.gl' || host.endsWith('.goo.gl')) && path.startsWith('/maps')) return null;
+      if ((host === 'google.com' || host === 'www.google.com' || host === 'maps.google.com') && path.startsWith('/maps')) return null;
+
+      return candidate;
+    }
+
+    function render(mode) {
+      const rows = inputUrls.value
+        .split(/\r?\n/)
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      preview.innerHTML = '';
+
+      rows.forEach((raw, idx) => {
+        const normalized = normalize(raw);
+        const card = document.createElement('article');
+        card.className = 'item';
+
+        const src = mode === 'raw' ? raw : (normalized || '');
+        const status = mode === 'raw'
+          ? 'Đang xem link gốc'
+          : (normalized ? 'Convert thành công' : 'Không convert được (để trống ảnh)');
+
+        card.innerHTML = `
+          <div class="img-wrap">${src ? `<img src="${src}" alt="preview-${idx + 1}" />` : ''}</div>
+          <div class="body">
+            <div class="label">URL gốc</div>
+            <div class="url">${raw}</div>
+            ${mode === 'converted' ? `<div class="label">URL sau convert</div><div class="url">${normalized || '(null)'}</div>` : ''}
+            <div class="${normalized || mode === 'raw' ? 'status-ok' : 'status-warn'}">${status}</div>
+          </div>
+        `;
+
+        preview.appendChild(card);
+      });
+    }
+
+    document.getElementById('btnRaw').addEventListener('click', () => render('raw'));
+    document.getElementById('btnConvert').addEventListener('click', () => render('converted'));
+
+    render('raw');
+  </script>
+</body>
+
+</html>

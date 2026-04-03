@@ -105,14 +105,13 @@ public class PlaceImportService {
         place.setDistrict(normalizeNullable(place.getDistrict()));
         place.setCategory(normalizeNullable(place.getCategory()));
         place.setMealType(normalizeNullable(place.getMealType()));
-        place.setOpeningHours(normalizeNullable(place.getOpeningHours()));
+        place.setOpenHours(normalizeNullable(place.getOpenHours()));
         place.setPriceRange(normalizeNullable(place.getPriceRange()));
-        place.setImageUrl(normalizeNullable(place.getImageUrl()));
+        place.setImageUrl(PlaceImageUrlNormalizer.normalize(place.getImageUrl()));
         place.setGoogleMapsUrl(normalizeNullable(place.getGoogleMapsUrl()));
         place.setProvince(normalizeNullable(place.getProvince()));
         place.setNormalizedDistrict(normalizeNullable(place.getNormalizedDistrict()));
         place.setEffectiveTag(normalizeNullable(place.getEffectiveTag()));
-        place.setOpenTime(normalizeNullable(place.getOpenTime()));
 
         if (place.getReviewCount() == null) {
             place.setReviewCount(0);
@@ -139,12 +138,12 @@ public class PlaceImportService {
 
     private String buildSearchString(Place place) {
         return String.join(" ",
-                        Objects.toString(place.getName(), ""),
-                        Objects.toString(place.getCategory(), ""),
-                        Objects.toString(place.getAddress(), ""),
-                        Objects.toString(place.getDistrict(), ""),
-                        Objects.toString(place.getProvince(), ""),
-                        Objects.toString(place.getEffectiveTag(), ""))
+                Objects.toString(place.getName(), ""),
+                Objects.toString(place.getCategory(), ""),
+                Objects.toString(place.getAddress(), ""),
+                Objects.toString(place.getDistrict(), ""),
+                Objects.toString(place.getProvince(), ""),
+                Objects.toString(place.getEffectiveTag(), ""))
                 .toLowerCase(Locale.ROOT)
                 .trim();
     }

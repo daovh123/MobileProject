@@ -34,8 +34,8 @@ data class PlaceDto(
     val rating: Double?,
     @SerializedName("reviewCount")
     val reviewCount: Int?,
-    @SerializedName("openingHours")
-    val openingHours: String?,
+    @SerializedName("openHours")
+    val openHours: String?,
     @SerializedName("priceRange")
     val priceRange: String?,
     @SerializedName("imageUrl")

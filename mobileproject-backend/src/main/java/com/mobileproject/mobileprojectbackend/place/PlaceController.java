@@ -33,8 +33,7 @@ public class PlaceController {
     @PostMapping("/import")
     public ResponseEntity<PlaceImportResponse> importFromFile(
             @RequestParam(required = false) String filePath,
-            @RequestParam(defaultValue = "false") boolean clearBeforeImport
-    ) {
+            @RequestParam(defaultValue = "false") boolean clearBeforeImport) {
         PlaceImportResponse response = placeImportService.importFromFile(filePath, clearBeforeImport);
         return ResponseEntity.ok(response);
     }
@@ -46,36 +45,31 @@ public class PlaceController {
             @RequestParam(required = false) String district,
             @RequestParam(required = false, defaultValue = "all") String type,
             @RequestParam(required = false) Double minRating,
-            @RequestParam(required = false) Boolean openNow,
             @RequestParam(required = false) Double nearLat,
             @RequestParam(required = false) Double nearLng,
             @RequestParam(required = false) Double radiusKm,
             @RequestParam(defaultValue = "trending") String sort,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
-    ) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         PlaceSearchRequest request = new PlaceSearchRequest(
                 q,
                 province,
                 district,
                 type,
                 minRating,
-                openNow,
                 nearLat,
                 nearLng,
                 radiusKm,
                 sort,
                 page,
-                size
-        );
+                size);
         return ResponseEntity.ok(placeService.search(request));
     }
 
     @GetMapping("/trending")
     public ResponseEntity<PlaceSearchResponse> trending(
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
-    ) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return ResponseEntity.ok(placeService.trending(page, size));
     }
 
@@ -86,25 +80,21 @@ public class PlaceController {
             @RequestParam(required = false) String district,
             @RequestParam(required = false, defaultValue = "all") String type,
             @RequestParam(required = false) Double minRating,
-            @RequestParam(required = false) Boolean openNow,
             @RequestParam(required = false) Double nearLat,
             @RequestParam(required = false) Double nearLng,
-            @RequestParam(required = false) Double radiusKm
-    ) {
+            @RequestParam(required = false) Double radiusKm) {
         PlaceSearchRequest request = new PlaceSearchRequest(
                 q,
                 province,
                 district,
                 type,
                 minRating,
-                openNow,
                 nearLat,
                 nearLng,
                 radiusKm,
                 "trending",
                 0,
-                1
-        );
+                1);
         return ResponseEntity.ok(placeService.random(request));
     }
 
