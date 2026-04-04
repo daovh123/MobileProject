@@ -2,6 +2,7 @@ package com.example.mobileproject.domain.usecase
 
 import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.domain.entity.PlaceFilterOptions
+import com.example.mobileproject.domain.entity.PlaceSearchPage
 import com.example.mobileproject.domain.repository.PlaceRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -54,7 +55,7 @@ class SearchPlacesUseCaseTest {
                 page: Int,
                 size: Int,
                 sort: String,
-            ): List<Place> {
+            ): PlaceSearchPage {
                 capturedQuery = query
                 capturedProvince = province
                 capturedDistrict = district
@@ -63,7 +64,12 @@ class SearchPlacesUseCaseTest {
                 capturedPage = page
                 capturedSize = size
                 capturedSort = sort
-                return expected
+                return PlaceSearchPage(
+                    items = expected,
+                    total = expected.size.toLong(),
+                    page = page,
+                    size = size,
+                )
             }
 
             override suspend fun getRandomPlace(
@@ -100,7 +106,7 @@ class SearchPlacesUseCaseTest {
             sort = "rating",
         )
 
-        assertEquals(expected, result)
+        assertEquals(expected, result.items)
         assertEquals("pho", capturedQuery)
         assertEquals("TP. Ho Chi Minh", capturedProvince)
         assertEquals("Q. 1", capturedDistrict)

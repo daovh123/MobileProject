@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +46,38 @@ class PlaceServiceTest {
                                 null,
                                 null,
                                 "trending",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(1, response.total());
+                assertEquals("p1", response.items().getFirst().id());
+        }
+
+        @Test
+        void searchShouldApplyCombinedFiltersTogether() {
+                PlaceService placeService = new PlaceService(placeRepository);
+                when(placeRepository.findAll()).thenReturn(List.of(
+                                place("p1", "Pho Hoan Kiem", "Ha Noi", "Hoan Kiem", true, false, 4.5, 320, true,
+                                                21.0280, 105.8345, "pho hoan kiem"),
+                                place("p2", "Pho Rating Thap", "Ha Noi", "Dong Da", true, false, 3.8, 210, false,
+                                                21.0300, 105.8320, "pho rating thap"),
+                                place("p3", "Pho Sai Gon", "TP. Ho Chi Minh", "Quan 1", true, false, 4.7, 400, true,
+                                                10.7750, 106.7000, "pho sai gon"),
+                                place("p4", "Tra Chanh Hoan Kiem", "Ha Noi", "Hoan Kiem", false, true, 4.6, 190, false,
+                                                21.0290, 105.8330, "tra chanh hoan kiem")));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                "pho",
+                                "ha noi",
+                                null,
+                                "food",
+                                4.0,
+                                21.0278,
+                                105.8342,
+                                2.0,
+                                "distance",
                                 0,
                                 20);
 
@@ -256,10 +291,203 @@ class PlaceServiceTest {
                 PlaceSearchResponse response = placeService.search(request);
 
                 assertEquals(4, response.total());
-                assertEquals("p1", response.items().get(0).id());
+                assertEquals("p3", response.items().get(0).id());
                 assertEquals("p2", response.items().get(1).id());
-                assertEquals("p3", response.items().get(2).id());
+                assertEquals("p1", response.items().get(2).id());
                 assertEquals("p4", response.items().get(3).id());
+        }
+
+        @Test
+        void searchWithMinRatingOneShouldIncludePlacesWithoutRating() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place unrated = place("p1", "Unrated Place", "Ha Noi", "Dong Da", true, false,
+                                null, 10, false, 21.02, 105.82, "unrated");
+                Place rated = place("p2", "Rated Place", "Ha Noi", "Ba Dinh", true, false,
+                                4.5, 120, false, 21.03, 105.83, "rated");
+
+                when(placeRepository.findAll()).thenReturn(List.of(unrated, rated));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                "ha noi",
+                                null,
+                                "all",
+                                1.0,
+                                null,
+                                null,
+                                null,
+                                "ratingMix",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(2, response.total());
+        }
+
+        @Test
+        void searchWithMinRatingTwoShouldExcludePlacesWithoutRating() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place unrated = place("p1", "Unrated Place", "Ha Noi", "Dong Da", true, false,
+                                null, 10, false, 21.02, 105.82, "unrated");
+                Place rated = place("p2", "Rated Place", "Ha Noi", "Ba Dinh", true, false,
+                                4.5, 120, false, 21.03, 105.83, "rated");
+
+                when(placeRepository.findAll()).thenReturn(List.of(unrated, rated));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                "ha noi",
+                                null,
+                                "all",
+                                2.0,
+                                null,
+                                null,
+                                null,
+                                "ratingMix",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(1, response.total());
+                assertEquals("p2", response.items().getFirst().id());
+        }
+
+        @Test
+        void searchShouldRejectInvalidTypeValue() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "dessert",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                0,
+                                20);
+
+                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                                () -> placeService.search(request));
+
+                assertEquals(HttpStatus.BAD_REQUEST.value(), exception.getStatusCode().value());
+        }
+
+        @Test
+        void searchShouldRejectDistanceSortWithoutCoordinates() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "distance",
+                                0,
+                                20);
+
+                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                                () -> placeService.search(request));
+
+                assertEquals(HttpStatus.BAD_REQUEST.value(), exception.getStatusCode().value());
+        }
+
+        @Test
+        void searchShouldRejectRadiusWithoutCoordinates() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                null,
+                                null,
+                                null,
+                                5.0,
+                                "trending",
+                                0,
+                                20);
+
+                ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                                () -> placeService.search(request));
+
+                assertEquals(HttpStatus.BAD_REQUEST.value(), exception.getStatusCode().value());
+        }
+
+        @Test
+        void searchShouldFilterByRadiusWhenCoordinatesProvided() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place nearPlace = place("p1", "Near Place", "TP. Ho Chi Minh", "Quan 1", true, false,
+                                4.6, 120, false, 10.7760, 106.6990, "near place");
+                Place farPlace = place("p2", "Far Place", "TP. Ho Chi Minh", "Quan 3", true, false,
+                                4.9, 240, false, 10.9000, 106.8200, "far place");
+
+                when(placeRepository.findAll()).thenReturn(List.of(nearPlace, farPlace));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                null,
+                                10.7780,
+                                106.7000,
+                                5.0,
+                                "distance",
+                                0,
+                                20);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(1, response.total());
+                assertEquals("p1", response.items().getFirst().id());
+                assertTrue(response.items().getFirst().distanceKm() != null);
+                assertTrue(response.items().getFirst().distanceKm() <= 5.0);
+        }
+
+        @Test
+        void searchShouldApplyPagingAfterFiltering() {
+                PlaceService placeService = new PlaceService(placeRepository);
+
+                Place top = place("p1", "Top", "TP. Ho Chi Minh", "Quan 1", true, false,
+                                5.0, 200, false, 10.77, 106.69, "top");
+                Place middle = place("p2", "Middle", "TP. Ho Chi Minh", "Quan 3", true, false,
+                                4.5, 180, false, 10.78, 106.68, "middle");
+                Place low = place("p3", "Low", "TP. Ho Chi Minh", "Quan 7", true, false,
+                                4.0, 160, false, 10.74, 106.71, "low");
+
+                when(placeRepository.findAll()).thenReturn(List.of(top, middle, low));
+
+                PlaceSearchRequest request = new PlaceSearchRequest(
+                                null,
+                                null,
+                                null,
+                                "all",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "trending",
+                                1,
+                                1);
+
+                PlaceSearchResponse response = placeService.search(request);
+
+                assertEquals(3, response.total());
+                assertEquals(1, response.items().size());
+                assertEquals("p2", response.items().getFirst().id());
         }
 
         private Place place(String id,

@@ -191,4 +191,5 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         pairHint.text = hintText
         pairHint.setTextColor(ContextCompat.getColor(requireContext(), hintColor))
     }
+
 }

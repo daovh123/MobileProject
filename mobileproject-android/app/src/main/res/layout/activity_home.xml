@@ -30,13 +30,12 @@
         android:id="@+id/bottomNavCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="14dp"
         android:layout_marginTop="6dp"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="10dp"
-        android:alpha="0.96"
-        app:cardBackgroundColor="?attr/colorSurface"
-        app:cardElevation="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="14dp"
+        app:cardBackgroundColor="@color/nav_glass_surface"
+        app:cardElevation="9dp"
         app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MobileProject.BottomNav">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -44,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             style="@style/Widget.MobileProject.BottomNav"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_nav_glass"
             android:theme="@style/ThemeOverlay.MobileProject.BottomNav"
             app:itemIconSize="28dp"
             app:itemPaddingTop="14dp"

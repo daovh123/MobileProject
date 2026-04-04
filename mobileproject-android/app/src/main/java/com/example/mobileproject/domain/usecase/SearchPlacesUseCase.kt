@@ -1,6 +1,6 @@
 package com.example.mobileproject.domain.usecase
 
-import com.example.mobileproject.domain.entity.Place
+import com.example.mobileproject.domain.entity.PlaceSearchPage
 import com.example.mobileproject.domain.repository.PlaceRepository
 import javax.inject.Inject
 
@@ -19,7 +19,7 @@ class SearchPlacesUseCase @Inject constructor(
         page: Int = 0,
         size: Int = 20,
         sort: String = "trending",
-    ): List<Place> {
+    ): PlaceSearchPage {
         return placeRepository.searchPlaces(
             query = query,
             province = province,

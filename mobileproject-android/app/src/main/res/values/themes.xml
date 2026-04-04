@@ -93,14 +93,14 @@
     </style>
 
     <style name="Widget.MobileProject.Explore.DockedSearch" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">20dp</item>
-        <item name="boxCornerRadiusTopEnd">20dp</item>
-        <item name="boxCornerRadiusBottomStart">20dp</item>
-        <item name="boxCornerRadiusBottomEnd">20dp</item>
+        <item name="boxCornerRadiusTopStart">26dp</item>
+        <item name="boxCornerRadiusTopEnd">26dp</item>
+        <item name="boxCornerRadiusBottomStart">26dp</item>
+        <item name="boxCornerRadiusBottomEnd">26dp</item>
         <item name="boxStrokeWidth">1dp</item>
         <item name="boxStrokeWidthFocused">2dp</item>
-        <item name="boxStrokeColor">?attr/colorPrimary</item>
-        <item name="boxBackgroundColor">?attr/colorSurface</item>
+        <item name="boxStrokeColor">?attr/colorOutline</item>
+        <item name="boxBackgroundColor">@android:color/white</item>
         <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
     </style>
 

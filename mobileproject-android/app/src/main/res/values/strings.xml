@@ -80,6 +80,8 @@
     <string name="page_wallet">Ví</string>
     <string name="page_explore">Khám phá</string>
     <string name="page_memories">Kỷ niệm</string>
+    <string name="explore_header_title">Khám phá</string>
+    <string name="explore_feed_title">Nhà hàng nổi bật</string>
     <string name="explore_subtitle">Tìm quán hợp gu trong vài chạm với bộ lọc gọn và rõ ràng.</string>
     <string name="explore_search_hint">Tìm quán hoặc món ăn</string>
     <string name="explore_search_action">Tìm</string>
@@ -119,9 +121,13 @@
     <string name="explore_rating_5_option">5</string>
     <string name="explore_radius_hint">Bán kính (km)</string>
     <string name="explore_retry">Thử lại</string>
+    <string name="explore_results_count">Đã hiển thị %1$d / %2$d địa điểm</string>
     <string name="explore_empty_message">Không tìm thấy địa điểm phù hợp.</string>
     <string name="explore_error_message">Không thể tải dữ liệu: %1$s</string>
     <string name="explore_random_result_format">Gợi ý ngẫu nhiên: %1$s (%2$s)</string>
+    <string name="explore_trending_title">Xu hướng hôm nay</string>
+    <string name="explore_trending_collapse">Thu gọn xu hướng</string>
+    <string name="explore_trending_expand">Mở rộng xu hướng</string>
     <string name="explore_updating">Đang cập nhật</string>
     <string name="explore_open_hours_unknown">Chưa rõ giờ mở cửa</string>
     <string name="explore_rating_unknown">Chưa có đánh giá</string>
@@ -164,8 +170,13 @@
     <string name="memories_recent_moments">Khoảnh khắc gần đây</string>
     <string name="memories_more_count">+12</string>
     <string name="memories_partner_info">Thông tin đối tác</string>
+    <string name="memories_tab_favorites">Yêu thích</string>
+    <string name="memories_tab_history">Lịch sử</string>
+    <string name="memories_empty">Chưa có dữ liệu</string>
+    <string name="memories_clear_history">Xóa lịch sử</string>
 
     <string name="memories_greeting">Xin chào, %1$s!</string>
+    <string name="explore_toggle_favorite">Thêm hoặc bỏ yêu thích</string>
 
     <string name="cd_open_profile">Mở hồ sơ</string>
     <string name="cd_open_menu">Mở menu</string>

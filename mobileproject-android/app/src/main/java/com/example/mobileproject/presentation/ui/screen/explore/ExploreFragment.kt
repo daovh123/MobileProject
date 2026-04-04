@@ -14,6 +14,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.view.isVisible
@@ -23,13 +24,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.presentation.ui.components.place.PlaceAdapter
+import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.viewmodel.ExplorePlaceType
 import com.example.mobileproject.presentation.viewmodel.ExploreUiState
 import com.example.mobileproject.presentation.viewmodel.ExploreViewModel
+import com.example.mobileproject.presentation.viewmodel.FavoriteUiState
+import com.example.mobileproject.presentation.viewmodel.FavoriteViewModel
+import com.example.mobileproject.presentation.viewmodel.HistoryViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -37,16 +43,22 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.textview.MaterialTextView
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 @AndroidEntryPoint
 class ExploreFragment : Fragment(R.layout.fragment_explore) {
+
+    private companion object {
+        const val LOAD_MORE_THRESHOLD = 6
+    }
 
     private data class AreaOption(
         val labelResId: Int,
@@ -54,11 +66,15 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     )
 
     private lateinit var exploreViewModel: ExploreViewModel
+    private lateinit var favoriteViewModel: FavoriteViewModel
+    private lateinit var historyViewModel: HistoryViewModel
     private val fusedLocationClient by lazy { LocationServices.getFusedLocationProviderClient(requireActivity()) }
 
     private var currentLocationLat: Double? = null
     private var currentLocationLng: Double? = null
     private var lastHandledRandomSuggestionToken: Long = -1
+    private var isTrendingCollapsed: Boolean = false
+    private var accessToken: String = ""
 
     private val predefinedAreaOptions = listOf(
         AreaOption(R.string.explore_area_ha_noi, "ha noi"),
@@ -98,6 +114,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     private val placeAdapter = PlaceAdapter { place ->
         showPlaceDetail(place)
     }
+    private val trendingAdapter = ExploreTrendingAdapter { place ->
+        showPlaceDetail(place)
+    }
     private lateinit var areaAdapter: ArrayAdapter<String>
     private lateinit var ratingAdapter: ArrayAdapter<String>
 
@@ -105,12 +124,21 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         super.onViewCreated(view, savedInstanceState)
 
         exploreViewModel = ViewModelProvider(this)[ExploreViewModel::class.java]
+        favoriteViewModel = ViewModelProvider(this)[FavoriteViewModel::class.java]
+        historyViewModel = ViewModelProvider(this)[HistoryViewModel::class.java]
+        accessToken = (activity as? HomeActivity)
+            ?.intent
+            ?.getStringExtra(HomeActivity.EXTRA_ACCESS_TOKEN)
+            .orEmpty()
 
+        if (accessToken.isNotBlank()) {
+            favoriteViewModel.loadFavorites(accessToken)
+        }
+
+        val searchLayout = view.findViewById<TextInputLayout>(R.id.tilExploreQuery)
         val searchInput = view.findViewById<TextInputEditText>(R.id.etExploreQuery)
-        val searchButton = view.findViewById<MaterialButton>(R.id.btnExploreSearch)
         val areaInput = view.findViewById<AutoCompleteTextView>(R.id.actExploreArea)
         val randomButton = view.findViewById<MaterialButton>(R.id.btnExploreRandom)
-        val filterToggleButton = view.findViewById<MaterialButton>(R.id.btnExploreFilterToggle)
         val advancedFiltersLayout = view.findViewById<View>(R.id.llExploreAdvancedFilters)
         val typeGroup = view.findViewById<ChipGroup>(R.id.cgExploreType)
         val typeAllChip = view.findViewById<Chip>(R.id.chipTypeAll)
@@ -121,12 +149,43 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val radiusInput = view.findViewById<TextInputEditText>(R.id.etExploreRadius)
         val randomText = view.findViewById<MaterialTextView>(R.id.tvExploreRandomResult)
         val progressBar = view.findViewById<LinearProgressIndicator>(R.id.progressExplore)
+        val pagingProgressBar = view.findViewById<LinearProgressIndicator>(R.id.progressExplorePaging)
         val messageText = view.findViewById<MaterialTextView>(R.id.tvExploreMessage)
         val retryButton = view.findViewById<MaterialButton>(R.id.btnExploreRetry)
+        val resultCountText = view.findViewById<MaterialTextView>(R.id.tvExploreResultCount)
         val recyclerView = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvExplorePlaces)
+        val trendingSection = view.findViewById<View>(R.id.llExploreTrendingSection)
+        val trendingRecycler = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvExploreTrending)
+        val trendingCollapseButton = view.findViewById<ImageButton>(R.id.btnTrendingCollapse)
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val placeLayoutManager = LinearLayoutManager(requireContext())
+        recyclerView.layoutManager = placeLayoutManager
         recyclerView.adapter = placeAdapter
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy <= 0) {
+                    return
+                }
+
+                val totalItems = placeLayoutManager.itemCount
+                if (totalItems <= 0) {
+                    return
+                }
+
+                val lastVisible = placeLayoutManager.findLastVisibleItemPosition()
+                if (lastVisible >= totalItems - LOAD_MORE_THRESHOLD) {
+                    exploreViewModel.loadNextPage()
+                }
+            }
+        })
+
+        trendingRecycler.layoutManager = LinearLayoutManager(
+            requireContext(),
+            LinearLayoutManager.HORIZONTAL,
+            false,
+        )
+        trendingRecycler.adapter = trendingAdapter
 
         areaAdapter = ArrayAdapter(
             requireContext(),
@@ -153,17 +212,23 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             exploreViewModel.onProvinceChanged(normalizeProvinceSelection(selected))
         }
 
-        filterToggleButton.setOnClickListener {
+        searchLayout.setEndIconOnClickListener {
             setAdvancedFiltersExpanded(
                 expanded = !advancedFiltersLayout.isVisible,
                 advancedFiltersLayout = advancedFiltersLayout,
-                filterToggleButton = filterToggleButton,
+                searchLayout = searchLayout,
+            )
+        }
+        searchLayout.setStartIconOnClickListener {
+            submitSearch(
+                query = searchInput.text?.toString().orEmpty(),
+                province = areaInput.text?.toString().orEmpty(),
             )
         }
         setAdvancedFiltersExpanded(
             expanded = false,
             advancedFiltersLayout = advancedFiltersLayout,
-            filterToggleButton = filterToggleButton,
+            searchLayout = searchLayout,
         )
 
         ratingAdapter = ArrayAdapter(
@@ -186,13 +251,6 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
             }
         }
         ratingInput.setText(getString(R.string.explore_rating_all_option), false)
-
-        searchButton.setOnClickListener {
-            submitSearch(
-                query = searchInput.text?.toString().orEmpty(),
-                province = areaInput.text?.toString().orEmpty(),
-            )
-        }
 
         searchInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -227,11 +285,17 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                 setAdvancedFiltersExpanded(
                     expanded = true,
                     advancedFiltersLayout = advancedFiltersLayout,
-                    filterToggleButton = filterToggleButton,
+                    searchLayout = searchLayout,
                 )
                 ensureCurrentLocation()
             }
         }
+
+        trendingCollapseButton.setOnClickListener {
+            isTrendingCollapsed = !isTrendingCollapsed
+            updateTrendingCollapseUi(trendingCollapseButton, trendingRecycler)
+        }
+        updateTrendingCollapseUi(trendingCollapseButton, trendingRecycler)
 
         ratingInput.setOnItemClickListener { _, _, position, _ ->
             exploreViewModel.onMinRatingChanged(minRatingFromPosition(position))
@@ -259,8 +323,13 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
                         typeDrinkChip = typeDrinkChip,
                         nearMeChip = nearMeChip,
                         progressBar = progressBar,
+                        pagingProgressBar = pagingProgressBar,
+                        resultCountText = resultCountText,
                         messageText = messageText,
                         retryButton = retryButton,
+                        trendingSection = trendingSection,
+                        trendingRecycler = trendingRecycler,
+                        trendingCollapseButton = trendingCollapseButton,
                     )
                 }
             }
@@ -284,11 +353,23 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         typeDrinkChip: Chip,
         nearMeChip: Chip,
         progressBar: LinearProgressIndicator,
+        pagingProgressBar: LinearProgressIndicator,
+        resultCountText: MaterialTextView,
         messageText: MaterialTextView,
         retryButton: MaterialButton,
+        trendingSection: View,
+        trendingRecycler: RecyclerView,
+        trendingCollapseButton: ImageButton,
     ) {
         progressBar.isVisible = state.isLoading || state.isRandomLoading
+        pagingProgressBar.isVisible = state.isPaging
         placeAdapter.submitList(state.places)
+        trendingAdapter.submitList(state.trending)
+        val hasTrending = state.trending.isNotEmpty()
+        trendingSection.isVisible = hasTrending
+        if (hasTrending) {
+            updateTrendingCollapseUi(trendingCollapseButton, trendingRecycler)
+        }
 
         syncAreaSuggestions(state.availableProvinces)
 
@@ -318,6 +399,16 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         }
         if (!radiusInput.hasFocus() && radiusInput.text?.toString().orEmpty() != state.radiusKmInput) {
             radiusInput.setText(state.radiusKmInput)
+        }
+
+        val hasLoadedResults = state.loadedPlaces > 0
+        resultCountText.isVisible = hasLoadedResults
+        if (hasLoadedResults) {
+            resultCountText.text = getString(
+                R.string.explore_results_count,
+                state.loadedPlaces,
+                state.totalPlaces,
+            )
         }
 
         val randomSuggestion = state.randomSuggestion
@@ -416,17 +507,43 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
     private fun setAdvancedFiltersExpanded(
         expanded: Boolean,
         advancedFiltersLayout: View,
-        filterToggleButton: MaterialButton,
+        searchLayout: TextInputLayout,
     ) {
         advancedFiltersLayout.isVisible = expanded
         if (expanded) {
             view?.findViewById<AutoCompleteTextView>(R.id.actExploreArea)?.let(::refreshDropdownBounds)
             view?.findViewById<AutoCompleteTextView>(R.id.actExploreMinRating)?.let(::refreshDropdownBounds)
         }
-        filterToggleButton.text = if (expanded) {
-            getString(R.string.explore_filter_toggle_hide)
+        val iconRes = if (expanded) {
+            R.drawable.ic_close_24
         } else {
-            getString(R.string.explore_filter_toggle_show)
+            R.drawable.ic_tune_24
+        }
+        searchLayout.endIconDrawable = AppCompatResources.getDrawable(requireContext(), iconRes)
+        searchLayout.setEndIconContentDescription(
+            if (expanded) {
+                getString(R.string.explore_filter_toggle_hide)
+            } else {
+                getString(R.string.explore_filter_toggle_show)
+            },
+        )
+    }
+
+    private fun updateTrendingCollapseUi(
+        collapseButton: ImageButton,
+        trendingRecycler: RecyclerView,
+    ) {
+        trendingRecycler.isVisible = !isTrendingCollapsed
+        val iconRes = if (isTrendingCollapsed) {
+            R.drawable.ic_expand_more_24
+        } else {
+            R.drawable.ic_expand_less_24
+        }
+        collapseButton.setImageDrawable(AppCompatResources.getDrawable(requireContext(), iconRes))
+        collapseButton.contentDescription = if (isTrendingCollapsed) {
+            getString(R.string.explore_trending_expand)
+        } else {
+            getString(R.string.explore_trending_collapse)
         }
     }
 
@@ -484,6 +601,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
     private fun buildRatingOptions(): List<String> {
         return listOf(
+            getString(R.string.explore_rating_all_option),
             getString(R.string.explore_rating_1_option),
             getString(R.string.explore_rating_2_option),
             getString(R.string.explore_rating_3_option),
@@ -494,11 +612,12 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
 
     private fun minRatingFromPosition(position: Int): Int? {
         return when (position) {
-            0 -> 1
-            1 -> 2
-            2 -> 3
-            3 -> 4
-            4 -> 5
+            0 -> null
+            1 -> 1
+            2 -> 2
+            3 -> 3
+            4 -> 4
+            5 -> 5
             else -> null
         }
     }
@@ -519,6 +638,7 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_place_detail, null)
         dialog.setContentView(dialogView)
 
+        val favoriteButton = dialogView.findViewById<ImageButton>(R.id.btnFavorite)
         val closeButton = dialogView.findViewById<ImageButton>(R.id.btnPlaceDetailClose)
         val imageView = dialogView.findViewById<ImageView>(R.id.ivPlaceDetailImage)
         val titleText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailTitle)
@@ -530,6 +650,45 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         val ratingText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailRating)
         val addressText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailAddress)
         val coordinatesText = dialogView.findViewById<MaterialTextView>(R.id.tvPlaceDetailCoordinates)
+
+        if (accessToken.isNotBlank()) {
+            historyViewModel.recordView(accessToken, place.id)
+            favoriteViewModel.checkFavorite(accessToken, place.id)
+        }
+
+        fun renderFavoriteButton(state: FavoriteUiState) {
+            val isFavorite = state.favoriteIds.contains(place.id)
+            val isLoading = state.toggleInProgress.contains(place.id)
+            favoriteButton.setImageResource(
+                if (isFavorite) R.drawable.ic_heart_filled else R.drawable.ic_heart_outline,
+            )
+            favoriteButton.isEnabled = accessToken.isNotBlank() && !isLoading
+            favoriteButton.alpha = if (favoriteButton.isEnabled) 1f else 0.5f
+        }
+
+        renderFavoriteButton(favoriteViewModel.uiState.value)
+        val favoriteStateJob: Job? = if (accessToken.isBlank()) {
+            null
+        } else {
+            viewLifecycleOwner.lifecycleScope.launch {
+                favoriteViewModel.uiState.collect { state ->
+                    renderFavoriteButton(state)
+                }
+            }
+        }
+
+        favoriteButton.setOnClickListener {
+            if (accessToken.isBlank()) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.home_pair_session_expired),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return@setOnClickListener
+            }
+
+            favoriteViewModel.toggleFavorite(accessToken, place.id)
+        }
 
         val location = normalizedValue(place.province)
             ?: normalizedValue(place.district)
@@ -589,6 +748,9 @@ class ExploreFragment : Fragment(R.layout.fragment_explore) {
         }
 
         closeButton.setOnClickListener { dialog.dismiss() }
+        dialog.setOnDismissListener {
+            favoriteStateJob?.cancel()
+        }
 
         dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialog.show()

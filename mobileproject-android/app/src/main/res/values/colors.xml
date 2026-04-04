@@ -47,4 +47,7 @@
     <color name="couple_card">#FFFFFFFF</color>
     <color name="couple_code_bg">#FFEAF5FF</color>
     <color name="couple_soft_panel">#FFF5F1F3</color>
+
+    <color name="nav_glass_surface">#CCFFFFFF</color>
+    <color name="nav_glass_stroke">#80FFFFFF</color>
 </resources>

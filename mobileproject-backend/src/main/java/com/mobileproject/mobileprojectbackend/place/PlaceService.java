@@ -367,13 +367,16 @@ public class PlaceService {
                         Collectors.toList()));
 
         Comparator<PlaceView> withinBucketComparator = Comparator
-                .comparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned())).reversed()
+                .comparing((PlaceView view) -> defaultDouble(view.place().getRating()), Comparator.reverseOrder())
+                .thenComparing((PlaceView view) -> Boolean.TRUE.equals(view.place().getIsPinned()),
+                        Comparator.reverseOrder())
                 .thenComparing((PlaceView view) -> defaultInt(view.place().getReviewCount()), Comparator.reverseOrder())
                 .thenComparing(view -> normalizeFilterValue(view.place().getName(), ""));
 
         byBucket.values().forEach(bucket -> bucket.sort(withinBucketComparator));
 
         List<Double> buckets = new ArrayList<>(byBucket.keySet());
+        buckets.sort(Comparator.reverseOrder());
         List<PlaceView> mixed = new ArrayList<>(places.size());
 
         int index = 0;
@@ -442,7 +445,7 @@ public class PlaceService {
         }
         Double rating = place.getRating();
         if (rating == null) {
-            return false;
+            return minRating <= 1.0;
         }
         return rating >= minRating;
     }

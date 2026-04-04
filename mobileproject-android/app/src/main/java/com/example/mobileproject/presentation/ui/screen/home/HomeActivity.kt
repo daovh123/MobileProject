@@ -70,7 +70,7 @@ class HomeActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    private fun switchTo(menuItemId: Int) {
+    fun switchTo(menuItemId: Int) {
         val navItem = navItems[menuItemId] ?: return
 
         topAppBar.title = getString(navItem.titleRes)

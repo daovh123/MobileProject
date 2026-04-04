@@ -8,6 +8,8 @@ import com.example.mobileproject.domain.usecase.GetRandomPlaceUseCase
 import com.example.mobileproject.domain.usecase.GetVietnamProvincesUseCase
 import com.example.mobileproject.domain.usecase.SearchPlacesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +34,13 @@ data class ExploreUiState(
     val radiusKmInput: String = "",
     val randomSuggestion: Place? = null,
     val randomSuggestionToken: Long = 0,
+    val trending: List<Place> = emptyList(),
+    val trendingLoading: Boolean = false,
     val places: List<Place> = emptyList(),
+    val totalPlaces: Long = 0,
+    val loadedPlaces: Int = 0,
+    val hasMore: Boolean = false,
+    val isPaging: Boolean = false,
     val isLoading: Boolean = false,
     val isRandomLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -48,14 +56,19 @@ class ExploreViewModel @Inject constructor(
 
     private companion object {
         const val DEFAULT_NEARBY_RADIUS_KM = 5.0
+        const val EXPLORE_PAGE_SIZE = 30
     }
 
     private val _uiState = MutableStateFlow(ExploreUiState(isLoading = true))
     val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
+    private var loadPlacesJob: Job? = null
+    private var latestPlacesRequestId: Long = 0
+    private var currentExplorePage: Int = 0
 
     init {
         loadAreaOptions()
-        loadPlaces()
+        loadTrending()
+        refreshPlaces()
     }
 
     fun onQueryChanged(query: String) {
@@ -68,13 +81,13 @@ class ExploreViewModel @Inject constructor(
 
     fun onTypeChanged(type: ExplorePlaceType) {
         _uiState.value = _uiState.value.copy(selectedType = type)
-        loadPlaces()
+        refreshPlaces()
     }
 
     fun onNearMeChanged(checked: Boolean) {
         _uiState.value = _uiState.value.copy(nearMeOnly = checked)
         if (!checked || (_uiState.value.currentLat != null && _uiState.value.currentLng != null)) {
-            loadPlaces()
+            refreshPlaces()
         }
     }
 
@@ -85,7 +98,7 @@ class ExploreViewModel @Inject constructor(
             errorMessage = null,
         )
         if (_uiState.value.nearMeOnly) {
-            loadPlaces()
+            refreshPlaces()
         }
     }
 
@@ -96,12 +109,12 @@ class ExploreViewModel @Inject constructor(
             nearMeOnly = false,
             errorMessage = errorMessage,
         )
-        loadPlaces()
+        refreshPlaces()
     }
 
     fun onMinRatingChanged(minRating: Int?) {
         _uiState.value = _uiState.value.copy(selectedMinRating = minRating)
-        loadPlaces()
+        refreshPlaces()
     }
 
     fun onRadiusChanged(radiusKmInput: String) {
@@ -109,11 +122,20 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun search() {
-        loadPlaces()
+        refreshPlaces()
     }
 
     fun retry() {
-        loadPlaces()
+        refreshPlaces()
+    }
+
+    fun loadNextPage() {
+        val state = _uiState.value
+        if (state.isLoading || state.isPaging || !state.hasMore) {
+            return
+        }
+
+        loadPlacesPage(page = currentExplorePage + 1, append = true)
     }
 
     fun randomPlace() {
@@ -193,10 +215,42 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
-    private fun loadPlaces() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+    private fun refreshPlaces() {
+        currentExplorePage = 0
+        loadPlacesPage(page = 0, append = false)
+    }
 
+    private fun loadPlacesPage(page: Int, append: Boolean) {
+        if (append && page <= 0) {
+            return
+        }
+
+        if (!append) {
+            loadPlacesJob?.cancel()
+        }
+
+        val requestId = if (append) {
+            latestPlacesRequestId
+        } else {
+            ++latestPlacesRequestId
+        }
+
+        val beforeRequest = _uiState.value
+        _uiState.value = if (append) {
+            beforeRequest.copy(isPaging = true, errorMessage = null)
+        } else {
+            beforeRequest.copy(
+                isLoading = true,
+                isPaging = false,
+                places = emptyList(),
+                totalPlaces = 0,
+                loadedPlaces = 0,
+                hasMore = false,
+                errorMessage = null,
+            )
+        }
+
+        loadPlacesJob = viewModelScope.launch {
             val state = _uiState.value
             val normalizedQuery = state.query.trim().takeIf { it.isNotBlank() }
             val normalizedProvince = state.selectedProvince.trim().takeIf { it.isNotBlank() }
@@ -207,21 +261,27 @@ class ExploreViewModel @Inject constructor(
             val radiusKm = if (state.nearMeOnly) parsedRadius ?: DEFAULT_NEARBY_RADIUS_KM else null
             val sort = when {
                 state.nearMeOnly -> "distance"
-                state.selectedMinRating != null -> "ratingMix"
-                else -> "trending"
+                else -> "ratingMix"
             }
 
             if (state.nearMeOnly && (nearLat == null || nearLng == null)) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    places = emptyList(),
-                    errorMessage = "Can cap quyen vi tri de loc gan toi",
-                )
+                _uiState.value = if (append) {
+                    state.copy(isPaging = false)
+                } else {
+                    state.copy(
+                        isLoading = false,
+                        places = emptyList(),
+                        totalPlaces = 0,
+                        loadedPlaces = 0,
+                        hasMore = false,
+                        errorMessage = "Can cap quyen vi tri de loc gan toi",
+                    )
+                }
                 return@launch
             }
 
-            runCatching {
-                searchPlacesUseCase(
+            try {
+                val searchPage = searchPlacesUseCase(
                     query = normalizedQuery,
                     province = normalizedProvince,
                     district = null,
@@ -230,22 +290,84 @@ class ExploreViewModel @Inject constructor(
                     nearLat = nearLat,
                     nearLng = nearLng,
                     radiusKm = radiusKm,
-                    page = 0,
-                    size = 30,
+                    page = page,
+                    size = EXPLORE_PAGE_SIZE,
                     sort = sort,
                 )
-            }.onSuccess { places ->
-                _uiState.value = _uiState.value.copy(
+
+                if (requestId != latestPlacesRequestId) {
+                    return@launch
+                }
+
+                val current = _uiState.value
+                val mergedPlaces = if (append) {
+                    (current.places + searchPage.items).distinctBy { it.id }
+                } else {
+                    searchPage.items
+                }
+                val loadedPlaces = mergedPlaces.size
+                val hasMore = loadedPlaces < searchPage.total
+
+                currentExplorePage = searchPage.page
+                _uiState.value = current.copy(
                     isLoading = false,
-                    places = places,
+                    isPaging = false,
+                    places = mergedPlaces,
+                    totalPlaces = searchPage.total,
+                    loadedPlaces = loadedPlaces,
+                    hasMore = hasMore,
                     errorMessage = null,
                 )
-            }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    places = emptyList(),
-                    errorMessage = throwable.message ?: "Khong the tai du lieu",
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                if (requestId != latestPlacesRequestId) {
+                    return@launch
+                }
+
+                val current = _uiState.value
+                _uiState.value = if (append) {
+                    current.copy(isPaging = false)
+                } else {
+                    current.copy(
+                        isLoading = false,
+                        isPaging = false,
+                        places = emptyList(),
+                        totalPlaces = 0,
+                        loadedPlaces = 0,
+                        hasMore = false,
+                        errorMessage = throwable.message ?: "Khong the tai du lieu",
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadTrending() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(trendingLoading = true)
+
+            runCatching {
+                searchPlacesUseCase(
+                    query = null,
+                    province = null,
+                    district = null,
+                    type = ExplorePlaceType.ALL.value,
+                    minRating = null,
+                    nearLat = null,
+                    nearLng = null,
+                    radiusKm = null,
+                    page = 0,
+                    size = 10,
+                    sort = "trending",
                 )
+            }.onSuccess { searchPage ->
+                _uiState.value = _uiState.value.copy(
+                    trending = searchPage.items,
+                    trendingLoading = false,
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(trendingLoading = false)
             }
         }
     }

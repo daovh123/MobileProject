@@ -2,6 +2,7 @@ package com.example.mobileproject.domain.repository
 
 import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.domain.entity.PlaceFilterOptions
+import com.example.mobileproject.domain.entity.PlaceSearchPage
 
 interface PlaceRepository {
     suspend fun searchPlaces(
@@ -16,7 +17,7 @@ interface PlaceRepository {
         page: Int,
         size: Int,
         sort: String,
-    ): List<Place>
+    ): PlaceSearchPage
 
     suspend fun getRandomPlace(
         query: String?,

@@ -136,10 +136,13 @@ class PlaceRepositoryImplTest {
             sort = "trending",
         )
 
-        assertEquals(2, result.size)
-        assertEquals("p1", result[0].id)
-        assertEquals("Pho Ong Cat", result[0].name)
-        assertEquals("Quan ca phe", result[1].effectiveTag)
-        assertEquals(null, result[1].rating)
+        assertEquals(2, result.total)
+        assertEquals(0, result.page)
+        assertEquals(20, result.size)
+        assertEquals(2, result.items.size)
+        assertEquals("p1", result.items[0].id)
+        assertEquals("Pho Ong Cat", result.items[0].name)
+        assertEquals("Quan ca phe", result.items[1].effectiveTag)
+        assertEquals(null, result.items[1].rating)
     }
 }
