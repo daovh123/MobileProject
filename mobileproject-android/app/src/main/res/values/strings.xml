@@ -76,6 +76,9 @@
     <string name="home_pair_code_expiry">Mã ghép đôi của bạn hết hạn lúc: %1$s</string>
     <string name="home_pair_session_expired">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</string>
 
+    <string name="home_days_together_label">DAYS TOGETHER</string>
+    <string name="home_days_anniversary_tomorrow">Happy Anniversary!</string>
+
     <string name="page_home">Trang chủ</string>
     <string name="page_wallet">Ví</string>
     <string name="page_explore">Khám phá</string>

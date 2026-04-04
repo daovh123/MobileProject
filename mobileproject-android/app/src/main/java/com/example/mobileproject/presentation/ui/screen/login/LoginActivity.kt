@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AuthSession
 import com.example.mobileproject.domain.entity.PostLoginDestination
 import com.example.mobileproject.domain.entity.resolvePostLoginDestination
@@ -57,9 +58,13 @@ import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActi
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var authSessionStore: AuthSessionStore
 
     companion object {
         const val EXTRA_PREFILLED_EMAIL = "extra_prefilled_email"
@@ -71,6 +76,21 @@ class LoginActivity : ComponentActivity() {
         enableImmersiveMode()
         val prefilledEmail = intent.getStringExtra(EXTRA_PREFILLED_EMAIL).orEmpty()
         val showRegistrationSuccess = intent.getBooleanExtra(EXTRA_REGISTERED_SUCCESS, false)
+
+        val savedSession = authSessionStore.load()
+        if (savedSession != null) {
+            val intent = when (savedSession.resolvePostLoginDestination()) {
+                PostLoginDestination.PROFILE -> Intent(this, PersonalInfoActivity::class.java)
+                PostLoginDestination.HOME -> Intent(this, HomeActivity::class.java)
+            }.apply {
+                putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
+                putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
+            }
+            startActivity(intent)
+            finish()
+            return
+        }
+
         setContent {
             MaterialTheme {
                 val authViewModel: AuthViewModel = hiltViewModel()

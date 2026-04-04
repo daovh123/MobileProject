@@ -18,6 +18,12 @@ public interface CoupleRequestRepository extends MongoRepository<CoupleRequest, 
 
     Optional<CoupleRequest> findFirstByRequesterUserIdOrderByUpdatedAtDesc(String requesterUserId);
 
+    Optional<CoupleRequest> findFirstByRequesterUserIdAndRecipientUserIdAndStatusOrderByUpdatedAtDesc(
+            String requesterUserId,
+            String recipientUserId,
+            CoupleRequestStatus status
+    );
+
     long deleteByRequesterUsername(String requesterUsername);
 
     long deleteByRecipientUsername(String recipientUsername);

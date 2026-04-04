@@ -32,8 +32,11 @@ class CoupleServiceTest {
     @Mock
     private CoupleRequestRepository coupleRequestRepository;
 
-        @Mock
-        private CoupleCodeCacheService coupleCodeCacheService;
+    @Mock
+    private CoupleCodeCacheService coupleCodeCacheService;
+
+    @Mock
+    private CoupleInfoRepository coupleInfoRepository;
 
     @InjectMocks
     private CoupleService coupleService;
@@ -105,6 +108,7 @@ class CoupleServiceTest {
         verify(authUserRepository).save(recipient);
         verify(coupleCodeCacheService).invalidateCodeByUserId("u1");
         verify(coupleCodeCacheService).invalidateCodeByUserId("u2");
+        verify(coupleInfoRepository).save(any(CoupleInfo.class));
     }
 
     @Test
@@ -135,6 +139,7 @@ class CoupleServiceTest {
         assertEquals("REJECTED", response.status());
         assertNotNull(request.getUpdatedAt());
         verify(coupleCodeCacheService, never()).invalidateCodeByUserId(any(String.class));
+        verify(coupleInfoRepository, never()).save(any(CoupleInfo.class));
     }
 
     @Test

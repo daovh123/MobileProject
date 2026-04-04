@@ -18,6 +18,10 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textview.MaterialTextView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.TimeZone
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -53,6 +57,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val connectedCard = view.findViewById<View>(R.id.cardPairConnected)
         val partnerName = view.findViewById<MaterialTextView>(R.id.tvPairPartnerName)
 
+        val daysTogetherCard = view.findViewById<View>(R.id.cardDaysTogether)
+        val daysTogetherCount = view.findViewById<MaterialTextView>(R.id.tvDaysTogetherCount)
+        val anniversaryHintCard = view.findViewById<View>(R.id.cardAnniversaryHint)
+
         val pairButton = view.findViewById<MaterialButton>(R.id.btnPairNow)
         pairButton.setOnClickListener {
             startActivity(
@@ -68,6 +76,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 pairCode = pairCode,
                 pairHint = pairHint,
                 connectedCard = connectedCard,
+                daysTogetherCard = daysTogetherCard,
                 pairButton = pairButton,
             )
             return
@@ -84,6 +93,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         pairHint = pairHint,
                         connectedCard = connectedCard,
                         partnerName = partnerName,
+                        daysTogetherCard = daysTogetherCard,
+                        daysTogetherCount = daysTogetherCount,
+                        anniversaryHintCard = anniversaryHintCard,
                         pairButton = pairButton,
                     )
                 }
@@ -106,12 +118,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         pairCode: MaterialTextView,
         pairHint: MaterialTextView,
         connectedCard: View,
+        daysTogetherCard: View,
         pairButton: MaterialButton,
     ) {
         pairTitle.text = getString(R.string.home_pair_title)
         pairSubtitle.text = getString(R.string.home_pair_subtitle)
         pairCode.visibility = View.GONE
         connectedCard.visibility = View.GONE
+        daysTogetherCard.visibility = View.GONE
         pairHint.visibility = View.VISIBLE
         pairHint.text = getString(R.string.home_pair_session_expired)
         pairHint.setTextColor(ContextCompat.getColor(requireContext(), R.color.auth_pink))
@@ -128,6 +142,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         pairHint: MaterialTextView,
         connectedCard: View,
         partnerName: MaterialTextView,
+        daysTogetherCard: View,
+        daysTogetherCount: MaterialTextView,
+        anniversaryHintCard: View,
         pairButton: MaterialButton,
     ) {
         if (state.paired) {
@@ -138,6 +155,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             pairButton.visibility = View.GONE
             connectedCard.visibility = View.VISIBLE
 
+            daysTogetherCard.visibility = View.VISIBLE
+            val computedDaysTogether = state.daysTogether?.coerceAtLeast(1)
+                ?: computeDaysTogetherFromStartAt(state.startAt)
+                ?: 1L
+            daysTogetherCount.text = computedDaysTogether.toString()
+
+            val showHappyAnniversary = state.anniversaryTomorrow == true
+            anniversaryHintCard.visibility = if (showHappyAnniversary) View.VISIBLE else View.GONE
+
             val partnerDisplayName = state.partnerUsername ?: getString(R.string.home_pair_partner_unknown)
             partnerName.text = getString(R.string.home_pair_partner_name, partnerDisplayName)
             return
@@ -146,6 +172,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         pairTitle.text = getString(R.string.home_pair_title)
         pairSubtitle.text = getString(R.string.home_pair_subtitle)
         connectedCard.visibility = View.GONE
+        daysTogetherCard.visibility = View.GONE
         pairButton.visibility = View.VISIBLE
         pairButton.isEnabled = !state.isLoading
         pairButton.text = if (state.isLoading) {
@@ -190,5 +217,41 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         pairHint.visibility = View.VISIBLE
         pairHint.text = hintText
         pairHint.setTextColor(ContextCompat.getColor(requireContext(), hintColor))
+    }
+
+    private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
+        val datePart = startAt?.takeIf { it.length >= 10 }?.substring(0, 10) ?: return null
+        val parts = datePart.split("-")
+        if (parts.size != 3) {
+            return null
+        }
+
+        val year = parts[0].toIntOrNull() ?: return null
+        val month = parts[1].toIntOrNull() ?: return null
+        val day = parts[2].toIntOrNull() ?: return null
+
+        val utc = TimeZone.getTimeZone("UTC")
+
+        val startCal = GregorianCalendar(utc).apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month - 1)
+            set(Calendar.DAY_OF_MONTH, day)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val todayCal = GregorianCalendar(utc).apply {
+            timeInMillis = System.currentTimeMillis()
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val diffMillis = todayCal.timeInMillis - startCal.timeInMillis
+        val days = TimeUnit.MILLISECONDS.toDays(diffMillis) + 1
+        return days.coerceAtLeast(1)
     }
 }

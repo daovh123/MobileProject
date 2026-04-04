@@ -9,15 +9,20 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.mobileproject.R
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var authSessionStore: AuthSessionStore
 
     companion object {
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
@@ -32,6 +37,9 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
+        if (accessToken.isBlank()) {
+            accessToken = authSessionStore.load()?.token.orEmpty()
+        }
         authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
         val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBarSettings)

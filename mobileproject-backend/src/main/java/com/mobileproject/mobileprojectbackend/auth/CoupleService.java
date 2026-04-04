@@ -5,29 +5,41 @@ import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestActionRespon
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestCreateRequest;
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestDecisionRequest;
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleStatusResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class CoupleService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CoupleService.class);
+
     private final AuthIdentityService authIdentityService;
     private final AuthUserRepository authUserRepository;
     private final CoupleRequestRepository coupleRequestRepository;
     private final CoupleCodeCacheService coupleCodeCacheService;
+    private final CoupleInfoRepository coupleInfoRepository;
 
     public CoupleService(AuthIdentityService authIdentityService,
                          AuthUserRepository authUserRepository,
                          CoupleRequestRepository coupleRequestRepository,
-                         CoupleCodeCacheService coupleCodeCacheService) {
+                         CoupleCodeCacheService coupleCodeCacheService,
+                         CoupleInfoRepository coupleInfoRepository) {
         this.authIdentityService = authIdentityService;
         this.authUserRepository = authUserRepository;
         this.coupleRequestRepository = coupleRequestRepository;
         this.coupleCodeCacheService = coupleCodeCacheService;
+        this.coupleInfoRepository = coupleInfoRepository;
     }
 
     public CoupleCodeResponse generateMyCode(String authorizationHeader) {
@@ -115,6 +127,26 @@ public class CoupleService {
             coupleCodeCacheService.invalidateCodeByUserId(requester.getId());
             coupleCodeCacheService.invalidateCodeByUserId(recipient.getId());
 
+            String user1 = canonicalUser1(requester.getId(), recipient.getId());
+            String user2 = canonicalUser2(requester.getId(), recipient.getId());
+            String coupleId = coupleIdForUsers(user1, user2);
+            CoupleInfo coupleInfo = new CoupleInfo();
+            coupleInfo.setId(coupleId);
+            coupleInfo.setIdCouple(coupleId);
+            coupleInfo.setIdUser1(user1);
+            coupleInfo.setIdUser2(user2);
+            coupleInfo.setStartAt(now);
+            try {
+                coupleInfoRepository.save(coupleInfo);
+            } catch (Exception exception) {
+                LOGGER.warn(
+                        "Failed to persist couple_info for requester={} recipient={}.",
+                        requester.getId(),
+                        recipient.getId(),
+                        exception
+                );
+            }
+
             coupleRequest.setStatus(CoupleRequestStatus.ACCEPTED);
             coupleRequest.setUpdatedAt(now);
             CoupleRequest savedRequest = coupleRequestRepository.save(coupleRequest);
@@ -157,6 +189,25 @@ public class CoupleService {
             partner = authUserRepository.findById(user.getPartnerUserId()).orElse(null);
         }
 
+        String coupleId = null;
+        String startAt = null;
+        Long daysTogether = null;
+        Boolean anniversaryTomorrow = null;
+
+        if (isPaired(user) && partner != null) {
+            CoupleInfo coupleInfo = getOrCreateCoupleInfo(user.getId(), partner.getId());
+
+            if (coupleInfo != null) {
+                coupleId = coupleInfo.getIdCouple();
+                startAt = coupleInfo.getStartAt();
+                DaysTogetherResult daysTogetherResult = computeDaysTogether(startAt);
+                if (daysTogetherResult != null) {
+                    daysTogether = daysTogetherResult.daysTogether();
+                    anniversaryTomorrow = daysTogetherResult.anniversaryToday();
+                }
+            }
+        }
+
         CoupleRequest incoming = null;
         if (!isPaired(user)) {
             incoming = coupleRequestRepository
@@ -182,8 +233,219 @@ public class CoupleService {
                 outgoing == null ? null : outgoing.getId(),
                 outgoing == null ? null : outgoing.getRecipientUsername(),
                 outgoing == null ? null : outgoing.getStatus().name(),
-                outgoing == null ? null : outgoing.getUpdatedAt()
+                outgoing == null ? null : outgoing.getUpdatedAt(),
+                coupleId,
+                startAt,
+                daysTogether,
+                anniversaryTomorrow
         );
+    }
+
+    private DaysTogetherResult computeDaysTogether(String startAt) {
+        if (isBlank(startAt)) {
+            return null;
+        }
+
+        try {
+            LocalDate startDate = Instant.parse(startAt).atZone(ZoneOffset.UTC).toLocalDate();
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
+
+            long days = ChronoUnit.DAYS.between(startDate, today) + 1;
+            if (days < 1) {
+                days = 1;
+            }
+
+            boolean anniversaryToday = today.getMonthValue() == startDate.getMonthValue()
+                    && today.getDayOfMonth() == startDate.getDayOfMonth();
+
+            return new DaysTogetherResult(days, anniversaryToday);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private record DaysTogetherResult(long daysTogether, boolean anniversaryToday) {
+    }
+
+    private CoupleInfo getOrCreateCoupleInfo(String userId, String partnerId) {
+        String user1 = canonicalUser1(userId, partnerId);
+        String user2 = canonicalUser2(userId, partnerId);
+        String coupleId = coupleIdForUsers(user1, user2);
+
+        CoupleInfo stableExisting = coupleInfoRepository.findById(coupleId).orElse(null);
+        if (stableExisting != null) {
+            return stableExisting;
+        }
+
+        List<CoupleInfo> legacy = new ArrayList<>();
+        try {
+            legacy.addAll(coupleInfoRepository.findByIdUser1AndIdUser2(user1, user2));
+            legacy.addAll(coupleInfoRepository.findByIdUser1AndIdUser2(user2, user1));
+        } catch (Exception exception) {
+            LOGGER.warn("Failed to query legacy couple_info for user1={} user2={}", user1, user2, exception);
+        }
+
+        String derivedStartAt = pickEarliestStartAt(legacy);
+        if (isBlank(derivedStartAt)) {
+            derivedStartAt = deriveStartAtFromAcceptedRequest(userId, partnerId);
+        }
+        if (isBlank(derivedStartAt)) {
+            derivedStartAt = Instant.now().toString();
+        }
+
+        CoupleInfo coupleInfo = new CoupleInfo();
+        coupleInfo.setId(coupleId);
+        coupleInfo.setIdCouple(coupleId);
+        coupleInfo.setIdUser1(user1);
+        coupleInfo.setIdUser2(user2);
+        coupleInfo.setStartAt(derivedStartAt);
+
+        try {
+            coupleInfoRepository.save(coupleInfo);
+        } catch (Exception exception) {
+            LOGGER.warn(
+                    "Failed to backfill couple_info for user1={} user2={}.",
+                    user1,
+                    user2,
+                    exception
+            );
+            return null;
+        }
+
+        if (!legacy.isEmpty()) {
+            try {
+                for (CoupleInfo legacyInfo : legacy) {
+                    if (legacyInfo == null || isBlank(legacyInfo.getId())) {
+                        continue;
+                    }
+                    if (coupleId.equals(legacyInfo.getId())) {
+                        continue;
+                    }
+                    coupleInfoRepository.deleteById(legacyInfo.getId());
+                }
+            } catch (Exception exception) {
+                LOGGER.warn("Failed to cleanup legacy couple_info for coupleId={}", coupleId, exception);
+            }
+        }
+
+        return coupleInfo;
+    }
+
+    private String canonicalUser1(String userId, String partnerId) {
+        return userId.compareTo(partnerId) <= 0 ? userId : partnerId;
+    }
+
+    private String canonicalUser2(String userId, String partnerId) {
+        return userId.compareTo(partnerId) <= 0 ? partnerId : userId;
+    }
+
+    private String coupleIdForUsers(String user1, String user2) {
+        return "couple:" + user1 + ":" + user2;
+    }
+
+    private String pickEarliestStartAt(List<CoupleInfo> legacy) {
+        if (legacy == null || legacy.isEmpty()) {
+            return null;
+        }
+
+        Instant best = null;
+        String bestValue = null;
+
+        for (CoupleInfo info : legacy) {
+            if (info == null) {
+                continue;
+            }
+            String value = info.getStartAt();
+            Instant parsed = parseInstantOrNull(value);
+            if (parsed == null) {
+                continue;
+            }
+            if (best == null || parsed.isBefore(best)) {
+                best = parsed;
+                bestValue = value;
+            }
+        }
+
+        if (!isBlank(bestValue)) {
+            return bestValue;
+        }
+
+        for (CoupleInfo info : legacy) {
+            if (info == null) {
+                continue;
+            }
+            if (!isBlank(info.getStartAt())) {
+                return info.getStartAt();
+            }
+        }
+
+        return null;
+    }
+
+    private String deriveStartAtFromAcceptedRequest(String userId, String partnerId) {
+        CoupleRequest a = coupleRequestRepository
+                .findFirstByRequesterUserIdAndRecipientUserIdAndStatusOrderByUpdatedAtDesc(
+                        userId,
+                        partnerId,
+                        CoupleRequestStatus.ACCEPTED
+                )
+                .orElse(null);
+
+        CoupleRequest b = coupleRequestRepository
+                .findFirstByRequesterUserIdAndRecipientUserIdAndStatusOrderByUpdatedAtDesc(
+                        partnerId,
+                        userId,
+                        CoupleRequestStatus.ACCEPTED
+                )
+                .orElse(null);
+
+        CoupleRequest latest = latestByUpdatedAt(a, b);
+        if (latest == null) {
+            return null;
+        }
+
+        if (!isBlank(latest.getUpdatedAt())) {
+            return latest.getUpdatedAt();
+        }
+        if (!isBlank(latest.getCreatedAt())) {
+            return latest.getCreatedAt();
+        }
+        return null;
+    }
+
+    private CoupleRequest latestByUpdatedAt(CoupleRequest a, CoupleRequest b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+
+        Instant aInstant = parseInstantOrNull(a.getUpdatedAt());
+        Instant bInstant = parseInstantOrNull(b.getUpdatedAt());
+
+        if (aInstant == null && bInstant == null) {
+            return a;
+        }
+        if (aInstant == null) {
+            return b;
+        }
+        if (bInstant == null) {
+            return a;
+        }
+
+        return aInstant.isAfter(bInstant) ? a : b;
+    }
+
+    private Instant parseInstantOrNull(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        try {
+            return Instant.parse(value);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private void ensureProfileCompleted(AuthUser user) {

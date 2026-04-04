@@ -59,4 +59,8 @@ data class CoupleStatusResponseDto(
     val outgoingRecipientUsername: String?,
     val outgoingStatus: String?,
     val outgoingUpdatedAt: String?,
+    val coupleId: String?,
+    val startAt: String?,
+    val daysTogether: Long?,
+    val anniversaryTomorrow: Boolean?,
 )

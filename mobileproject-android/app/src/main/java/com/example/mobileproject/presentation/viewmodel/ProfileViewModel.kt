@@ -2,6 +2,7 @@ package com.example.mobileproject.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
+    private val authSessionStore: AuthSessionStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -46,8 +48,12 @@ class ProfileViewModel @Inject constructor(
                     birthDate = birthDate.trim(),
                     gender = gender.trim(),
                 )
-            }.onSuccess {
-                _uiState.value = ProfileUiState(savedProfile = it)
+            }.onSuccess { profile ->
+                authSessionStore.updateProfileState(
+                    profileCompleted = profile.profileCompleted,
+                    coupleConnected = profile.coupleConnected,
+                )
+                _uiState.value = ProfileUiState(savedProfile = profile)
             }.onFailure {
                 _uiState.value = ProfileUiState(errorMessage = it.message ?: "Luu ho so that bai")
             }

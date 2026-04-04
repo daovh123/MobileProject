@@ -1,6 +1,7 @@
 package com.example.mobileproject.data.repository
 
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.model.auth.AuthResponseDto
 import com.example.mobileproject.data.model.auth.LoginRequestDto
 import com.example.mobileproject.data.model.auth.LogoutResponseDto
@@ -14,6 +15,7 @@ import javax.inject.Inject
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val gson: Gson,
+    private val authSessionStore: AuthSessionStore,
 ) : AuthRepository {
 
     override suspend fun login(usernameOrEmail: String, password: String): AuthSession {
@@ -23,7 +25,9 @@ class AuthRepositoryImpl @Inject constructor(
                 password = password,
             )
         )
-        return response.toAuthSessionOrThrow(gson, defaultFailureMessage = "Dang nhap that bai")
+        val session = response.toAuthSessionOrThrow(gson, defaultFailureMessage = "Dang nhap that bai")
+        authSessionStore.save(session)
+        return session
     }
 
     override suspend fun register(username: String, email: String, password: String): AuthSession {
@@ -38,8 +42,12 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(token: String) {
-        val response = apiService.logout(authorizationHeader(token))
-        response.toLogoutSuccessOrThrow(gson, defaultFailureMessage = "Dang xuat that bai")
+        runCatching {
+            val response = apiService.logout(authorizationHeader(token))
+            response.toLogoutSuccessOrThrow(gson, defaultFailureMessage = "Dang xuat that bai")
+        }
+
+        authSessionStore.clear()
     }
 }
 

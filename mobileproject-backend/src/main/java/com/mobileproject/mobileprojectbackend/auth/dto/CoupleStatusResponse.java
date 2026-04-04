@@ -15,7 +15,11 @@ public record CoupleStatusResponse(
         String outgoingRequestId,
         String outgoingRecipientUsername,
         String outgoingStatus,
-        String outgoingUpdatedAt
+        String outgoingUpdatedAt,
+        String coupleId,
+        String startAt,
+        Long daysTogether,
+        Boolean anniversaryTomorrow
 ) {
     public static CoupleStatusResponse success(String message,
                                                boolean profileCompleted,
@@ -30,7 +34,11 @@ public record CoupleStatusResponse(
                                                String outgoingRequestId,
                                                String outgoingRecipientUsername,
                                                String outgoingStatus,
-                                               String outgoingUpdatedAt) {
+                                               String outgoingUpdatedAt,
+                                               String coupleId,
+                                               String startAt,
+                                               Long daysTogether,
+                                               Boolean anniversaryTomorrow) {
         return new CoupleStatusResponse(
                 true,
                 message,
@@ -46,7 +54,11 @@ public record CoupleStatusResponse(
                 outgoingRequestId,
                 outgoingRecipientUsername,
                 outgoingStatus,
-                outgoingUpdatedAt
+                outgoingUpdatedAt,
+                coupleId,
+                startAt,
+                daysTogether,
+                anniversaryTomorrow
         );
     }
 }

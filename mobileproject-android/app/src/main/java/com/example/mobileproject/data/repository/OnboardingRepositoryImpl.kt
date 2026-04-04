@@ -67,6 +67,10 @@ class OnboardingRepositoryImpl @Inject constructor(
             outgoingRecipientUsername = body.outgoingRecipientUsername,
             outgoingStatus = body.outgoingStatus,
             outgoingUpdatedAt = body.outgoingUpdatedAt,
+            coupleId = body.coupleId,
+            startAt = body.startAt,
+            daysTogether = body.daysTogether,
+            anniversaryTomorrow = body.anniversaryTomorrow,
         )
     }
 

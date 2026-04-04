@@ -14,9 +14,14 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.activity.addCallback
 import dagger.hilt.android.AndroidEntryPoint
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var authSessionStore: AuthSessionStore
 
     private lateinit var topAppBar: MaterialToolbar
     private lateinit var bottomNav: BottomNavigationView
@@ -30,6 +35,9 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
+        if (accessToken.isBlank()) {
+            accessToken = authSessionStore.load()?.token.orEmpty()
+        }
         navItems = createNavItems(accessToken)
 
         ViewModelProvider(this)[ProductViewModel::class.java]
