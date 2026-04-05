@@ -3,9 +3,7 @@ package com.example.mobileproject.presentation.ui.screen.home
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.viewmodel.ProductViewModel
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreFragment
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesFragment
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsFragment
@@ -39,8 +37,6 @@ class HomeActivity : AppCompatActivity() {
             accessToken = authSessionStore.load()?.token.orEmpty()
         }
         navItems = createNavItems(accessToken)
-
-        ViewModelProvider(this)[ProductViewModel::class.java]
 
         topAppBar = findViewById(R.id.topAppBar)
         bottomNav = findViewById(R.id.bottomNav)
@@ -82,7 +78,7 @@ class HomeActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    private fun switchTo(menuItemId: Int) {
+    fun switchTo(menuItemId: Int) {
         val navItem = navItems[menuItemId] ?: return
 
         topAppBar.title = getString(navItem.titleRes)

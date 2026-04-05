@@ -1,0 +1,19 @@
+{
+    "properties": [
+        {
+            "name": "app.place.import.file-path",
+            "type": "java.lang.String",
+            "description": "A description for 'app.place.import.file-path'"
+        },
+        {
+            "name": "app.place.import.skip-when-data-exists",
+            "type": "java.lang.String",
+            "description": "A description for 'app.place.import.skip-when-data-exists'"
+        },
+        {
+            "name": "app.place.import.auto-startup",
+            "type": "java.lang.String",
+            "description": "A description for 'app.place.import.auto-startup'"
+        }
+    ]
+}

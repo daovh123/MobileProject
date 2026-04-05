@@ -4,6 +4,9 @@ import com.example.mobileproject.data.model.auth.AuthResponseDto
 import com.example.mobileproject.data.model.auth.LoginRequestDto
 import com.example.mobileproject.data.model.auth.LogoutResponseDto
 import com.example.mobileproject.data.model.auth.RegisterRequestDto
+import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
+import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
+import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -12,11 +15,13 @@ import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.ProductDto
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.POST
+import retrofit2.http.Query
 import retrofit2.Response
 
 interface ApiService {
@@ -58,4 +63,37 @@ interface ApiService {
         @Path("requestId") requestId: String,
         @Body request: CoupleRequestDecisionRequestDto,
     ): Response<CoupleRequestActionResponseDto>
+
+    @POST("api/favorites/toggle")
+    suspend fun toggleFavorite(
+        @Header("Authorization") authorization: String,
+        @Query("placeId") placeId: String,
+    ): Response<FavoriteToggleResponseDto>
+
+    @GET("api/favorites")
+    suspend fun getFavorites(
+        @Header("Authorization") authorization: String,
+    ): Response<FavoriteListResponseDto>
+
+    @GET("api/favorites/check")
+    suspend fun checkFavorite(
+        @Header("Authorization") authorization: String,
+        @Query("placeId") placeId: String,
+    ): Response<FavoriteToggleResponseDto>
+
+    @POST("api/history/view")
+    suspend fun recordHistory(
+        @Header("Authorization") authorization: String,
+        @Query("placeId") placeId: String,
+    ): Response<Unit>
+
+    @GET("api/history")
+    suspend fun getHistory(
+        @Header("Authorization") authorization: String,
+    ): Response<HistoryListResponseDto>
+
+    @DELETE("api/history")
+    suspend fun clearHistory(
+        @Header("Authorization") authorization: String,
+    ): Response<Unit>
 }

@@ -1,10 +1,16 @@
 package com.example.mobileproject.di
 
 import com.example.mobileproject.data.repository.AuthRepositoryImpl
+import com.example.mobileproject.data.repository.FavoriteRepositoryImpl
+import com.example.mobileproject.data.repository.HistoryRepositoryImpl
 import com.example.mobileproject.data.repository.OnboardingRepositoryImpl
+import com.example.mobileproject.data.repository.PlaceRepositoryImpl
 import com.example.mobileproject.data.repository.ProductRepositoryImpl
 import com.example.mobileproject.domain.repository.AuthRepository
+import com.example.mobileproject.domain.repository.FavoriteRepository
+import com.example.mobileproject.domain.repository.HistoryRepository
 import com.example.mobileproject.domain.repository.OnboardingRepository
+import com.example.mobileproject.domain.repository.PlaceRepository
 import com.example.mobileproject.domain.repository.ProductRepository
 import dagger.Binds
 import dagger.Module
@@ -33,4 +39,22 @@ abstract class RepositoryModule {
     abstract fun bindProductRepository(
         impl: ProductRepositoryImpl,
     ): ProductRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaceRepository(
+        impl: PlaceRepositoryImpl,
+    ): PlaceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFavoriteRepository(
+        impl: FavoriteRepositoryImpl,
+    ): FavoriteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHistoryRepository(
+        impl: HistoryRepositoryImpl,
+    ): HistoryRepository
 }

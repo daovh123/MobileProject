@@ -6,6 +6,9 @@ import com.example.mobileproject.data.model.auth.AuthResponseDto
 import com.example.mobileproject.data.model.auth.LoginRequestDto
 import com.example.mobileproject.data.model.auth.LogoutResponseDto
 import com.example.mobileproject.data.model.auth.RegisterRequestDto
+import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
+import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
+import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -180,6 +183,39 @@ class OnboardingRepositoryImplTest {
             request: CoupleRequestDecisionRequestDto,
         ): Response<CoupleRequestActionResponseDto> {
             return decideRequestResponse
+        }
+
+        override suspend fun toggleFavorite(
+            authorization: String,
+            placeId: String,
+        ): Response<FavoriteToggleResponseDto> {
+            return Response.success(FavoriteToggleResponseDto(false, "unused", null, null, null))
+        }
+
+        override suspend fun getFavorites(authorization: String): Response<FavoriteListResponseDto> {
+            return Response.success(FavoriteListResponseDto(false, "unused", emptyList()))
+        }
+
+        override suspend fun checkFavorite(
+            authorization: String,
+            placeId: String,
+        ): Response<FavoriteToggleResponseDto> {
+            return Response.success(FavoriteToggleResponseDto(false, "unused", null, null, null))
+        }
+
+        override suspend fun recordHistory(
+            authorization: String,
+            placeId: String,
+        ): Response<Unit> {
+            return Response.success(Unit)
+        }
+
+        override suspend fun getHistory(authorization: String): Response<HistoryListResponseDto> {
+            return Response.success(HistoryListResponseDto(false, "unused", emptyList()))
+        }
+
+        override suspend fun clearHistory(authorization: String): Response<Unit> {
+            return Response.success(Unit)
         }
     }
 }
