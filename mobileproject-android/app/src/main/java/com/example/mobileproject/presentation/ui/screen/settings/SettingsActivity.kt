@@ -2,20 +2,27 @@ package com.example.mobileproject.presentation.ui.screen.settings
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
-import com.example.mobileproject.presentation.viewmodel.AuthViewModel
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -28,76 +35,62 @@ class SettingsActivity : AppCompatActivity() {
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
     }
 
-    private lateinit var authViewModel: AuthViewModel
     private var accessToken: String = ""
-    private var logoutRequested: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
 
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         if (accessToken.isBlank()) {
             accessToken = authSessionStore.load()?.token.orEmpty()
         }
-        authViewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
-        val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBarSettings)
-        val logoutButton = findViewById<MaterialButton>(R.id.btnLogout)
-
-        topAppBar.setNavigationOnClickListener {
-            finish()
+        setContent {
+            SettingsActivityScreen(
+                accessToken = accessToken,
+                onClose = { finish() },
+            )
         }
-
-        logoutButton.setOnClickListener {
-            performLogout()
-        }
-
-        observeLogoutState(logoutButton)
     }
+}
 
-    private fun observeLogoutState(logoutButton: MaterialButton) {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                authViewModel.uiState.collect { state ->
-                    logoutButton.isEnabled = !state.isLoading
-
-                    if (state.logoutCompleted) {
-                        authViewModel.consumeLogoutSuccess()
-                        logoutRequested = false
-                        Toast.makeText(this@SettingsActivity, getString(R.string.logout_success), Toast.LENGTH_SHORT).show()
-                        navigateToLogin()
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SettingsActivityScreen(
+    accessToken: String,
+    onClose: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.settings_title),
+                        color = colorResource(R.color.md3_primary),
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close_24),
+                            contentDescription = null,
+                            tint = colorResource(R.color.md3_primary),
+                        )
                     }
-
-                    if (logoutRequested && !state.errorMessage.isNullOrBlank()) {
-                        logoutRequested = false
-                        Toast.makeText(this@SettingsActivity, state.errorMessage, Toast.LENGTH_SHORT).show()
-                        authViewModel.clearError()
-                    }
-                }
-            }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorResource(R.color.md3_surface),
+                ),
+            )
+        },
+        containerColor = colorResource(R.color.md3_surface_variant),
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            SettingsScreen(accessToken = accessToken)
         }
-    }
-
-    private fun performLogout() {
-        if (logoutRequested) {
-            return
-        }
-
-        if (accessToken.isBlank()) {
-            navigateToLogin()
-            return
-        }
-
-        logoutRequested = true
-        authViewModel.logout(accessToken)
-    }
-
-    private fun navigateToLogin() {
-        val intent = Intent(this, LoginActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        }
-        startActivity(intent)
-        finish()
     }
 }

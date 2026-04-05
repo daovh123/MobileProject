@@ -1,7 +1,9 @@
 package com.example.mobileproject.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.domain.usecase.GetPlaceFilterOptionsUseCase
 import com.example.mobileproject.domain.usecase.GetRandomPlaceUseCase
@@ -15,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val EXPLORE_VM_LOG_TAG: String = "ExploreViewModel"
 
 enum class ExplorePlaceType(val value: String) {
     ALL("all"),
@@ -66,6 +70,9 @@ class ExploreViewModel @Inject constructor(
     private var currentExplorePage: Int = 0
 
     init {
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "init")
+        }
         loadAreaOptions()
         loadTrending()
         refreshPlaces()
@@ -81,11 +88,17 @@ class ExploreViewModel @Inject constructor(
 
     fun onTypeChanged(type: ExplorePlaceType) {
         _uiState.value = _uiState.value.copy(selectedType = type)
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "onTypeChanged type=${type.value}")
+        }
         refreshPlaces()
     }
 
     fun onNearMeChanged(checked: Boolean) {
         _uiState.value = _uiState.value.copy(nearMeOnly = checked)
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "onNearMeChanged checked=$checked")
+        }
         if (!checked || (_uiState.value.currentLat != null && _uiState.value.currentLng != null)) {
             refreshPlaces()
         }
@@ -97,12 +110,18 @@ class ExploreViewModel @Inject constructor(
             currentLng = lng,
             errorMessage = null,
         )
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "onCurrentLocationUpdated")
+        }
         if (_uiState.value.nearMeOnly) {
             refreshPlaces()
         }
     }
 
     fun onCurrentLocationUnavailable(errorMessage: String?) {
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "onCurrentLocationUnavailable message=${errorMessage?.take(60)}")
+        }
         _uiState.value = _uiState.value.copy(
             currentLat = null,
             currentLng = null,
@@ -114,6 +133,9 @@ class ExploreViewModel @Inject constructor(
 
     fun onMinRatingChanged(minRating: Int?) {
         _uiState.value = _uiState.value.copy(selectedMinRating = minRating)
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "onMinRatingChanged minRating=$minRating")
+        }
         refreshPlaces()
     }
 
@@ -122,10 +144,16 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun search() {
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "search")
+        }
         refreshPlaces()
     }
 
     fun retry() {
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "retry")
+        }
         refreshPlaces()
     }
 
@@ -135,11 +163,17 @@ class ExploreViewModel @Inject constructor(
             return
         }
 
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "loadNextPage currentPage=$currentExplorePage loaded=${state.loadedPlaces} total=${state.totalPlaces}")
+        }
         loadPlacesPage(page = currentExplorePage + 1, append = true)
     }
 
     fun randomPlace() {
         viewModelScope.launch {
+            if (BuildConfig.DEBUG) {
+                Log.d(EXPLORE_VM_LOG_TAG, "randomPlace")
+            }
             _uiState.value = _uiState.value.copy(
                 isRandomLoading = true,
                 errorMessage = null,
@@ -174,12 +208,18 @@ class ExploreViewModel @Inject constructor(
                     radiusKm = radiusKm,
                 )
             }.onSuccess { randomPlace ->
+                if (BuildConfig.DEBUG) {
+                    Log.d(EXPLORE_VM_LOG_TAG, "randomPlace success placeId=${randomPlace.id}")
+                }
                 _uiState.value = _uiState.value.copy(
                     isRandomLoading = false,
                     randomSuggestion = randomPlace,
                     randomSuggestionToken = _uiState.value.randomSuggestionToken + 1,
                 )
             }.onFailure { throwable ->
+                if (BuildConfig.DEBUG) {
+                    Log.w(EXPLORE_VM_LOG_TAG, "randomPlace failure", throwable)
+                }
                 _uiState.value = _uiState.value.copy(
                     isRandomLoading = false,
                     randomSuggestion = null,
@@ -216,6 +256,12 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun refreshPlaces() {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                EXPLORE_VM_LOG_TAG,
+                "refreshPlaces nearMe=${_uiState.value.nearMeOnly} type=${_uiState.value.selectedType.value} provinceBlank=${_uiState.value.selectedProvince.isBlank()}",
+            )
+        }
         currentExplorePage = 0
         loadPlacesPage(page = 0, append = false)
     }
@@ -223,6 +269,10 @@ class ExploreViewModel @Inject constructor(
     private fun loadPlacesPage(page: Int, append: Boolean) {
         if (append && page <= 0) {
             return
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(EXPLORE_VM_LOG_TAG, "loadPlacesPage page=$page append=$append")
         }
 
         if (!append) {
@@ -309,6 +359,12 @@ class ExploreViewModel @Inject constructor(
                 val hasMore = loadedPlaces < searchPage.total
 
                 currentExplorePage = searchPage.page
+                if (BuildConfig.DEBUG) {
+                    Log.d(
+                        EXPLORE_VM_LOG_TAG,
+                        "loadPlacesPage success page=${searchPage.page} items=${searchPage.items.size} total=${searchPage.total}",
+                    )
+                }
                 _uiState.value = current.copy(
                     isLoading = false,
                     isPaging = false,
@@ -321,6 +377,9 @@ class ExploreViewModel @Inject constructor(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (throwable: Throwable) {
+                if (BuildConfig.DEBUG) {
+                    Log.w(EXPLORE_VM_LOG_TAG, "loadPlacesPage failure", throwable)
+                }
                 if (requestId != latestPlacesRequestId) {
                     return@launch
                 }
@@ -345,6 +404,9 @@ class ExploreViewModel @Inject constructor(
 
     private fun loadTrending() {
         viewModelScope.launch {
+            if (BuildConfig.DEBUG) {
+                Log.d(EXPLORE_VM_LOG_TAG, "loadTrending")
+            }
             _uiState.value = _uiState.value.copy(trendingLoading = true)
 
             runCatching {
@@ -362,11 +424,17 @@ class ExploreViewModel @Inject constructor(
                     sort = "trending",
                 )
             }.onSuccess { searchPage ->
+                if (BuildConfig.DEBUG) {
+                    Log.d(EXPLORE_VM_LOG_TAG, "loadTrending success items=${searchPage.items.size}")
+                }
                 _uiState.value = _uiState.value.copy(
                     trending = searchPage.items,
                     trendingLoading = false,
                 )
             }.onFailure {
+                if (BuildConfig.DEBUG) {
+                    Log.w(EXPLORE_VM_LOG_TAG, "loadTrending failure", it)
+                }
                 _uiState.value = _uiState.value.copy(trendingLoading = false)
             }
         }

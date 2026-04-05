@@ -79,6 +79,16 @@
     <string name="home_days_together_label">DAYS TOGETHER</string>
     <string name="home_days_anniversary_tomorrow">Happy Anniversary!</string>
 
+    <string name="home_open_map_button">Bản đồ cặp đôi</string>
+
+    <string name="map_share_title">Bản đồ</string>
+    <string name="map_share_content_description">Bản đồ vị trí của hai bạn</string>
+    <string name="map_share_permission_denied">Bạn cần cấp quyền vị trí để dùng bản đồ.</string>
+    <string name="map_share_load_failed">Không thể tải dữ liệu bản đồ.</string>
+    <string name="map_share_me_marker">Bạn</string>
+    <string name="map_share_partner_marker">Đối phương</string>
+    <string name="map_share_notification_text">Đang chia sẻ vị trí của bạn</string>
+
     <string name="page_home">Trang chủ</string>
     <string name="page_wallet">Ví</string>
     <string name="page_explore">Khám phá</string>

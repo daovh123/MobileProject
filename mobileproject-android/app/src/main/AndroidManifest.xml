@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:name=".MainApplication"
@@ -20,6 +23,10 @@
 
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.settings.SettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.map.MapShareActivity"
             android:exported="false" />
 
         <activity
@@ -55,6 +62,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="com.example.mobileproject.presentation.service.MapShareForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
     </application>
 

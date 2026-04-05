@@ -1,0 +1,816 @@
+package com.example.mobileproject.presentation.ui.screen.home
+
+import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.example.mobileproject.BuildConfig
+import com.example.mobileproject.R
+import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.presentation.seed.SeedDataProvider
+import com.example.mobileproject.presentation.service.MapShareForegroundService
+import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
+import com.example.mobileproject.presentation.ui.screen.map.MapShareActivity
+import com.example.mobileproject.presentation.viewmodel.CoupleUiState
+import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
+import kotlinx.coroutines.launch
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.TimeZone
+import java.util.concurrent.TimeUnit
+
+private const val DEFAULT_ZOOM: Double = 17.0
+private const val MAP_BOOTSTRAP_THROTTLE_MS: Long = 10_000L
+
+@Composable
+fun HomeScreen(
+    accessToken: String,
+    apiService: ApiService,
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val coupleViewModel: CoupleViewModel = hiltViewModel()
+    val coupleState by coupleViewModel.uiState.collectAsState()
+
+    var currentCoupleId by remember { mutableStateOf<String?>(null) }
+
+    val mapView = remember {
+        MapView(context).apply {
+            Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            controller.setZoom(DEFAULT_ZOOM)
+        }
+    }
+
+    var myMarker by remember { mutableStateOf<Marker?>(null) }
+    var partnerMarker by remember { mutableStateOf<Marker?>(null) }
+    var hasCenteredOnce by remember { mutableStateOf(false) }
+
+    var mapBootstrapInFlight by remember { mutableStateOf(false) }
+    var lastMapBootstrapAttemptMs by remember { mutableStateOf(0L) }
+    var serviceStartedForCoupleId by remember { mutableStateOf<String?>(null) }
+
+    var hasRequestedSharingPermissions by remember { mutableStateOf(false) }
+    var pendingSharingPermissionRequest by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun updateMarker(
+        existing: Marker?,
+        titleRes: Int,
+        lat: Double,
+        lng: Double,
+        onCreated: (Marker) -> Unit,
+    ): Marker {
+        val point = GeoPoint(lat, lng)
+        val marker = existing ?: Marker(mapView).also {
+            it.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            it.title = context.getString(titleRes)
+            mapView.overlays.add(it)
+            onCreated(it)
+        }
+        marker.position = point
+        mapView.invalidate()
+        return marker
+    }
+
+    fun centerOn(point: GeoPoint) {
+        hasCenteredOnce = true
+        mapView.controller.setZoom(DEFAULT_ZOOM)
+        mapView.controller.setCenter(point)
+    }
+
+    fun centerIfNeeded(lat: Double, lng: Double) {
+        if (hasCenteredOnce) {
+            return
+        }
+        hasCenteredOnce = true
+        mapView.controller.setZoom(DEFAULT_ZOOM)
+        mapView.controller.setCenter(GeoPoint(lat, lng))
+    }
+
+    fun missingSharingPermissions(): List<String> {
+        val required = buildList {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        return required.filter { permission ->
+            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    fun maybeStartSharingService() {
+        val coupleId = currentCoupleId?.trim().orEmpty()
+        if (accessToken.isBlank() || coupleId.isBlank()) {
+            return
+        }
+        if (serviceStartedForCoupleId == coupleId) {
+            return
+        }
+
+        val missing = missingSharingPermissions()
+        if (missing.isNotEmpty()) {
+            if (!hasRequestedSharingPermissions) {
+                hasRequestedSharingPermissions = true
+                pendingSharingPermissionRequest = missing
+            }
+            return
+        }
+
+        MapShareForegroundService.start(context, accessToken, coupleId)
+        serviceStartedForCoupleId = coupleId
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        pendingSharingPermissionRequest = emptyList()
+        val grantedAll = grants.values.all { it }
+        if (!grantedAll) {
+            Toast.makeText(context, context.getString(R.string.map_share_permission_denied), Toast.LENGTH_SHORT).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        maybeStartSharingService()
+    }
+
+    LaunchedEffect(pendingSharingPermissionRequest) {
+        if (pendingSharingPermissionRequest.isNotEmpty()) {
+            permissionLauncher.launch(pendingSharingPermissionRequest.toTypedArray())
+        }
+    }
+
+    val openFullScreenMap by rememberUpdatedState {
+        if (accessToken.isBlank()) {
+            return@rememberUpdatedState
+        }
+
+        val intent = Intent(context, MapShareActivity::class.java)
+            .putExtra(MapShareActivity.EXTRA_ACCESS_TOKEN, accessToken)
+            .putExtra(MapShareActivity.EXTRA_KEEP_SHARING_ACTIVE, true)
+
+        val coupleId = currentCoupleId?.trim().orEmpty()
+        if (coupleId.isNotBlank()) {
+            intent.putExtra(MapShareActivity.EXTRA_COUPLE_ID, coupleId)
+        }
+
+        context.startActivity(intent)
+    }
+
+    val gestureDetector = remember {
+        GestureDetector(
+            context,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                    openFullScreenMap()
+                    return true
+                }
+            },
+        )
+    }
+
+    DisposableEffect(mapView, gestureDetector) {
+        mapView.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+
+        onDispose {
+            mapView.setOnTouchListener(null)
+        }
+    }
+
+    val mapUpdatesReceiver = remember {
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent == null) {
+                    return
+                }
+
+                when (intent.action) {
+                    MapShareForegroundService.ACTION_MY_LOCATION -> {
+                        val lat = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LATITUDE, Double.NaN)
+                        val lng = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LONGITUDE, Double.NaN)
+                        if (!lat.isNaN() && !lng.isNaN()) {
+                            myMarker = updateMarker(
+                                existing = myMarker,
+                                titleRes = R.string.map_share_me_marker,
+                                lat = lat,
+                                lng = lng,
+                                onCreated = { created -> myMarker = created },
+                            )
+                            centerIfNeeded(lat, lng)
+                        }
+                    }
+
+                    MapShareForegroundService.ACTION_PARTNER_LOCATION -> {
+                        val lat = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LATITUDE, Double.NaN)
+                        val lng = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LONGITUDE, Double.NaN)
+                        if (!lat.isNaN() && !lng.isNaN()) {
+                            partnerMarker = updateMarker(
+                                existing = partnerMarker,
+                                titleRes = R.string.map_share_partner_marker,
+                                lat = lat,
+                                lng = lng,
+                                onCreated = { created -> partnerMarker = created },
+                            )
+                            if (!hasCenteredOnce) {
+                                centerIfNeeded(lat, lng)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    DisposableEffect(coupleState.paired) {
+        if (!coupleState.paired) {
+            return@DisposableEffect onDispose { }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(MapShareForegroundService.ACTION_MY_LOCATION)
+            addAction(MapShareForegroundService.ACTION_PARTNER_LOCATION)
+        }
+
+        ContextCompat.registerReceiver(
+            context,
+            mapUpdatesReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+
+        onDispose {
+            runCatching { context.unregisterReceiver(mapUpdatesReceiver) }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_DESTROY -> runCatching { mapView.onDetach() }
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(accessToken) {
+        if (accessToken.isNotBlank()) {
+            coupleViewModel.loadStatus(accessToken)
+        }
+    }
+
+    LaunchedEffect(coupleState.paired, accessToken) {
+        if (!coupleState.paired || accessToken.isBlank()) {
+            return@LaunchedEffect
+        }
+
+        val now = System.currentTimeMillis()
+        if (mapBootstrapInFlight) {
+            return@LaunchedEffect
+        }
+        if (now - lastMapBootstrapAttemptMs < MAP_BOOTSTRAP_THROTTLE_MS) {
+            return@LaunchedEffect
+        }
+
+        lastMapBootstrapAttemptMs = now
+        mapBootstrapInFlight = true
+
+        try {
+            val tokenHeader = "Bearer ${accessToken.trim()}"
+            val response = runCatching { apiService.getMapLastLocations(tokenHeader) }.getOrNull()
+            val body = response?.body()
+            if (response == null || !response.isSuccessful || body == null || !body.success) {
+                return@LaunchedEffect
+            }
+
+            val resolvedCoupleId = body.coupleId?.trim().orEmpty()
+            if (resolvedCoupleId.isNotBlank()) {
+                currentCoupleId = resolvedCoupleId
+            }
+
+            body.myLocation?.let { loc ->
+                val lat = loc.latitude
+                val lng = loc.longitude
+                if (lat != null && lng != null) {
+                    myMarker = updateMarker(
+                        existing = myMarker,
+                        titleRes = R.string.map_share_me_marker,
+                        lat = lat,
+                        lng = lng,
+                        onCreated = { created -> myMarker = created },
+                    )
+                    centerIfNeeded(lat, lng)
+                }
+            }
+
+            body.partnerLocation?.let { loc ->
+                val lat = loc.latitude
+                val lng = loc.longitude
+                if (lat != null && lng != null) {
+                    partnerMarker = updateMarker(
+                        existing = partnerMarker,
+                        titleRes = R.string.map_share_partner_marker,
+                        lat = lat,
+                        lng = lng,
+                        onCreated = { created -> partnerMarker = created },
+                    )
+                    if (!hasCenteredOnce) {
+                        centerIfNeeded(lat, lng)
+                    }
+                }
+            }
+
+            maybeStartSharingService()
+        } finally {
+            mapBootstrapInFlight = false
+        }
+    }
+
+    LaunchedEffect(coupleState.paired) {
+        if (!coupleState.paired && serviceStartedForCoupleId != null) {
+            MapShareForegroundService.stop(context)
+            serviceStartedForCoupleId = null
+        }
+    }
+
+    HomeContent(
+        state = coupleState,
+        accessToken = accessToken,
+        onPairNow = {
+            if (accessToken.isBlank()) {
+                return@HomeContent
+            }
+            context.startActivity(
+                Intent(context, CoupleConnectActivity::class.java)
+                    .putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken),
+            )
+        },
+        daysTogether = coupleState.daysTogether?.coerceAtLeast(1)
+            ?: computeDaysTogetherFromStartAt(coupleState.startAt)
+            ?: 1L,
+        onCenterMe = {
+            val point = myMarker?.position ?: return@HomeContent
+            centerOn(point)
+        },
+        onCenterPartner = {
+            val point = partnerMarker?.position ?: return@HomeContent
+            centerOn(point)
+        },
+        mapView = mapView,
+    )
+}
+
+@Composable
+private fun HomeContent(
+    state: CoupleUiState,
+    accessToken: String,
+    daysTogether: Long,
+    onPairNow: () -> Unit,
+    onCenterMe: () -> Unit,
+    onCenterPartner: () -> Unit,
+    mapView: MapView,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(R.color.md3_surface_variant))
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.page_home),
+            style = MaterialTheme.typography.headlineMedium,
+            color = colorResource(R.color.md3_primary),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = SeedDataProvider.homeHighlights.getOrNull(0).orEmpty(),
+                    color = colorResource(R.color.md3_on_surface),
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = SeedDataProvider.homeHighlights.getOrNull(1).orEmpty(),
+                    color = colorResource(R.color.md3_on_surface_variant),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = SeedDataProvider.homeHighlights.getOrNull(2).orEmpty(),
+                    color = colorResource(R.color.md3_on_surface_variant),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                PairSection(
+                    state = state,
+                    accessToken = accessToken,
+                    onPairNow = onPairNow,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        if (state.paired) {
+            Spacer(modifier = Modifier.height(16.dp))
+            DaysTogetherCard(
+                daysTogether = daysTogether,
+                showAnniversaryHint = state.anniversaryTomorrow == true,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                ) {
+                    AndroidView(
+                        factory = { mapView },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        SmallFloatingActionButton(
+                            onClick = onCenterPartner,
+                            containerColor = colorResource(R.color.md3_surface),
+                            contentColor = colorResource(R.color.md3_primary),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_avatar_24),
+                                contentDescription = stringResource(R.string.map_share_partner_marker),
+                            )
+                        }
+
+                        SmallFloatingActionButton(
+                            onClick = onCenterMe,
+                            containerColor = colorResource(R.color.md3_surface),
+                            contentColor = colorResource(R.color.md3_primary),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_location_24),
+                                contentDescription = stringResource(R.string.map_share_me_marker),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PairSection(
+    state: CoupleUiState,
+    accessToken: String,
+    onPairNow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val noSession = accessToken.isBlank()
+
+    val titleText: String
+    val subtitleText: String
+    val showConnectedCard: Boolean
+    val showPairButton: Boolean
+    val pairButtonEnabled: Boolean
+    val pairButtonText: String
+
+    if (noSession) {
+        titleText = stringResource(R.string.home_pair_title)
+        subtitleText = stringResource(R.string.home_pair_subtitle)
+        showConnectedCard = false
+        showPairButton = true
+        pairButtonEnabled = false
+        pairButtonText = stringResource(R.string.home_pair_button)
+    } else if (state.paired) {
+        titleText = stringResource(R.string.home_pair_connected_title)
+        subtitleText = stringResource(R.string.home_pair_connected_subtitle)
+        showConnectedCard = true
+        showPairButton = false
+        pairButtonEnabled = false
+        pairButtonText = stringResource(R.string.home_pair_button)
+    } else {
+        titleText = stringResource(R.string.home_pair_title)
+        subtitleText = stringResource(R.string.home_pair_subtitle)
+        showConnectedCard = false
+        showPairButton = true
+        pairButtonEnabled = !state.isLoading
+        pairButtonText = if (state.isLoading) {
+            stringResource(R.string.home_pair_loading_button)
+        } else {
+            stringResource(R.string.home_pair_button)
+        }
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = titleText,
+            color = colorResource(R.color.md3_primary),
+            fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = subtitleText,
+            color = colorResource(R.color.md3_on_surface_variant),
+        )
+
+        if (!noSession && !state.paired) {
+            val myCode = state.myCoupleCode
+            if (!myCode.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.home_pair_my_code, myCode),
+                    color = colorResource(R.color.md3_primary),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        if (showConnectedCard) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
+                shape = RoundedCornerShape(14.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = stringResource(R.string.home_pair_connected_badge),
+                        color = colorResource(R.color.md3_on_primary_container),
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val partnerDisplayName = state.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
+                    Text(
+                        text = stringResource(R.string.home_pair_partner_name, partnerDisplayName),
+                        color = colorResource(R.color.md3_on_primary_container),
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.home_pair_connected_note),
+                        color = colorResource(R.color.md3_on_surface_variant),
+                    )
+                }
+            }
+        }
+
+        val hintText = when {
+            noSession -> stringResource(R.string.home_pair_session_expired)
+            !state.errorMessage.isNullOrBlank() -> state.errorMessage
+            state.outgoingStatus.equals("PENDING", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_pending)
+            state.outgoingStatus.equals("REJECTED", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_rejected)
+            !state.myCoupleCodeExpiresAt.isNullOrBlank() -> stringResource(
+                R.string.home_pair_code_expiry,
+                state.myCoupleCodeExpiresAt ?: "",
+            )
+            else -> null
+        }
+
+        if (!hintText.isNullOrBlank() && !state.paired) {
+            Spacer(modifier = Modifier.height(10.dp))
+            val hintColor = if (
+                noSession ||
+                !state.errorMessage.isNullOrBlank() ||
+                state.outgoingStatus.equals("REJECTED", ignoreCase = true)
+            ) {
+                colorResource(R.color.auth_pink)
+            } else {
+                colorResource(R.color.md3_on_surface_variant)
+            }
+
+            Text(
+                text = hintText,
+                color = hintColor,
+            )
+        }
+
+        if (showPairButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onPairNow,
+                enabled = pairButtonEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = pairButtonText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DaysTogetherCard(
+    daysTogether: Long,
+    showAnniversaryHint: Boolean,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = daysTogether.toString(),
+                style = MaterialTheme.typography.displayMedium,
+                color = colorResource(R.color.md3_primary),
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = stringResource(R.string.home_days_together_label),
+                color = colorResource(R.color.md3_on_surface_variant),
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
+                Spacer(modifier = Modifier.width(12.dp))
+                AvatarChip(
+                    containerColor = colorResource(R.color.md3_surface_variant),
+                    iconRes = R.drawable.ic_favorite_24,
+                    iconTint = colorResource(R.color.md3_primary),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
+            }
+
+            if (showAnniversaryHint) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
+                    shape = RoundedCornerShape(999.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_days_anniversary_tomorrow),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = colorResource(R.color.md3_on_primary_container),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarChip(
+    containerColor: Color,
+    iconRes: Int = R.drawable.ic_avatar_24,
+    iconTint: Color = colorResource(R.color.md3_on_primary_container),
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = CircleShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.size(44.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = stringResource(R.string.cd_avatar),
+                tint = iconTint,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+    }
+}
+
+private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
+    val datePart = startAt?.takeIf { it.length >= 10 }?.substring(0, 10) ?: return null
+    val parts = datePart.split("-")
+    if (parts.size != 3) {
+        return null
+    }
+
+    val year = parts[0].toIntOrNull() ?: return null
+    val month = parts[1].toIntOrNull() ?: return null
+    val day = parts[2].toIntOrNull() ?: return null
+
+    val utc = TimeZone.getTimeZone("UTC")
+
+    val startCal = GregorianCalendar(utc).apply {
+        set(Calendar.YEAR, year)
+        set(Calendar.MONTH, month - 1)
+        set(Calendar.DAY_OF_MONTH, day)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    val todayCal = GregorianCalendar(utc).apply {
+        timeInMillis = System.currentTimeMillis()
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    val diffMillis = todayCal.timeInMillis - startCal.timeInMillis
+    val days = TimeUnit.MILLISECONDS.toDays(diffMillis) + 1
+    return days.coerceAtLeast(1)
+}

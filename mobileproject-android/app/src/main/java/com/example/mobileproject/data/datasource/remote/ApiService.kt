@@ -7,6 +7,7 @@ import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
+import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -91,6 +92,11 @@ interface ApiService {
     suspend fun getHistory(
         @Header("Authorization") authorization: String,
     ): Response<HistoryListResponseDto>
+
+    @GET("api/auth/map/last")
+    suspend fun getMapLastLocations(
+        @Header("Authorization") authorization: String,
+    ): Response<MapLastLocationsResponseDto>
 
     @DELETE("api/history")
     suspend fun clearHistory(
