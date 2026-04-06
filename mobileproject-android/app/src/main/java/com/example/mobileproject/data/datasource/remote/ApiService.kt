@@ -47,6 +47,11 @@ interface ApiService {
         @Body request: ProfileUpsertRequestDto,
     ): Response<ProfileResponseDto>
 
+    @GET("api/auth/profile")
+    suspend fun getProfile(
+        @Header("Authorization") authorization: String,
+    ): Response<ProfileResponseDto>
+
     @GET("api/auth/couple/status")
     suspend fun getCoupleStatus(
         @Header("Authorization") authorization: String,
