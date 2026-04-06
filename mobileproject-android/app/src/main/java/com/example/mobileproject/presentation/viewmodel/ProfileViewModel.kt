@@ -31,7 +31,7 @@ class ProfileViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null, coupleError = null) }
+            _uiState.update { it.copy(isLoading = true, isLoadingCouple = true, errorMessage = null, coupleError = null) }
 
             val profileDeferred = async {
                 runCatching { onboardingRepository.getProfile(token) }
