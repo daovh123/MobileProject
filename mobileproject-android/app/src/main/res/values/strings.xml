@@ -180,6 +180,7 @@
     <string name="explore_location_permission_denied">Bạn chưa cấp quyền vị trí để dùng bộ lọc gần tôi.</string>
     <string name="explore_location_unavailable">Không lấy được vị trí hiện tại. Vui lòng thử lại.</string>
     <string name="memories_tagline">Mỗi đồng tiền kể câu chuyện của chúng ta.</string>
+    <string name="memories_header_title">Kỷ niệm của chúng ta</string>
     <string name="memories_recent_moments">Khoảnh khắc gần đây</string>
     <string name="memories_more_count">+12</string>
     <string name="memories_partner_info">Thông tin đối tác</string>
@@ -187,14 +188,22 @@
     <string name="memories_tab_history">Lịch sử</string>
     <string name="memories_empty">Chưa có dữ liệu</string>
     <string name="memories_clear_history">Xóa lịch sử</string>
+    <string name="memories_calendar_month_title">Tháng %1$d/%2$d</string>
 
     <string name="memories_greeting">Xin chào, %1$s!</string>
     <string name="explore_toggle_favorite">Thêm hoặc bỏ yêu thích</string>
+
+    <string name="chat_title">Chat với partner</string>
+    <string name="chat_empty">Chưa có tin nhắn nào</string>
+    <string name="chat_input_placeholder">Nhập tin nhắn…</string>
+    <string name="chat_send">Gửi</string>
+    <string name="chat_fab_label">Chat</string>
 
     <string name="cd_open_profile">Mở hồ sơ</string>
     <string name="cd_open_menu">Mở menu</string>
     <string name="cd_avatar">Ảnh đại diện</string>
     <string name="cd_favorite">Yêu thích</string>
+    <string name="cd_close">Đóng</string>
 
     <string name="action_notifications">Thông báo</string>
     <string name="action_logout">Đăng xuất</string>

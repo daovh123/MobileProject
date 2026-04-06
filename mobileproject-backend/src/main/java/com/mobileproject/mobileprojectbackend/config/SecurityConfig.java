@@ -23,7 +23,7 @@ public class SecurityConfig {
                                 "/api/places/**",
                                 "/api/favorites/**",
                                 "/api/history/**",
-                        "/ws/**",
+                                "/ws/**",
                                 "/actuator/**",
                                 "/error")
                         .permitAll()
