@@ -1,6 +1,7 @@
 package com.example.mobileproject.presentation.ui.screen.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -33,7 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,7 +54,9 @@ fun ChatScreen(
     val viewModel: ChatViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
-    var inputText by rememberSaveable { mutableStateOf("") }
+    var inputValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(""))
+    }
 
     LaunchedEffect(accessToken) {
         viewModel.start(accessToken)
@@ -109,13 +116,32 @@ fun ChatScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        val mentionContext = findMentionContext(inputValue)
+        val showMiniAiSuggestion = mentionContext != null && shouldSuggestMiniAi(mentionContext.query)
+
+        if (showMiniAiSuggestion) {
+            MiniAiSuggestionRow(
+                onClick = {
+                    mentionContext?.let {
+                        inputValue = completeMention(
+                            value = inputValue,
+                            tokenStart = it.start,
+                            tokenEnd = it.end,
+                            mentionText = "@MiniAI ",
+                        )
+                    }
+                },
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
+                value = inputValue,
+                onValueChange = { inputValue = it },
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
@@ -130,10 +156,10 @@ fun ChatScreen(
 
             Button(
                 onClick = {
-                    val toSend = inputText.trim()
+                    val toSend = inputValue.text.trim()
                     if (toSend.isNotBlank()) {
                         viewModel.send(accessToken, toSend)
-                        inputText = ""
+                        inputValue = TextFieldValue("")
                     }
                 },
                 enabled = !uiState.isSending && accessToken.isNotBlank(),
@@ -178,12 +204,120 @@ private fun ChatBubble(
             shape = RoundedCornerShape(18.dp),
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                val isAi = !mine && message.senderUsername?.equals("MiniAI", ignoreCase = true) == true
+                if (isAi) {
+                    Text(
+                        text = "MiniAI",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colorResource(R.color.md3_primary),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyLarge,
                     color = textColor,
                 )
             }
+        }
+    }
+}
+
+private data class MentionContext(
+    val start: Int,
+    val end: Int,
+    val query: String,
+)
+
+private fun findMentionContext(value: TextFieldValue): MentionContext? {
+    val text = value.text
+    if (text.isBlank()) {
+        return null
+    }
+
+    val cursor = value.selection.start.coerceIn(0, text.length)
+    val start = run {
+        var i = cursor - 1
+        while (i >= 0) {
+            val ch = text[i]
+            if (ch.isWhitespace()) {
+                return@run i + 1
+            }
+            i--
+        }
+        0
+    }
+
+    if (start !in 0..cursor) {
+        return null
+    }
+
+    val token = text.substring(start, cursor)
+    if (!token.startsWith("@")) {
+        return null
+    }
+
+    val query = token.drop(1)
+    return MentionContext(start = start, end = cursor, query = query)
+}
+
+private fun shouldSuggestMiniAi(query: String): Boolean {
+    val q = query.trim().lowercase()
+    if (q.isEmpty()) {
+        return true
+    }
+    return "miniai".startsWith(q)
+}
+
+private fun completeMention(
+    value: TextFieldValue,
+    tokenStart: Int,
+    tokenEnd: Int,
+    mentionText: String,
+): TextFieldValue {
+    val text = value.text
+    val safeStart = tokenStart.coerceIn(0, text.length)
+    val safeEnd = tokenEnd.coerceIn(safeStart, text.length)
+
+    val newText = buildString(text.length + mentionText.length + 1) {
+        append(text.substring(0, safeStart))
+        append(mentionText)
+        append(text.substring(safeEnd))
+    }
+    val newCursor = (safeStart + mentionText.length).coerceIn(0, newText.length)
+    return value.copy(text = newText, selection = TextRange(newCursor))
+}
+
+@Composable
+private fun MiniAiSuggestionRow(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "MiniAI",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorResource(R.color.md3_primary),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Nhấn để chèn @MiniAI",
+                style = MaterialTheme.typography.bodySmall,
+                color = colorResource(R.color.md3_on_surface_variant),
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.mobileproject.mobileprojectbackend.chat;
 
+import com.mobileproject.mobileprojectbackend.chat.ai.GroqChatClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -24,14 +26,25 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
+    private static final String[] AI_MENTIONS_LOWER = {"@miniai", "@mimiai"};
+    private static final String AI_SENDER_USER_ID = "ai:mimi";
+    private static final String AI_USERNAME = "MiniAI";
+    private static final int AI_CONTEXT_LIMIT = 20;
+
     private final ChatMessageRepository chatMessageRepository;
     private final ObjectMapper objectMapper;
+    private final GroqChatClient groqChatClient;
 
     private final Map<String, CopyOnWriteArraySet<WebSocketSession>> sessionsByCoupleId = new ConcurrentHashMap<>();
 
-    public ChatWebSocketHandler(ChatMessageRepository chatMessageRepository, ObjectMapper objectMapper) {
+    public ChatWebSocketHandler(
+            ChatMessageRepository chatMessageRepository,
+            ObjectMapper objectMapper,
+            GroqChatClient groqChatClient
+    ) {
         this.chatMessageRepository = chatMessageRepository;
         this.objectMapper = objectMapper;
+        this.groqChatClient = groqChatClient;
     }
 
     @Override
@@ -85,6 +98,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             ChatMessage saved = chatMessageRepository.save(entity);
             broadcastMessage(coupleId, saved);
+
+            if (containsAiMention(saved.getText())) {
+                triggerAiReplyAsync(session, coupleId, saved);
+            }
         } catch (Exception exception) {
             LOGGER.debug("Failed to persist/broadcast chat message", exception);
             sendError(session, "Không thể gửi tin nhắn. Vui lòng thử lại.");
@@ -233,8 +250,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String myUsername = usernameOf(session);
         String partnerUsername = partnerUsernameOf(session);
 
-        boolean mine = myUserId != null && myUserId.equals(message.getSenderUserId());
-        String senderUsername = mine ? myUsername : partnerUsername;
+        boolean isAi = AI_SENDER_USER_ID.equals(message.getSenderUserId());
+        boolean mine = !isAi && myUserId != null && myUserId.equals(message.getSenderUserId());
+        String senderUsername;
+        if (isAi) {
+            senderUsername = AI_USERNAME;
+        } else {
+            senderUsername = mine ? myUsername : partnerUsername;
+        }
 
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", message.getId());
@@ -288,6 +311,189 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private String partnerUsernameOf(WebSocketSession session) {
         return session == null ? null : (String) session.getAttributes().get("partnerUsername");
+    }
+
+    private boolean containsAiMention(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String lowered = text.toLowerCase();
+        for (String mention : AI_MENTIONS_LOWER) {
+            if (mention != null && !mention.isBlank() && lowered.contains(mention)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String stripAiMention(String text) {
+        if (text == null) {
+            return "";
+        }
+        String lowered = text.toLowerCase();
+
+        int index = -1;
+        String matchedMention = null;
+        for (String mention : AI_MENTIONS_LOWER) {
+            if (mention == null || mention.isBlank()) {
+                continue;
+            }
+            int found = lowered.indexOf(mention);
+            if (found >= 0 && (index < 0 || found < index)) {
+                index = found;
+                matchedMention = mention;
+            }
+        }
+
+        if (index < 0 || matchedMention == null) {
+            return text.trim();
+        }
+
+        String after = text.substring(index + matchedMention.length()).trim();
+        if (!after.isBlank()) {
+            String cleaned = after.replaceFirst("^[,.:;\\-]+\\s*", "");
+            return cleaned.replaceAll("\\s{2,}", " ").trim();
+        }
+
+        String before = text.substring(0, index).trim();
+        return before.replaceAll("\\s{2,}", " ").trim();
+    }
+
+    private void triggerAiReplyAsync(WebSocketSession session, String coupleId, ChatMessage latestUserMessage) {
+        String prompt = stripAiMention(latestUserMessage.getText());
+        if (prompt.isBlank()) {
+            sendError(session, "Bạn hãy nhập nội dung sau @MiniAI để mình trả lời nhé.");
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                List<ChatMessage> recent = new ArrayList<>(chatMessageRepository.findTop50ByCoupleIdOrderByCreatedAtDesc(coupleId));
+                Collections.reverse(recent);
+                List<GroqChatClient.Message> aiMessages = buildAiContext(session, recent, latestUserMessage.getId(), prompt);
+
+                String aiReply = groqChatClient.chat(aiMessages);
+                if (aiReply.isBlank()) {
+                    sendError(session, "MiniAI hiện chưa trả lời được. Vui lòng thử lại.");
+                    return;
+                }
+
+                ChatMessage aiEntity = new ChatMessage();
+                aiEntity.setCoupleId(coupleId);
+                aiEntity.setSenderUserId(AI_SENDER_USER_ID);
+                aiEntity.setReceiverUserId(userIdOf(session));
+                aiEntity.setText(aiReply);
+                aiEntity.setCreatedAt(Instant.now());
+
+                ChatMessage savedAi = chatMessageRepository.save(aiEntity);
+                broadcastMessage(coupleId, savedAi);
+            } catch (GroqChatClient.GroqApiException exception) {
+                sendError(session, mapGroqError(exception));
+            } catch (IllegalStateException exception) {
+                String message = exception.getMessage();
+                if (message == null || message.isBlank()) {
+                    sendError(session, "Không thể gọi MiniAI lúc này. Vui lòng thử lại.");
+                } else {
+                    sendError(session, message);
+                }
+            } catch (Exception exception) {
+                LOGGER.debug("Failed to generate MiniAI reply", exception);
+                sendError(session, "Không thể gọi MiniAI lúc này. Vui lòng thử lại.");
+            }
+        });
+    }
+
+    private String mapGroqError(GroqChatClient.GroqApiException exception) {
+        int status = exception == null ? 0 : exception.statusCode();
+        String detail = exception == null ? "" : exception.groqMessage();
+
+        String message;
+        if (status == 401 || status == 403) {
+            message = "Groq API key không hợp lệ hoặc đã hết hạn. Hãy cập nhật GROQ_API_KEY trên backend.";
+        } else if (status == 429) {
+            message = "MiniAI đang quá tải hoặc hết quota. Vui lòng thử lại sau.";
+        } else if (status >= 500) {
+            message = "Groq đang gặp lỗi tạm thời. Vui lòng thử lại sau.";
+        } else if (status > 0) {
+            message = "Không thể gọi MiniAI (HTTP " + status + ").";
+        } else {
+            message = "Không thể gọi MiniAI lúc này. Vui lòng thử lại.";
+        }
+
+        if (detail != null && !detail.isBlank()) {
+            String clipped = detail.length() > 140 ? detail.substring(0, 140) + "..." : detail;
+            return message + " (" + clipped + ")";
+        }
+        return message;
+    }
+
+    private List<GroqChatClient.Message> buildAiContext(
+            WebSocketSession session,
+            List<ChatMessage> recentMessages,
+            String latestMessageId,
+            String latestPrompt
+    ) {
+        String myUserId = userIdOf(session);
+        String partnerUserId = partnerUserIdOf(session);
+
+        List<GroqChatClient.Message> messages = new ArrayList<>();
+        messages.add(new GroqChatClient.Message(
+                "system",
+                "Bạn là MiniAI, trợ lý thân thiện trong cuộc trò chuyện của một cặp đôi. Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt. Không nhắc lại email/username trong câu trả lời. Nếu thiếu thông tin, hãy hỏi lại 1 câu."
+        ));
+
+        if (recentMessages == null || recentMessages.isEmpty()) {
+            messages.add(new GroqChatClient.Message("user", latestPrompt));
+            return messages;
+        }
+
+        int startIndex = Math.max(0, recentMessages.size() - AI_CONTEXT_LIMIT);
+        for (int i = startIndex; i < recentMessages.size(); i++) {
+            ChatMessage chatMessage = recentMessages.get(i);
+            if (chatMessage == null || chatMessage.getText() == null || chatMessage.getText().isBlank()) {
+                continue;
+            }
+
+            String senderId = chatMessage.getSenderUserId();
+            boolean isAi = AI_SENDER_USER_ID.equals(senderId);
+            String contentText;
+            if (latestMessageId != null && latestMessageId.equals(chatMessage.getId())) {
+                contentText = latestPrompt;
+            } else {
+                contentText = chatMessage.getText();
+            }
+
+            if (contentText == null || contentText.isBlank()) {
+                continue;
+            }
+
+            if (isAi) {
+                messages.add(new GroqChatClient.Message("assistant", contentText));
+                continue;
+            }
+
+            if (latestMessageId != null && latestMessageId.equals(chatMessage.getId())) {
+                messages.add(new GroqChatClient.Message("user", contentText));
+                continue;
+            }
+
+            String label;
+            if (senderId != null && senderId.equals(myUserId)) {
+                label = "Bạn";
+            } else if (senderId != null && senderId.equals(partnerUserId)) {
+                label = "Partner";
+            } else {
+                label = "Người dùng";
+            }
+
+            String content = (label == null || label.isBlank())
+                    ? contentText
+                    : (label + ": " + contentText);
+
+            messages.add(new GroqChatClient.Message("user", content));
+        }
+
+        return messages;
     }
 
     private record IncomingChat(String type, String text) {

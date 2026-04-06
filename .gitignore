@@ -54,7 +54,6 @@ google-services.json
 .env
 .env.*
 *.local
-secrets.properties
 apikey.properties
 config.properties
 *.pem
