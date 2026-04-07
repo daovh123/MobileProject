@@ -3,7 +3,7 @@ package com.mobileproject.mobileprojectbackend.favorite;
 import com.mobileproject.mobileprojectbackend.favorite.dto.FavoriteListResponse;
 import com.mobileproject.mobileprojectbackend.favorite.dto.FavoriteResponse;
 import com.mobileproject.mobileprojectbackend.place.Place;
-import com.mobileproject.mobileprojectbackend.place.PlaceRepository;
+import com.mobileproject.mobileprojectbackend.place.PlaceCacheService;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,19 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 @RequiredArgsConstructor
 public class FavoriteService {
 
     private final UserFavoriteRepository favoriteRepository;
-    private final PlaceRepository placeRepository;
+    private final PlaceCacheService placeCacheService;
 
     public FavoriteResponse toggleFavorite(String userId, String placeId) {
-        if (!placeRepository.existsById(placeId)) {
+        if (placeCacheService.findById(placeId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found");
         }
 
@@ -44,8 +41,7 @@ public class FavoriteService {
         List<UserFavorite> favorites = favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId);
         List<String> placeIds = favorites.stream().map(UserFavorite::getPlaceId).toList();
 
-        Map<String, Place> placeById = StreamSupport.stream(placeRepository.findAllById(placeIds).spliterator(), false)
-                .collect(Collectors.toMap(Place::getId, Function.identity(), (first, second) -> first));
+        Map<String, Place> placeById = placeCacheService.findAllByIds(placeIds);
 
         List<PlaceDto> places = placeIds.stream()
                 .map(placeById::get)

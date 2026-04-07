@@ -54,8 +54,10 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
+import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
+import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 
@@ -65,6 +67,7 @@ object HomeRoutes {
     const val EXPLORE: String = "explore"
     const val MEMORIES: String = "memories"
     const val SETTINGS: String = "settings"
+    const val PROFILE: String = "profile"
     const val CHAT: String = "chat"
 }
 
@@ -102,6 +105,7 @@ fun HomeScaffold(
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
     val currentItem = items.firstOrNull { it.route == currentRoute } ?: items.first()
     val isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES
+    val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
 
     val context = LocalContext.current
@@ -132,6 +136,11 @@ fun HomeScaffold(
                             text = stringResource(R.string.chat_title),
                             color = colorResource(R.color.md3_primary),
                         )
+                    } else if (isProfileRoute) {
+                        Text(
+                            text = stringResource(R.string.profile_title),
+                            color = colorResource(R.color.md3_primary),
+                        )
                     } else if (!isMemoriesRoute) {
                         Text(
                             text = stringResource(currentItem.titleRes),
@@ -151,7 +160,7 @@ fun HomeScaffold(
                     } else {
                         IconButton(
                             onClick = {
-                                navController.navigate(HomeRoutes.SETTINGS) {
+                                navController.navigate(HomeRoutes.PROFILE) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
@@ -189,7 +198,7 @@ fun HomeScaffold(
             )
         },
         bottomBar = {
-            if (!isChatRoute) {
+            if (!isChatRoute && !isProfileRoute) {
                 Card(
                     modifier = Modifier
                         .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 6.dp)
@@ -271,6 +280,15 @@ fun HomeScaffold(
                 }
                 composable(HomeRoutes.SETTINGS) {
                     SettingsScreen(accessToken = accessToken)
+                }
+                composable(HomeRoutes.PROFILE) {
+                    ProfileScreen(
+                        accessToken = accessToken,
+                        onNavigateBack = { navController.popBackStack() },
+                        onLogout = {
+                            (context as? HomeActivity)?.logoutAndOpenLogin()
+                        },
+                    )
                 }
                 composable(HomeRoutes.CHAT) {
                     ChatScreen(accessToken = accessToken)

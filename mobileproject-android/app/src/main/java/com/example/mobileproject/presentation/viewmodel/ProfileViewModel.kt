@@ -3,11 +3,11 @@ package com.example.mobileproject.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
+import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
-    private val authSessionStore: AuthSessionStore,
+    private val authSessionStore: AuthSessionStore? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -57,10 +57,7 @@ class ProfileViewModel @Inject constructor(
                     )
                 }
             }.onFailure { error ->
-                val sessionExpired = error is IllegalStateException &&
-                    error.message?.contains("Unauthorized", ignoreCase = true) == true ||
-                    error.message?.contains("expired", ignoreCase = true) == true ||
-                    error.message?.contains("401", ignoreCase = true) == true
+                val sessionExpired = error.isSessionExpiredError()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -148,7 +145,7 @@ class ProfileViewModel @Inject constructor(
                     gender = gender.trim(),
                 )
             }.onSuccess { profile ->
-                authSessionStore.updateProfileState(
+                authSessionStore?.updateProfileState(
                     profileCompleted = profile.profileCompleted,
                     coupleConnected = profile.coupleConnected,
                 )
@@ -162,10 +159,7 @@ class ProfileViewModel @Inject constructor(
                     )
                 }
             }.onFailure { error ->
-                val sessionExpired = error is IllegalStateException &&
-                    error.message?.contains("Unauthorized", ignoreCase = true) == true ||
-                    error.message?.contains("expired", ignoreCase = true) == true ||
-                    error.message?.contains("401", ignoreCase = true) == true
+                val sessionExpired = error.isSessionExpiredError()
                 _uiState.update {
                     it.copy(
                         isSaving = false,
@@ -188,6 +182,15 @@ class ProfileViewModel @Inject constructor(
     fun clearSessionExpired() {
         _uiState.update { it.copy(sessionExpired = false) }
     }
+}
+
+private fun Throwable.isSessionExpiredError(): Boolean {
+    val reason = message.orEmpty()
+    return this is IllegalStateException && (
+        reason.contains("unauthorized", ignoreCase = true) ||
+            reason.contains("expired", ignoreCase = true) ||
+            reason.contains("401", ignoreCase = true)
+        )
 }
 
 data class ProfileUiState(

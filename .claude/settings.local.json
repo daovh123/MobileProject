@@ -3,7 +3,9 @@
     "allow": [
       "Read(//home/**)",
       "Read(//home/user/**)",
-      "Read(//dev/**)"
+      "Read(//dev/**)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }

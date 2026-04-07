@@ -19,15 +19,14 @@ public class ProfileService {
             DateTimeFormatter.ofPattern("d/M/uuuu"),
             DateTimeFormatter.ofPattern("dd/MM/uuuu"),
             DateTimeFormatter.ofPattern("d-M-uuuu"),
-            DateTimeFormatter.ofPattern("dd-MM-uuuu")
-    );
+            DateTimeFormatter.ofPattern("dd-MM-uuuu"));
 
     private final AuthIdentityService authIdentityService;
-    private final AuthUserRepository authUserRepository;
+    private final AuthUserCacheService authUserCacheService;
 
-    public ProfileService(AuthIdentityService authIdentityService, AuthUserRepository authUserRepository) {
+    public ProfileService(AuthIdentityService authIdentityService, AuthUserCacheService authUserCacheService) {
         this.authIdentityService = authIdentityService;
-        this.authUserRepository = authUserRepository;
+        this.authUserCacheService = authUserCacheService;
     }
 
     public ProfileResponse upsertProfile(String authorizationHeader, ProfileUpsertRequest request) {
@@ -47,9 +46,9 @@ public class ProfileService {
         user.setBirthDate(birthDate);
         user.setGender(gender);
         user.setProfileCompleted(true);
-        authUserRepository.save(user);
+        AuthUser savedUser = authUserCacheService.save(user);
 
-        return toProfileResponse(user, "Profile saved successfully");
+        return toProfileResponse(savedUser, "Profile saved successfully");
     }
 
     public ProfileResponse getProfile(String authorizationHeader) {
@@ -66,8 +65,7 @@ public class ProfileService {
                 user.getBirthDate(),
                 user.getGender(),
                 user.isProfileCompleted(),
-                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank()
-        );
+                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank());
     }
 
     private String trimToNull(String value) {
@@ -95,8 +93,7 @@ public class ProfileService {
 
         throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Birth date must be yyyy-MM-dd or dd/MM/yyyy"
-        );
+                "Birth date must be yyyy-MM-dd or dd/MM/yyyy");
     }
 
     private String normalizeGender(String rawValue) {
@@ -111,8 +108,7 @@ public class ProfileService {
             case "other", "khac" -> "OTHER";
             default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Gender must be MALE, FEMALE, or OTHER"
-            );
+                    "Gender must be MALE, FEMALE, or OTHER");
         };
     }
 }

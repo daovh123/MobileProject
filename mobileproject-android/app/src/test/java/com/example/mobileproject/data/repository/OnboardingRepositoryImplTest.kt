@@ -9,6 +9,7 @@ import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
+import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -18,6 +19,7 @@ import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
@@ -58,6 +60,60 @@ class OnboardingRepositoryImplTest {
     }
 
     @Test
+    fun `getProfile maps profile response`() = runBlocking {
+        val fakeApi = FakeApiService().apply {
+            profileResponse = Response.success(
+                ProfileResponseDto(
+                    success = true,
+                    message = "Fetched",
+                    username = "bob",
+                    fullName = "Bob",
+                    nickName = null,
+                    birthDate = "2020-03-01",
+                    gender = "MALE",
+                    profileCompleted = true,
+                    coupleConnected = true,
+                )
+            )
+        }
+
+        val repository = OnboardingRepositoryImpl(fakeApi, Gson())
+        val profile = repository.getProfile("token-y")
+
+        assertEquals("bob", profile.username)
+        assertEquals("Bob", profile.fullName)
+        assertEquals("2020-03-01", profile.birthDate)
+        assertTrue(profile.profileCompleted)
+        assertTrue(profile.coupleConnected)
+        assertNull(profile.nickName)
+    }
+
+    @Test
+    fun `getProfile throws message when api returns business failure`() = runBlocking {
+        val fakeApi = FakeApiService().apply {
+            profileResponse = Response.success(
+                ProfileResponseDto(
+                    success = false,
+                    message = "Unauthorized",
+                    username = null,
+                    fullName = null,
+                    nickName = null,
+                    birthDate = null,
+                    gender = null,
+                    profileCompleted = false,
+                    coupleConnected = false,
+                )
+            )
+        }
+
+        val repository = OnboardingRepositoryImpl(fakeApi, Gson())
+
+        val exception = runCatching { repository.getProfile("token-z") }.exceptionOrNull()
+        assertTrue(exception is IllegalStateException)
+        assertEquals("Unauthorized", exception?.message)
+    }
+
+    @Test
     fun `getCoupleStatus maps incoming pending request`() = runBlocking {
         val fakeApi = FakeApiService().apply {
             coupleStatusResponse = Response.success(
@@ -77,6 +133,10 @@ class OnboardingRepositoryImplTest {
                     outgoingRecipientUsername = null,
                     outgoingStatus = null,
                     outgoingUpdatedAt = null,
+                    coupleId = null,
+                    startAt = null,
+                    daysTogether = null,
+                    anniversaryTomorrow = null,
                 )
             )
         }
@@ -128,6 +188,7 @@ class OnboardingRepositoryImplTest {
                 paired = false,
                 partnerUsername = null,
                 myCoupleCode = null,
+                myCoupleCodeExpiresAt = null,
                 incomingRequestId = null,
                 incomingRequesterUsername = null,
                 incomingRequesterDisplayName = null,
@@ -136,6 +197,10 @@ class OnboardingRepositoryImplTest {
                 outgoingRecipientUsername = null,
                 outgoingStatus = null,
                 outgoingUpdatedAt = null,
+                coupleId = null,
+                startAt = null,
+                daysTogether = null,
+                anniversaryTomorrow = null,
             )
         )
         var sendRequestResponse: Response<CoupleRequestActionResponseDto> = Response.success(
@@ -163,6 +228,10 @@ class OnboardingRepositoryImplTest {
             authorization: String,
             request: ProfileUpsertRequestDto,
         ): Response<ProfileResponseDto> {
+            return profileResponse
+        }
+
+        override suspend fun getProfile(authorization: String): Response<ProfileResponseDto> {
             return profileResponse
         }
 
@@ -212,6 +281,10 @@ class OnboardingRepositoryImplTest {
 
         override suspend fun getHistory(authorization: String): Response<HistoryListResponseDto> {
             return Response.success(HistoryListResponseDto(false, "unused", emptyList()))
+        }
+
+        override suspend fun getMapLastLocations(authorization: String): Response<MapLastLocationsResponseDto> {
+            return Response.success(MapLastLocationsResponseDto(false, "unused", null, null, null))
         }
 
         override suspend fun clearHistory(authorization: String): Response<Unit> {

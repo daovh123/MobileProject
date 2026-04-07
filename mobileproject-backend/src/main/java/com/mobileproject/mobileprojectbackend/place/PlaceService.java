@@ -138,6 +138,12 @@ public class PlaceService {
         return new PlaceFilterOptionsResponse(districts, provinces);
     }
 
+    public void invalidateCache() {
+        synchronized (cacheLock) {
+            cachedPlaceData = null;
+        }
+    }
+
     private List<PlaceView> filterPlaces(SearchCriteria criteria) {
         return getCachedPlaceData().places().stream()
                 .map(place -> toPlaceView(place, criteria.nearLat(), criteria.nearLng()))
