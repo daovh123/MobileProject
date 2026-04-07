@@ -42,12 +42,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(token: String) {
-        runCatching {
+        val logoutResult = runCatching {
             val response = apiService.logout(authorizationHeader(token))
             response.toLogoutSuccessOrThrow(gson, defaultFailureMessage = "Dang xuat that bai")
         }
 
         authSessionStore?.clear()
+        logoutResult.getOrThrow()
     }
 }
 
