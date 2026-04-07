@@ -25,18 +25,18 @@ public class CoupleService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CoupleService.class);
 
     private final AuthIdentityService authIdentityService;
-    private final AuthUserRepository authUserRepository;
+    private final AuthUserCacheService authUserCacheService;
     private final CoupleRequestRepository coupleRequestRepository;
     private final CoupleCodeCacheService coupleCodeCacheService;
     private final CoupleInfoRepository coupleInfoRepository;
 
     public CoupleService(AuthIdentityService authIdentityService,
-                         AuthUserRepository authUserRepository,
-                         CoupleRequestRepository coupleRequestRepository,
-                         CoupleCodeCacheService coupleCodeCacheService,
-                         CoupleInfoRepository coupleInfoRepository) {
+            AuthUserCacheService authUserCacheService,
+            CoupleRequestRepository coupleRequestRepository,
+            CoupleCodeCacheService coupleCodeCacheService,
+            CoupleInfoRepository coupleInfoRepository) {
         this.authIdentityService = authIdentityService;
-        this.authUserRepository = authUserRepository;
+        this.authUserCacheService = authUserCacheService;
         this.coupleRequestRepository = coupleRequestRepository;
         this.coupleCodeCacheService = coupleCodeCacheService;
         this.coupleInfoRepository = coupleInfoRepository;
@@ -61,8 +61,8 @@ public class CoupleService {
         String normalizedPartnerCode = normalizeCode(request.partnerCode());
         String recipientUserId = coupleCodeCacheService.findUserIdByCode(normalizedPartnerCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner code does not exist"));
-        AuthUser recipient = authUserRepository.findById(recipientUserId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner code does not exist"));
+        AuthUser recipient = authUserCacheService.findById(recipientUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Partner code does not exist"));
 
         if (requester.getId().equals(recipient.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot connect with your own code");
@@ -91,13 +91,12 @@ public class CoupleService {
                 savedRequest.getId(),
                 savedRequest.getStatus().name(),
                 savedRequest.getRequesterUsername(),
-                savedRequest.getRecipientUsername()
-        );
+                savedRequest.getRecipientUsername());
     }
 
     public CoupleRequestActionResponse decideRequest(String authorizationHeader,
-                                                     String requestId,
-                                                     CoupleRequestDecisionRequest request) {
+            String requestId,
+            CoupleRequestDecisionRequest request) {
         AuthUser recipient = authIdentityService.requireCurrentUser(authorizationHeader);
         ensureProfileCompleted(recipient);
 
@@ -111,7 +110,7 @@ public class CoupleService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Couple request is already processed");
         }
 
-        AuthUser requester = authUserRepository.findById(coupleRequest.getRequesterUserId())
+        AuthUser requester = authUserCacheService.findById(coupleRequest.getRequesterUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Requester no longer exists"));
 
         String now = Instant.now().toString();
@@ -122,8 +121,8 @@ public class CoupleService {
             requester.setPartnerUserId(recipient.getId());
             recipient.setPartnerUserId(requester.getId());
 
-            authUserRepository.save(requester);
-            authUserRepository.save(recipient);
+            authUserCacheService.save(requester);
+            authUserCacheService.save(recipient);
             coupleCodeCacheService.invalidateCodeByUserId(requester.getId());
             coupleCodeCacheService.invalidateCodeByUserId(recipient.getId());
 
@@ -143,8 +142,7 @@ public class CoupleService {
                         "Failed to persist couple_info for requester={} recipient={}.",
                         requester.getId(),
                         recipient.getId(),
-                        exception
-                );
+                        exception);
             }
 
             coupleRequest.setStatus(CoupleRequestStatus.ACCEPTED);
@@ -156,8 +154,7 @@ public class CoupleService {
                     savedRequest.getId(),
                     savedRequest.getStatus().name(),
                     savedRequest.getRequesterUsername(),
-                    savedRequest.getRecipientUsername()
-            );
+                    savedRequest.getRecipientUsername());
         }
 
         coupleRequest.setStatus(CoupleRequestStatus.REJECTED);
@@ -169,8 +166,7 @@ public class CoupleService {
                 savedRequest.getId(),
                 savedRequest.getStatus().name(),
                 savedRequest.getRequesterUsername(),
-                savedRequest.getRecipientUsername()
-        );
+                savedRequest.getRecipientUsername());
     }
 
     public CoupleStatusResponse getStatus(String authorizationHeader) {
@@ -186,7 +182,7 @@ public class CoupleService {
 
         AuthUser partner = null;
         if (isPaired(user)) {
-            partner = authUserRepository.findById(user.getPartnerUserId()).orElse(null);
+            partner = authUserCacheService.findById(user.getPartnerUserId()).orElse(null);
         }
 
         String coupleId = null;
@@ -237,8 +233,7 @@ public class CoupleService {
                 coupleId,
                 startAt,
                 daysTogether,
-                anniversaryTomorrow
-        );
+                anniversaryTomorrow);
     }
 
     private DaysTogetherResult computeDaysTogether(String startAt) {
@@ -307,8 +302,7 @@ public class CoupleService {
                     "Failed to backfill couple_info for user1={} user2={}.",
                     user1,
                     user2,
-                    exception
-            );
+                    exception);
             return null;
         }
 
@@ -387,16 +381,14 @@ public class CoupleService {
                 .findFirstByRequesterUserIdAndRecipientUserIdAndStatusOrderByUpdatedAtDesc(
                         userId,
                         partnerId,
-                        CoupleRequestStatus.ACCEPTED
-                )
+                        CoupleRequestStatus.ACCEPTED)
                 .orElse(null);
 
         CoupleRequest b = coupleRequestRepository
                 .findFirstByRequesterUserIdAndRecipientUserIdAndStatusOrderByUpdatedAtDesc(
                         partnerId,
                         userId,
-                        CoupleRequestStatus.ACCEPTED
-                )
+                        CoupleRequestStatus.ACCEPTED)
                 .orElse(null);
 
         CoupleRequest latest = latestByUpdatedAt(a, b);
@@ -452,8 +444,7 @@ public class CoupleService {
         if (!user.isProfileCompleted()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Please complete profile first"
-            );
+                    "Please complete profile first");
         }
     }
 

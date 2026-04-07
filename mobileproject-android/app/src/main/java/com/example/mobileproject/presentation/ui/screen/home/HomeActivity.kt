@@ -1,5 +1,6 @@
 package com.example.mobileproject.presentation.ui.screen.home
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,6 +9,7 @@ import androidx.navigation.NavHostController
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -56,6 +58,15 @@ class HomeActivity : ComponentActivity() {
             launchSingleTop = true
             restoreState = true
         }
+    }
+
+    fun logoutAndOpenLogin() {
+        authSessionStore.clear()
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        startActivity(intent)
+        finish()
     }
 
     companion object {

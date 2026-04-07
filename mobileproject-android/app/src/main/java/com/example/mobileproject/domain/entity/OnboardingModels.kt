@@ -32,8 +32,8 @@ data class CoupleStatus(
     val outgoingRecipientUsername: String?,
     val outgoingStatus: String?,
     val outgoingUpdatedAt: String?,
-    val coupleId: String?,
-    val startAt: String?,
-    val daysTogether: Long?,
-    val anniversaryTomorrow: Boolean?,
+    val coupleId: String? = null,
+    val startAt: String? = null,
+    val daysTogether: Long? = null,
+    val anniversaryTomorrow: Boolean? = null,
 )

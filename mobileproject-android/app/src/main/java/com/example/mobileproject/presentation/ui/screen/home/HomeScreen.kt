@@ -96,12 +96,20 @@ fun HomeScreen(
 
     var currentCoupleId by remember { mutableStateOf<String?>(null) }
 
-    val mapView = remember {
-        MapView(context).apply {
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+
+    fun createMapViewIfNeeded(): MapView {
+        mapView?.let { existing ->
+            return existing
+        }
+
+        return MapView(context).apply {
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(DEFAULT_ZOOM)
+        }.also { created ->
+            mapView = created
         }
     }
 
@@ -122,32 +130,35 @@ fun HomeScreen(
         lat: Double,
         lng: Double,
         onCreated: (Marker) -> Unit,
-    ): Marker {
+    ): Marker? {
+        val activeMapView = mapView ?: return existing
         val point = GeoPoint(lat, lng)
-        val marker = existing ?: Marker(mapView).also {
+        val marker = existing ?: Marker(activeMapView).also {
             it.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             it.title = context.getString(titleRes)
-            mapView.overlays.add(it)
+            activeMapView.overlays.add(it)
             onCreated(it)
         }
         marker.position = point
-        mapView.invalidate()
+        activeMapView.invalidate()
         return marker
     }
 
     fun centerOn(point: GeoPoint) {
+        val activeMapView = mapView ?: return
         hasCenteredOnce = true
-        mapView.controller.setZoom(DEFAULT_ZOOM)
-        mapView.controller.setCenter(point)
+        activeMapView.controller.setZoom(DEFAULT_ZOOM)
+        activeMapView.controller.setCenter(point)
     }
 
     fun centerIfNeeded(lat: Double, lng: Double) {
+        val activeMapView = mapView ?: return
         if (hasCenteredOnce) {
             return
         }
         hasCenteredOnce = true
-        mapView.controller.setZoom(DEFAULT_ZOOM)
-        mapView.controller.setCenter(GeoPoint(lat, lng))
+        activeMapView.controller.setZoom(DEFAULT_ZOOM)
+        activeMapView.controller.setCenter(GeoPoint(lat, lng))
     }
 
     fun missingSharingPermissions(): List<String> {
@@ -234,13 +245,18 @@ fun HomeScreen(
     }
 
     DisposableEffect(mapView, gestureDetector) {
-        mapView.setOnTouchListener { _, event ->
+        val activeMapView = mapView
+        if (activeMapView == null) {
+            return@DisposableEffect onDispose { }
+        }
+
+        activeMapView.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             false
         }
 
         onDispose {
-            mapView.setOnTouchListener(null)
+            activeMapView.setOnTouchListener(null)
         }
     }
 
@@ -311,11 +327,16 @@ fun HomeScreen(
     }
 
     DisposableEffect(lifecycleOwner, mapView) {
+        val activeMapView = mapView
+        if (activeMapView == null) {
+            return@DisposableEffect onDispose { }
+        }
+
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_DESTROY -> runCatching { mapView.onDetach() }
+                Lifecycle.Event.ON_RESUME -> activeMapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> activeMapView.onPause()
+                Lifecycle.Event.ON_DESTROY -> runCatching { activeMapView.onDetach() }
                 else -> Unit
             }
         }
@@ -323,6 +344,23 @@ fun HomeScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(coupleState.paired) {
+        if (coupleState.paired) {
+            createMapViewIfNeeded()
+        } else {
+            myMarker = null
+            partnerMarker = null
+            hasCenteredOnce = false
+            mapView?.let { activeMapView ->
+                runCatching {
+                    activeMapView.onPause()
+                    activeMapView.onDetach()
+                }
+            }
+            mapView = null
         }
     }
 
@@ -336,6 +374,8 @@ fun HomeScreen(
         if (!coupleState.paired || accessToken.isBlank()) {
             return@LaunchedEffect
         }
+
+        createMapViewIfNeeded()
 
         val now = System.currentTimeMillis()
         if (mapBootstrapInFlight) {
@@ -441,7 +481,7 @@ private fun HomeContent(
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
     onCenterPartner: () -> Unit,
-    mapView: MapView,
+    mapView: MapView?,
 ) {
     Column(
         modifier = Modifier
@@ -510,10 +550,25 @@ private fun HomeContent(
                         .fillMaxWidth()
                         .height(220.dp),
                 ) {
-                    AndroidView(
-                        factory = { mapView },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    val activeMapView = mapView
+                    if (activeMapView != null) {
+                        AndroidView(
+                            factory = { activeMapView },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(colorResource(R.color.md3_surface_variant)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_pair_loading_button),
+                                color = colorResource(R.color.md3_on_surface_variant),
+                            )
+                        }
+                    }
 
                     Column(
                         modifier = Modifier

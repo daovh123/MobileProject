@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,11 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -93,15 +88,18 @@ private fun PersonalInfoScreen(
     profileViewModel: ProfileViewModel,
     onContinue: (String) -> Unit,
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var nickName by remember { mutableStateOf("") }
-    var birthDate by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf<String?>(null) }
-    var validationError by remember { mutableStateOf<String?>(null) }
+    var submitRequested by remember { mutableStateOf(false) }
     val uiState by profileViewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.savedProfile) {
-        if (uiState.savedProfile != null) {
+    LaunchedEffect(accessToken) {
+        if (accessToken.isNotBlank()) {
+            profileViewModel.loadProfile(accessToken)
+        }
+    }
+
+    LaunchedEffect(uiState.savedProfile, uiState.isSaving, submitRequested) {
+        if (submitRequested && !uiState.isSaving && uiState.savedProfile != null && uiState.errorMessage.isNullOrBlank()) {
+            submitRequested = false
             onContinue(accessToken)
             profileViewModel.consumeSaveSuccess()
         }
@@ -110,7 +108,6 @@ private fun PersonalInfoScreen(
     val primaryText = colorResource(R.color.auth_text_primary)
     val secondaryText = colorResource(R.color.auth_text_secondary)
     val pink = colorResource(R.color.auth_pink)
-    val requiredFieldsMessage = stringResource(R.string.auth_required_fields)
 
     Box(
         modifier = Modifier
@@ -165,88 +162,56 @@ private fun PersonalInfoScreen(
                     modifier = Modifier.padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = fullName,
-                        onValueChange = {
-                            fullName = it
-                            validationError = null
+                    ProfileFormContent(
+                        fullName = uiState.fullName,
+                        nickName = uiState.nickName,
+                        birthDate = uiState.birthDate,
+                        gender = uiState.gender,
+                        isSaving = uiState.isSaving,
+                        onFullNameChange = {
+                            profileViewModel.updateDraft(
+                                fullName = it,
+                                nickName = uiState.nickName,
+                                birthDate = uiState.birthDate,
+                                gender = uiState.gender,
+                            )
                             profileViewModel.clearError()
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.register_name_hint)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = nickName,
-                        onValueChange = {
-                            nickName = it
-                            validationError = null
+                        onNickNameChange = {
+                            profileViewModel.updateDraft(
+                                fullName = uiState.fullName,
+                                nickName = it,
+                                birthDate = uiState.birthDate,
+                                gender = uiState.gender,
+                            )
                             profileViewModel.clearError()
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.register_nickname_hint)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = birthDate,
-                        onValueChange = {
-                            birthDate = it
-                            validationError = null
+                        onBirthDateChange = {
+                            profileViewModel.updateDraft(
+                                fullName = uiState.fullName,
+                                nickName = uiState.nickName,
+                                birthDate = it,
+                                gender = uiState.gender,
+                            )
                             profileViewModel.clearError()
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.register_birthdate_hint)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp)
+                        onGenderChange = {
+                            profileViewModel.updateDraft(
+                                fullName = uiState.fullName,
+                                nickName = uiState.nickName,
+                                birthDate = uiState.birthDate,
+                                gender = it,
+                            )
+                            profileViewModel.clearError()
+                        },
+                        onSave = {
+                            submitRequested = true
+                            profileViewModel.saveProfile(token = accessToken)
+                        },
+                        saveEnabled = !uiState.isSaving,
                     )
 
-                    Text(
-                        text = stringResource(R.string.register_gender_label),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = primaryText,
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        GenderOptionButton(
-                            label = stringResource(R.string.register_gender_male),
-                            isSelected = gender == "MALE",
-                            onClick = {
-                                gender = "MALE"
-                                validationError = null
-                                profileViewModel.clearError()
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        GenderOptionButton(
-                            label = stringResource(R.string.register_gender_female),
-                            isSelected = gender == "FEMALE",
-                            onClick = {
-                                gender = "FEMALE"
-                                validationError = null
-                                profileViewModel.clearError()
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        GenderOptionButton(
-                            label = stringResource(R.string.register_gender_other),
-                            isSelected = gender == "OTHER",
-                            onClick = {
-                                gender = "OTHER"
-                                validationError = null
-                                profileViewModel.clearError()
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-
-                    val errorMessage = validationError ?: uiState.errorMessage
+                    val errorMessage = uiState.errorMessage
                     if (!errorMessage.isNullOrBlank()) {
                         Text(
                             text = errorMessage,
@@ -256,62 +221,8 @@ private fun PersonalInfoScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Button(
-                        onClick = {
-                            if (fullName.isBlank() || birthDate.isBlank() || gender.isNullOrBlank()) {
-                                validationError = requiredFieldsMessage
-                            } else {
-                                validationError = null
-                                profileViewModel.saveProfile(
-                                    token = accessToken,
-                                    fullName = fullName,
-                                    nickName = nickName,
-                                    birthDate = birthDate,
-                                    gender = gender ?: "",
-                                )
-                            }
-                        },
-                        enabled = !uiState.isLoading,
-                        colors = ButtonDefaults.buttonColors(containerColor = pink),
-                        shape = RoundedCornerShape(18.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    ) {
-                        Text(
-                            text = if (uiState.isLoading) {
-                                stringResource(R.string.profile_saving)
-                            } else {
-                                stringResource(R.string.profile_save_continue)
-                            },
-                            color = Color.White,
-                        )
-                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun GenderOptionButton(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val pink = colorResource(R.color.auth_pink)
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (isSelected) pink.copy(alpha = 0.14f) else Color.Transparent,
-            contentColor = if (isSelected) pink else Color.Gray,
-        ),
-    ) {
-        Text(text = label)
     }
 }

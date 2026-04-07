@@ -15,13 +15,16 @@ import java.util.Optional;
 public class AuthService {
 
     private final AuthUserRepository authUserRepository;
+    private final AuthUserCacheService authUserCacheService;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
 
     public AuthService(AuthUserRepository authUserRepository,
-                       PasswordEncoder passwordEncoder,
-                       AuthTokenService authTokenService) {
+            AuthUserCacheService authUserCacheService,
+            PasswordEncoder passwordEncoder,
+            AuthTokenService authTokenService) {
         this.authUserRepository = authUserRepository;
+        this.authUserCacheService = authUserCacheService;
         this.passwordEncoder = passwordEncoder;
         this.authTokenService = authTokenService;
     }
@@ -41,30 +44,29 @@ public class AuthService {
                 usernameKey,
                 emailKey,
                 passwordEncoder.encode(request.password()),
-                Instant.now().toString()
-        );
+                Instant.now().toString());
 
-        authUserRepository.save(user);
+        AuthUser savedUser = authUserCacheService.save(user);
 
         return AuthResponse.success(
                 "Register successful",
                 issueDevToken(usernameKey),
-                user.getUsername(),
-                user.getEmail(),
-                user.isProfileCompleted(),
-                isCoupleConnected(user)
-        );
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                savedUser.isProfileCompleted(),
+                isCoupleConnected(savedUser));
     }
 
     public AuthResponse login(LoginRequest request) {
         String loginKey = normalize(request.usernameOrEmail());
 
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(loginKey);
+        Optional<AuthUser> userOptional = authUserCacheService.findByUsername(loginKey);
         if (userOptional.isEmpty()) {
-            userOptional = authUserRepository.findByEmail(loginKey);
+            userOptional = authUserCacheService.findByEmail(loginKey);
         }
 
-        if (userOptional.isEmpty() || !passwordEncoder.matches(request.password(), userOptional.get().getPasswordHash())) {
+        if (userOptional.isEmpty()
+                || !passwordEncoder.matches(request.password(), userOptional.get().getPasswordHash())) {
             return AuthResponse.failure("Invalid username/email or password");
         }
 
@@ -76,8 +78,7 @@ public class AuthService {
                 user.getUsername(),
                 user.getEmail(),
                 user.isProfileCompleted(),
-                isCoupleConnected(user)
-        );
+                isCoupleConnected(user));
     }
 
     public LogoutResponse logout(String authorizationHeader) {
