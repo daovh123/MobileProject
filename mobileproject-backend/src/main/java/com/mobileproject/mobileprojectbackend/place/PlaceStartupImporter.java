@@ -16,6 +16,7 @@ public class PlaceStartupImporter implements ApplicationRunner {
 
     private final PlaceRepository placeRepository;
     private final PlaceImportService placeImportService;
+    private final PlaceService placeService;
 
     @Value("${app.place.import.auto-startup:false}")
     private boolean autoStartup;
@@ -26,31 +27,49 @@ public class PlaceStartupImporter implements ApplicationRunner {
     @Value("${app.place.import.file-path:D:/data.json}")
     private String filePath;
 
-    public PlaceStartupImporter(PlaceRepository placeRepository, PlaceImportService placeImportService) {
+    public PlaceStartupImporter(
+            PlaceRepository placeRepository,
+            PlaceImportService placeImportService,
+            PlaceService placeService) {
         this.placeRepository = placeRepository;
         this.placeImportService = placeImportService;
+        this.placeService = placeService;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        if (!autoStartup) {
-            return;
-        }
-
-        long existingCount = placeRepository.count();
-        if (skipWhenDataExists && existingCount > 0) {
-            logger.info("Skip startup import because places collection already has {} documents", existingCount);
-            return;
-        }
-
+        boolean cacheWarmHandled = false;
         try {
-            PlaceImportResponse response = placeImportService.importFromFile(filePath, false);
-            logger.info("Startup import completed: imported={}, totalInDatabase={}",
-                    response.importedCount(), response.totalInDatabase());
+            if (autoStartup) {
+                long existingCount = placeRepository.count();
+                if (skipWhenDataExists && existingCount > 0) {
+                    logger.info("Skip startup import because places collection already has {} documents",
+                            existingCount);
+                    return;
+                }
+
+                PlaceImportResponse response = placeImportService.importFromFile(filePath, false);
+                logger.info("Startup import completed: imported={}, totalInDatabase={}",
+                        response.importedCount(), response.totalInDatabase());
+                cacheWarmHandled = true;
+            }
         } catch (ResponseStatusException responseStatusException) {
             logger.warn("Startup import skipped: {}", responseStatusException.getReason());
         } catch (Exception exception) {
             logger.error("Unexpected startup import failure", exception);
+        } finally {
+            if (!cacheWarmHandled) {
+                warmUpPlaceCache();
+            }
+        }
+    }
+
+    private void warmUpPlaceCache() {
+        try {
+            int cachedCount = placeService.rebuildCache();
+            logger.info("Startup place cache warm-up completed with {} records", cachedCount);
+        } catch (RuntimeException exception) {
+            logger.warn("Startup place cache warm-up failed. Cache will be built lazily on demand", exception);
         }
     }
 }

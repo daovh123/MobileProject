@@ -81,8 +81,9 @@ public class PlaceImportService {
 
             saveInBatches(places);
 
-            // Keep in-memory and Redis caches consistent after import.
-            placeService.invalidateCache();
+            // Rebuild in-memory cache immediately so first query after import is already
+            // warm.
+            placeService.rebuildCache();
             placeCacheService.evictAll();
 
             long totalInDb = placeRepository.count();

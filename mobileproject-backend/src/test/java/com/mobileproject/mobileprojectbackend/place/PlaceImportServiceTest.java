@@ -80,7 +80,7 @@ class PlaceImportServiceTest {
 
     assertEquals(1, response.importedCount());
     assertEquals(1L, response.totalInDatabase());
-    verify(placeService).invalidateCache();
+    verify(placeService).rebuildCache();
     verify(placeCacheService).evictAll();
   }
 
