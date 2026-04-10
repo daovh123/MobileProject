@@ -219,6 +219,15 @@
     <string name="chat_send">Gửi</string>
     <string name="chat_fab_label">Chat</string>
 
+    <string name="chat_notification_channel_name">Tin nhắn</string>
+    <string name="chat_notification_channel_description">Thông báo khi có tin nhắn chat mới.</string>
+    <string name="chat_notification_reply_action">Trả lời</string>
+    <string name="chat_notification_reply_label">Nhập tin nhắn…</string>
+    <string name="chat_notification_you">Bạn</string>
+    <string name="chat_notification_send_failed">Không thể gửi</string>
+    <string name="chat_in_app_open_action">Mở</string>
+    <string name="chat_in_app_message_format">%1$s: %2$s</string>
+
     <string name="cd_open_profile">Mở hồ sơ</string>
     <string name="cd_open_menu">Mở menu</string>
     <string name="cd_avatar">Ảnh đại diện</string>

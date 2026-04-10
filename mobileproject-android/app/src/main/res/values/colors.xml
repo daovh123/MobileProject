@@ -1,53 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- TDesign-like brand palette (mapped onto template names used by Theme.MobileProject) -->
+    <!-- Editorial Intimacy Design System: The Shared Sanctuary -->
+
+    <!-- Primary: Warm terracotta/rose - The heart of connection -->
+    <color name="primary">#FF974042</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    <color name="primary_container">#FFF88C8C</color>
+    <color name="on_primary_container">#FF3E1A1C</color>
+    <color name="primary_dim">#FFC97A73</color>
+    <color name="primary_fixed">#FFF88C8C</color>
+    <color name="primary_fixed_dim">#FFD98572</color>
+
+    <!-- Secondary: Soft lavender - Emotional depth -->
+    <color name="secondary">#FF8A7B8E</color>
+    <color name="on_secondary">#FFFFFFFF</color>
+    <color name="secondary_container">#FFC9B7D1</color>
+    <color name="on_secondary_container">#FF3E2E45</color>
+    <color name="secondary_dim">#FFA8939C</color>
+    <color name="secondary_fixed">#FFC9B7D1</color>
+    <color name="secondary_fixed_dim">#FFAEA0B3</color>
+
+    <!-- Surface Colors: Soft, breathing room -->
+    <color name="surface">#FFFDFBFD</color>
+    <color name="on_surface">#FF2D2729</color>
+    <color name="surface_dim">#FFE8E4E9</color>
+    <color name="surface_bright">#FFFAF8FC</color>
+    <color name="surface_container_lowest">#FFFFFFFF</color>
+    <color name="surface_container_low">#FFF8F5FA</color>
+    <color name="surface_container">#FFF2EFEE</color>
+    <color name="surface_container_high">#FFEDE8ED</color>
+    <color name="surface_container_highest">#FFE7E2E8</color>
+    <color name="on_surface_variant">#FF625B67</color>
+
+    <!-- Neutral Colors: Soft, romantic -->
+    <color name="outline">#FF8D8189</color>
+    <color name="outline_variant">#FFD0C7D0</color>
+    <color name="inverse_surface">#FF322E33</color>
+    <color name="inverse_on_surface">#FFF5F0F7</color>
+
+    <!-- Error: Soft warning -->
+    <color name="error">#FFB3261E</color>
+    <color name="on_error">#FFFFFFFF</color>
+    <color name="error_container">#FFF9DEDC</color>
+    <color name="on_error_container">#FF410E0B</color>
+
+    <!-- Background: The canvas -->
+    <color name="background">#FFFDFBFD</color>
+    <color name="on_background">#FF2D2729</color>
+
+    <!-- Gradient Colors: Lit-from-within glow -->
+    <color name="gradient_start">#FF974042</color>
+    <color name="gradient_end">#FFF88C8C</color>
+
+    <!-- Backdrop Colors: For glassmorphism (70% opacity at 24px blur) -->
+    <color name="backdrop_color">#FFFDFBFD</color>
+
+    <!-- Legacy compatibility - mapped to new system -->
+    <color name="md3_primary">#FF974042</color>
+    <color name="md3_on_primary">#FFFFFFFF</color>
+    <color name="md3_primary_container">#FFF88C8C</color>
+    <color name="md3_on_primary_container">#FF3E1A1C</color>
+
+    <color name="md3_secondary">#FF8A7B8E</color>
+    <color name="md3_on_secondary">#FFFFFFFF</color>
+    <color name="md3_secondary_container">#FFC9B7D1</color>
+    <color name="md3_on_secondary_container">#FF3E2E45</color>
+
+    <color name="md3_tertiary">#FFB88B7B</color>
+    <color name="md3_on_tertiary">#FFFFFFFF</color>
+    <color name="md3_tertiary_container">#FFDEC4B9</color>
+    <color name="md3_on_tertiary_container">#FF3E2B24</color>
+
+    <color name="md3_surface">#FFFDFBFD</color>
+    <color name="md3_on_surface">#FF2D2729</color>
+    <color name="md3_surface_variant">#FFF2EFEE</color>
+    <color name="md3_on_surface_variant">#FF625B67</color>
+    <color name="md3_outline">#FF8D8189</color>
+
+    <color name="md3_error">#FFB3261E</color>
+    <color name="md3_on_error">#FFFFFFFF</color>
+
+    <!-- Legacy component colors (remapped) -->
+    <color name="bottom_nav_indicator_pink">#FFF88C8C</color>
+    <color name="auth_pink">#FF974042</color>
+    <color name="auth_text_primary">#FF2D2729</color>
+    <color name="auth_text_secondary">#FF8D8189</color>
+    <color name="auth_input_bg">#FFF8F5FA</color>
+    <color name="auth_bg_top">#FFFDFBFD</color>
+    <color name="auth_bg_bottom">#FFF2EFEE</color>
+    <color name="couple_bg_top">#FFFDFBFD</color>
+    <color name="couple_bg_bottom">#FFF2EFEE</color>
+    <color name="couple_card">#FFFFFFFF</color>
+    <color name="couple_code_bg">#FFF8F5FA</color>
+    <color name="couple_soft_panel">#FFF2EFEE</color>
+
+    <!-- Glassmorphism & Overlay -->
+    <color name="nav_glass_surface">#B3FDFBFD</color>
+    <color name="nav_glass_stroke">#26D0C7D0</color>
+
+    <!-- Legacy support -->
     <color name="purple_200">#FFD9E2FF</color>
     <color name="purple_500">#FF0052D9</color>
     <color name="purple_700">#FF003A9F</color>
     <color name="teal_200">#FF00A870</color>
     <color name="teal_700">#FF007A50</color>
-    <color name="black">#FF000000</color>
+    <color name="black">#FF2D2729</color>
     <color name="white">#FFFFFFFF</color>
-
-    <!-- Material3 palette tuned for magenta + soft pink theme -->
-    <color name="md3_primary">#FFB0005C</color>
-    <color name="md3_on_primary">#FFFFFFFF</color>
-    <color name="md3_primary_container">#FFFBCDE2</color>
-    <color name="md3_on_primary_container">#FF3B0020</color>
-
-    <color name="md3_secondary">#FF8A397A</color>
-    <color name="md3_on_secondary">#FFFFFFFF</color>
-    <color name="md3_secondary_container">#FFFAD8EE</color>
-    <color name="md3_on_secondary_container">#FF3A102F</color>
-
-    <color name="md3_tertiary">#FFCA729B</color>
-    <color name="md3_on_tertiary">#FFFFFFFF</color>
-    <color name="md3_tertiary_container">#FFFFD8E8</color>
-    <color name="md3_on_tertiary_container">#FF3C0A22</color>
-
-    <color name="md3_surface">#FFFDFBFD</color>
-    <color name="md3_on_surface">#FF1F1B24</color>
-    <color name="md3_surface_variant">#FFF4F0F5</color>
-    <color name="md3_on_surface_variant">#FF625B67</color>
-    <color name="md3_outline">#FF968E99</color>
-
-    <color name="md3_error">#FFB31B25</color>
-    <color name="md3_on_error">#FFFFFFFF</color>
-
-    <!-- Custom component colors -->
-    <color name="bottom_nav_indicator_pink">#FFF7D7E8</color>
-    <color name="auth_pink">#FFE5006D</color>
-    <color name="auth_text_primary">#FF1D1D1F</color>
-    <color name="auth_text_secondary">#FF6E6E73</color>
-    <color name="auth_input_bg">#FFF5F3F5</color>
-    <color name="auth_bg_top">#FFFDF2F8</color>
-    <color name="auth_bg_bottom">#FFF7E6F3</color>
-    <color name="couple_bg_top">#FFF4F8FF</color>
-    <color name="couple_bg_bottom">#FFF6EFF8</color>
-    <color name="couple_card">#FFFFFFFF</color>
-    <color name="couple_code_bg">#FFEAF5FF</color>
-    <color name="couple_soft_panel">#FFF5F1F3</color>
-
-    <color name="nav_glass_surface">#CCFFFFFF</color>
-    <color name="nav_glass_stroke">#80FFFFFF</color>
 </resources>

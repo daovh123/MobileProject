@@ -1,6 +1,7 @@
 package com.mobileproject.mobileprojectbackend.chat;
 
 import com.mobileproject.mobileprojectbackend.chat.ai.GroqChatClient;
+import com.mobileproject.mobileprojectbackend.notifications.FcmPushService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,17 +35,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ChatMessageRepository chatMessageRepository;
     private final ObjectMapper objectMapper;
     private final GroqChatClient groqChatClient;
+    private final FcmPushService fcmPushService;
 
     private final Map<String, CopyOnWriteArraySet<WebSocketSession>> sessionsByCoupleId = new ConcurrentHashMap<>();
 
     public ChatWebSocketHandler(
             ChatMessageRepository chatMessageRepository,
             ObjectMapper objectMapper,
-            GroqChatClient groqChatClient
+            GroqChatClient groqChatClient,
+            FcmPushService fcmPushService
     ) {
         this.chatMessageRepository = chatMessageRepository;
         this.objectMapper = objectMapper;
         this.groqChatClient = groqChatClient;
+        this.fcmPushService = fcmPushService;
     }
 
     @Override
@@ -98,6 +102,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             ChatMessage saved = chatMessageRepository.save(entity);
             broadcastMessage(coupleId, saved);
+
+                // Always emit FCM push and let the client decide foreground/background presentation.
+                fcmPushService.sendChatMessagePush(
+                    receiverUserId,
+                    coupleId,
+                    usernameOf(session),
+                    saved.getText(),
+                    saved.getId(),
+                    saved.getCreatedAt()
+                );
 
             if (containsAiMention(saved.getText())) {
                 triggerAiReplyAsync(session, coupleId, saved);

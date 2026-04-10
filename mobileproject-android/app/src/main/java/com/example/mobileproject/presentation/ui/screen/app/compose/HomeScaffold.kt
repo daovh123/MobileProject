@@ -20,6 +20,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -52,6 +55,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.presentation.notification.ChatInAppNotificationBus
+import com.example.mobileproject.presentation.notification.ChatNotificationGate
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
@@ -107,6 +112,39 @@ fun HomeScaffold(
     val isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES
     val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val openChatActionLabel = stringResource(R.string.chat_in_app_open_action)
+    val inAppMessageFormat = stringResource(R.string.chat_in_app_message_format)
+
+    LaunchedEffect(navController, openChatActionLabel, inAppMessageFormat) {
+        ChatInAppNotificationBus.events.collect { event ->
+            val preview = event.messageText.trim().replace(Regex("\\s+"), " ")
+            val message = inAppMessageFormat.format(
+                event.senderUsername.ifBlank { event.conversationTitle },
+                preview,
+            )
+
+            val snackbarResult = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = openChatActionLabel,
+                withDismissAction = true,
+            )
+
+            if (snackbarResult == SnackbarResult.ActionPerformed) {
+                navController.navigate(HomeRoutes.CHAT) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
+    DisposableEffect(isChatRoute) {
+        ChatNotificationGate.setChatRouteActive(isChatRoute)
+        onDispose {
+            ChatNotificationGate.setChatRouteActive(false)
+        }
+    }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -128,6 +166,9 @@ fun HomeScaffold(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -319,20 +360,22 @@ private fun DraggableChatButton(
         val buttonSize = 56.dp
         val buttonSizePx = with(density) { buttonSize.toPx() }
         val marginPx = with(density) { 18.dp.toPx() }
-        val bottomSafePx = with(density) { 96.dp.toPx() }
 
         val maxWidthPx = with(density) { maxWidth.toPx() }
         val maxHeightPx = with(density) { maxHeight.toPx() }
-        val maxX = (maxWidthPx - buttonSizePx - marginPx).coerceAtLeast(0f)
-        val maxY = (maxHeightPx - buttonSizePx - bottomSafePx).coerceAtLeast(0f)
+        val maxX = (maxWidthPx - buttonSizePx).coerceAtLeast(0f)
+        val maxY = (maxHeightPx - buttonSizePx).coerceAtLeast(0f)
+
+        val initialX = (maxX - marginPx).coerceAtLeast(0f)
+        val initialY = (maxY - marginPx).coerceAtLeast(0f)
 
         var offsetX by rememberSaveable { mutableStateOf(Float.NaN) }
         var offsetY by rememberSaveable { mutableStateOf(Float.NaN) }
 
-        LaunchedEffect(maxX, maxY) {
+        LaunchedEffect(maxX, maxY, initialX, initialY) {
             if (offsetX.isNaN() || offsetY.isNaN()) {
-                offsetX = maxX
-                offsetY = maxY
+                offsetX = initialX
+                offsetY = initialY
             } else {
                 offsetX = offsetX.coerceIn(0f, maxX)
                 offsetY = offsetY.coerceIn(0f, maxY)

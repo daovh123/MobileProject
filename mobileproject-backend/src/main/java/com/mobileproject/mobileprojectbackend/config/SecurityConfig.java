@@ -23,6 +23,7 @@ public class SecurityConfig {
                                 "/api/places/**",
                                 "/api/favorites/**",
                                 "/api/history/**",
+                                "/api/notifications/**",
                                 "/ws/**",
                                 "/actuator/**",
                                 "/error")

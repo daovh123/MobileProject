@@ -76,6 +76,7 @@ class LoginActivity : ComponentActivity() {
         enableImmersiveMode()
         val prefilledEmail = intent.getStringExtra(EXTRA_PREFILLED_EMAIL).orEmpty()
         val showRegistrationSuccess = intent.getBooleanExtra(EXTRA_REGISTERED_SUCCESS, false)
+        val openChat = intent.getBooleanExtra(HomeActivity.EXTRA_OPEN_CHAT, false)
 
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
@@ -85,6 +86,7 @@ class LoginActivity : ComponentActivity() {
             }.apply {
                 putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
                 putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
+                putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
             }
             startActivity(intent)
             finish()
@@ -102,6 +104,7 @@ class LoginActivity : ComponentActivity() {
                         }.apply {
                             putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, session.token)
                             putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, session.token)
+                            putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
                         }
                         startActivity(intent)
                         finish()

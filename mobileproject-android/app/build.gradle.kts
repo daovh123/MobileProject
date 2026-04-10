@@ -3,13 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
+
 }
 
 android {
     namespace = "com.example.mobileproject"
 
     val apiBaseUrl = ((project.findProperty("API_BASE_URL") as? String)
-        ?: "http://10.0.2.2:8080/")
+        ?: "http://192.168.1.159:8080/")
         .trim()
         .removeSurrounding("\"")
 
@@ -75,6 +77,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("io.coil-kt:coil:2.7.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
@@ -86,4 +89,8 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 }

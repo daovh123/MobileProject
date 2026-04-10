@@ -8,6 +8,7 @@ import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
+import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -106,5 +107,11 @@ interface ApiService {
     @DELETE("api/history")
     suspend fun clearHistory(
         @Header("Authorization") authorization: String,
+    ): Response<Unit>
+
+    @POST("api/notifications/fcm-token")
+    suspend fun registerFcmToken(
+        @Header("Authorization") authorization: String,
+        @Body request: FcmTokenRequestDto,
     ): Response<Unit>
 }
