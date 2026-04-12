@@ -26,6 +26,7 @@ public class SecurityConfig {
                                 "/api/notifications/**",
                                 "/api/v1/transactions/**",
                                 "/api/v1/goals/**",
+                                "/api/v1/analytics/**",
                                 "/ws/**",
                                 "/actuator/**",
                                 "/error")

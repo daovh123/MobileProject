@@ -5,7 +5,6 @@ import com.mobileproject.mobileprojectbackend.favorite.dto.FavoriteResponse;
 import com.mobileproject.mobileprojectbackend.place.Place;
 import com.mobileproject.mobileprojectbackend.place.PlaceRepository;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceDto;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,11 +18,15 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
-@RequiredArgsConstructor
 public class FavoriteService {
 
     private final UserFavoriteRepository favoriteRepository;
     private final PlaceRepository placeRepository;
+
+    public FavoriteService(UserFavoriteRepository favoriteRepository, PlaceRepository placeRepository) {
+        this.favoriteRepository = favoriteRepository;
+        this.placeRepository = placeRepository;
+    }
 
     public FavoriteResponse toggleFavorite(String userId, String placeId) {
         if (!placeRepository.existsById(placeId)) {
