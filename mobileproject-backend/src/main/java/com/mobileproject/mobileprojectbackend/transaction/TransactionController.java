@@ -1,5 +1,6 @@
 package com.mobileproject.mobileprojectbackend.transaction;
 
+import com.mobileproject.mobileprojectbackend.transaction.dto.IncomeRequest;
 import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionRequest;
 import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionResponse;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,23 @@ public class TransactionController {
                 request.amount(),
                 request.type(),
                 request.category(),
+                request.note()
+        );
+
+        if (response.success()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/income")
+    public ResponseEntity<TransactionResponse> processIncome(@RequestBody IncomeRequest request) {
+        TransactionResponse response = transactionService.processIncome(
+                request.coupleId(),
+                request.amount(),
+                request.targetType(),
+                request.goalId(),
                 request.note()
         );
 
