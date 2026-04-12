@@ -24,4 +24,11 @@ public class CoupleInfo {
     private String idUser2;
 
     private String startAt;
+
+    @Field("total_balance")
+    private Long totalBalance;
+
+    public CoupleInfo() {
+        this.totalBalance = 0L;
+    }
 }

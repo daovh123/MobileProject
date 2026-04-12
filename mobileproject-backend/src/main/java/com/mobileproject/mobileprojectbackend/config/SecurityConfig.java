@@ -23,6 +23,11 @@ public class SecurityConfig {
                                 "/api/places/**",
                                 "/api/favorites/**",
                                 "/api/history/**",
+<<<<<<< Updated upstream
+=======
+                                "/api/notifications/**",
+                                "/api/v1/transactions/**",
+>>>>>>> Stashed changes
                                 "/ws/**",
                                 "/actuator/**",
                                 "/error")

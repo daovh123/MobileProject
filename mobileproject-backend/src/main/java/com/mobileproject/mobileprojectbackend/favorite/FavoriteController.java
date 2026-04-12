@@ -4,7 +4,6 @@ import com.mobileproject.mobileprojectbackend.auth.AuthIdentityService;
 import com.mobileproject.mobileprojectbackend.auth.AuthUser;
 import com.mobileproject.mobileprojectbackend.favorite.dto.FavoriteListResponse;
 import com.mobileproject.mobileprojectbackend.favorite.dto.FavoriteResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,11 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/favorites")
-@RequiredArgsConstructor
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
     private final AuthIdentityService authIdentityService;
+
+    public FavoriteController(FavoriteService favoriteService, AuthIdentityService authIdentityService) {
+        this.favoriteService = favoriteService;
+        this.authIdentityService = authIdentityService;
+    }
 
     @PostMapping("/toggle")
     public ResponseEntity<FavoriteResponse> toggleFavorite(
