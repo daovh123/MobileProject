@@ -50,11 +50,13 @@ com/example/mobileproject/
 ### 1) Presentation (`presentation/*`)
 
 Vai trò:
+
 - Chứa toàn bộ phần hiển thị UI và xử lý tương tác người dùng.
 - Nhận input từ UI -> chuyển thành event -> gọi use case ở Domain.
 - Tuyệt đối **không** gọi trực tiếp Retrofit/Room/API service.
 
 Chi tiết từng folder:
+
 - `presentation/ui/screen/*`
   - Màn hình hoàn chỉnh (ví dụ: Home, Detail, Profile).
   - Nhiệm vụ chính: render theo `UiState`, phát event về `ViewModel`.
@@ -74,10 +76,12 @@ Chi tiết từng folder:
 ### 2) Domain (`domain/*`)
 
 Vai trò:
+
 - Là lõi nghiệp vụ của app, viết thuần Kotlin.
 - Không phụ thuộc Android framework, Retrofit, Room hay thư viện UI.
 
 Chi tiết từng folder:
+
 - `domain/entity/*`
   - Mô hình dữ liệu nghiệp vụ cốt lõi dùng xuyên suốt app.
   - Đại diện cho “ngôn ngữ nghiệp vụ”, không đại diện cho DTO API.
@@ -89,16 +93,19 @@ Chi tiết từng folder:
   - Điều phối rule nghiệp vụ, gọi repository interface, trả kết quả cho Presentation.
 
 Nguyên tắc quan trọng:
+
 - Domain không import Data/Presentation.
 - Use case chỉ phụ thuộc `domain/repository/*` (interface).
 
 ### 3) Data (`data/*`)
 
 Vai trò:
+
 - Triển khai chi tiết cách lấy/lưu dữ liệu từ nguồn local và remote.
 - Chuyển đổi dữ liệu datasource về domain entity để trả cho Domain/Presentation.
 
 Chi tiết từng folder:
+
 - `data/datasource/local/*`
   - Truy cập dữ liệu local: Room DAO, DataStore, file cache...
   - Chỉ làm việc với local model/entity của local layer.
@@ -117,14 +124,17 @@ Chi tiết từng folder:
   - Kết hợp local/remote, xử lý cache strategy, error mapping.
 
 Nguyên tắc quan trọng:
+
 - Data phụ thuộc Domain để implement interface và trả về domain entity.
 
 ### 4) Core (`core/*`)
 
 Vai trò:
+
 - Chứa thành phần dùng chung toàn ứng dụng, không gắn với một feature cụ thể.
 
 Chi tiết từng folder:
+
 - `core/common/*`: hằng số chung, base type, utility dùng toàn app.
 - `core/dispatcher/*`: abstraction cho coroutine dispatcher để dễ test.
 - `core/extension/*`: extension function dùng lại nhiều nơi.
@@ -134,20 +144,24 @@ Chi tiết từng folder:
 ### 5) DI (`di/*`)
 
 Vai trò:
+
 - Khai báo dependency injection modules (Hilt/Koin).
 - Nơi bind interface -> implementation, provide API client, DB, dispatcher, repository, use case.
 
 Hướng dẫn cài đặt + wiring Hilt DI: xem `HILT_INJECTION_GUIDE.md`.
 
 Mục tiêu:
+
 - Tập trung cấu hình wiring ở một chỗ, tránh khởi tạo thủ công rải rác.
 
 ### 6) Utils (`utils/*`)
 
 Vai trò:
+
 - Các helper nhỏ, không thuộc nghiệp vụ chính.
 
 Lưu ý:
+
 - Không đặt business logic trong `utils/*`.
 - Nếu helper chỉ dùng cho một layer cụ thể, cân nhắc đặt vào layer đó thay vì đưa vào utils.
 

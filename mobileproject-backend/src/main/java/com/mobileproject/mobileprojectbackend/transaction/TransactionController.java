@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -35,6 +36,12 @@ public class TransactionController {
                 ", category=" + t.getCategory() + ", createdAt=" + t.getCreatedAt());
         }
         return ResponseEntity.ok(all);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Transaction>> getTransactions(@RequestParam String coupleId) {
+        List<Transaction> transactions = transactionRepository.findByCoupleIdOrderByCreatedAtDesc(coupleId);
+        return ResponseEntity.ok(transactions);
     }
 
     @PostMapping

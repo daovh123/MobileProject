@@ -1,17 +1,23 @@
 package com.example.mobileproject.di
 
+import com.example.mobileproject.data.repository.AnalyticsRepositoryImpl
 import com.example.mobileproject.data.repository.AuthRepositoryImpl
 import com.example.mobileproject.data.repository.FavoriteRepositoryImpl
+import com.example.mobileproject.data.repository.GoalRepositoryImpl
 import com.example.mobileproject.data.repository.HistoryRepositoryImpl
 import com.example.mobileproject.data.repository.OnboardingRepositoryImpl
 import com.example.mobileproject.data.repository.PlaceRepositoryImpl
 import com.example.mobileproject.data.repository.ProductRepositoryImpl
+import com.example.mobileproject.data.repository.TransactionRepositoryImpl
+import com.example.mobileproject.domain.repository.AnalyticsRepository
 import com.example.mobileproject.domain.repository.AuthRepository
 import com.example.mobileproject.domain.repository.FavoriteRepository
+import com.example.mobileproject.domain.repository.GoalRepository
 import com.example.mobileproject.domain.repository.HistoryRepository
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import com.example.mobileproject.domain.repository.PlaceRepository
 import com.example.mobileproject.domain.repository.ProductRepository
+import com.example.mobileproject.domain.repository.TransactionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -57,4 +63,22 @@ abstract class RepositoryModule {
     abstract fun bindHistoryRepository(
         impl: HistoryRepositoryImpl,
     ): HistoryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTransactionRepository(
+        impl: TransactionRepositoryImpl,
+    ): TransactionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(
+        impl: GoalRepositoryImpl,
+    ): GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAnalyticsRepository(
+        impl: AnalyticsRepositoryImpl,
+    ): AnalyticsRepository
 }
