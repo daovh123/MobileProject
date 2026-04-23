@@ -18,14 +18,16 @@ import java.util.Optional;
 public class FavoriteService {
 
     private final UserFavoriteRepository favoriteRepository;
-    private final PlaceCacheService placeCacheService;
+    private final PlaceCacheService placeCacheService; // Đảm bảo field này được sử dụng
 
-    public FavoriteService(UserFavoriteRepository favoriteRepository, PlaceRepository placeRepository) {
+    // Sửa Constructor để khớp với các biến field đã khai báo
+    public FavoriteService(UserFavoriteRepository favoriteRepository, PlaceCacheService placeCacheService) {
         this.favoriteRepository = favoriteRepository;
-        this.placeRepository = placeRepository;
+        this.placeCacheService = placeCacheService;
     }
 
     public FavoriteResponse toggleFavorite(String userId, String placeId) {
+        // Sử dụng placeCacheService để kiểm tra sự tồn tại của địa điểm
         if (placeCacheService.findById(placeId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found");
         }
@@ -44,6 +46,7 @@ public class FavoriteService {
         List<UserFavorite> favorites = favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId);
         List<String> placeIds = favorites.stream().map(UserFavorite::getPlaceId).toList();
 
+        // Lấy dữ liệu hàng loạt từ Cache để tối ưu performance
         Map<String, Place> placeById = placeCacheService.findAllByIds(placeIds);
 
         List<PlaceDto> places = placeIds.stream()

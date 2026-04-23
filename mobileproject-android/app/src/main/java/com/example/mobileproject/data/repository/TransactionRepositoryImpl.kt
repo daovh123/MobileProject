@@ -1,6 +1,7 @@
 package com.example.mobileproject.data.repository
 
 import com.example.mobileproject.core.result.Resource
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
@@ -12,7 +13,14 @@ import javax.inject.Inject
 
 class TransactionRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
+    private val authSessionStore: AuthSessionStore,
 ) : TransactionRepository {
+
+    private fun authorizationHeader(): String {
+        val token = authSessionStore.load()?.token?.trim().orEmpty()
+        if (token.isBlank()) throw IllegalStateException("Missing auth token")
+        return "Bearer $token"
+    }
 
     override suspend fun createTransaction(
         coupleId: String,
@@ -23,6 +31,7 @@ class TransactionRepositoryImpl @Inject constructor(
     ): Resource<TransactionResponse> {
         return try {
             val response = apiService.createTransaction(
+                authorizationHeader(),
                 TransactionRequestDto(
                     coupleId = coupleId,
                     amount = amount,
@@ -63,6 +72,7 @@ class TransactionRepositoryImpl @Inject constructor(
     ): Resource<TransactionResponse> {
         return try {
             val response = apiService.processIncome(
+                authorizationHeader(),
                 IncomeRequestDto(
                     coupleId = coupleId,
                     amount = amount,
@@ -96,7 +106,7 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun getTransactions(coupleId: String): Resource<List<Transaction>> {
         return try {
-            val response = apiService.getTransactions(coupleId)
+            val response = apiService.getTransactions(authorizationHeader(), coupleId)
             if (response.isSuccessful && response.body() != null) {
                 val body: List<TransactionDto> = response.body()!!
                 val transactions = body.map { dto ->

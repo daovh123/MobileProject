@@ -1,6 +1,7 @@
 package com.example.mobileproject.data.repository
 
 import com.example.mobileproject.core.result.Resource
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.model.goal.ContributeRequestDto
 import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
@@ -13,7 +14,14 @@ import javax.inject.Inject
 
 class GoalRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
+    private val authSessionStore: AuthSessionStore,
 ) : GoalRepository {
+
+    private fun authorizationHeader(): String {
+        val token = authSessionStore.load()?.token?.trim().orEmpty()
+        if (token.isBlank()) throw IllegalStateException("Missing auth token")
+        return "Bearer $token"
+    }
 
     override suspend fun createGoal(
         coupleId: String,
@@ -23,6 +31,7 @@ class GoalRepositoryImpl @Inject constructor(
     ): Resource<GoalResponse> {
         return try {
             val response = apiService.createGoal(
+                authorizationHeader(),
                 CreateGoalRequestDto(
                     coupleId = coupleId,
                     name = name,
@@ -55,7 +64,7 @@ class GoalRepositoryImpl @Inject constructor(
 
     override suspend fun getGoalsByCouple(coupleId: String): Resource<List<SavingGoal>> {
         return try {
-            val response = apiService.getGoalsByCouple(coupleId)
+            val response = apiService.getGoalsByCouple(authorizationHeader(), coupleId)
             if (response.isSuccessful && response.body() != null) {
                 val goals = response.body()!!.map { dto ->
                     SavingGoal(
@@ -86,6 +95,7 @@ class GoalRepositoryImpl @Inject constructor(
     ): Resource<ContributeResponse> {
         return try {
             val response = apiService.contributeFromWallet(
+                authorizationHeader(),
                 goalId,
                 ContributeRequestDto(amount, contributorId, note)
             )
@@ -119,6 +129,7 @@ class GoalRepositoryImpl @Inject constructor(
     ): Resource<ContributeResponse> {
         return try {
             val response = apiService.contributeToGoal(
+                authorizationHeader(),
                 goalId,
                 ContributeRequestDto(amount, contributorId, note)
             )
