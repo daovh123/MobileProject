@@ -8,18 +8,19 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthIdentityService {
 
     private final AuthTokenService authTokenService;
-    private final AuthUserRepository authUserRepository;
+    private final AuthUserCacheService authUserCacheService;
 
-    public AuthIdentityService(AuthTokenService authTokenService, AuthUserRepository authUserRepository) {
+    public AuthIdentityService(AuthTokenService authTokenService, AuthUserCacheService authUserCacheService) {
         this.authTokenService = authTokenService;
-        this.authUserRepository = authUserRepository;
+        this.authUserCacheService = authUserCacheService;
     }
 
     public AuthUser requireCurrentUser(String authorizationHeader) {
         String username = authTokenService.resolveUsername(authorizationHeader)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid access token"));
 
-        return authUserRepository.findByUsername(username)
+        return authUserCacheService.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User session not found"));
     }
 }

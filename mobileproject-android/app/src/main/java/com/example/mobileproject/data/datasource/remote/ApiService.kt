@@ -15,6 +15,7 @@ import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
 import com.example.mobileproject.data.model.goal.GoalResponseDto
 import com.example.mobileproject.data.model.goal.SavingGoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
+import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -26,14 +27,7 @@ import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionResponseDto
-import retrofit2.http.Body
-import retrofit2.http.DELETE
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.POST
-import retrofit2.http.Query
+import retrofit2.http.*
 import retrofit2.Response
 
 interface ApiService {
@@ -56,6 +50,11 @@ interface ApiService {
     suspend fun upsertProfile(
         @Header("Authorization") authorization: String,
         @Body request: ProfileUpsertRequestDto,
+    ): Response<ProfileResponseDto>
+
+    @GET("api/auth/profile")
+    suspend fun getProfile(
+        @Header("Authorization") authorization: String,
     ): Response<ProfileResponseDto>
 
     @GET("api/auth/couple/status")
@@ -114,41 +113,55 @@ interface ApiService {
         @Header("Authorization") authorization: String,
     ): Response<Unit>
 
+    // Notification APIs
+    @POST("api/notifications/fcm-token")
+    suspend fun registerFcmToken(
+        @Header("Authorization") authorization: String,
+        @Body request: FcmTokenRequestDto,
+    ): Response<Unit>
+
     // Transaction APIs
     @POST("api/v1/transactions")
     suspend fun createTransaction(
+        @Header("Authorization") authorization: String, // Thêm Header nếu cần xác thực
         @Body request: TransactionRequestDto,
     ): Response<TransactionResponseDto>
 
     @POST("api/v1/transactions/income")
     suspend fun processIncome(
+        @Header("Authorization") authorization: String,
         @Body request: IncomeRequestDto,
     ): Response<TransactionResponseDto>
 
     @GET("api/v1/transactions")
     suspend fun getTransactions(
+        @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
     ): Response<List<TransactionDto>>
 
     // Goal APIs
     @POST("api/v1/goals")
     suspend fun createGoal(
+        @Header("Authorization") authorization: String,
         @Body request: CreateGoalRequestDto,
     ): Response<GoalResponseDto>
 
     @GET("api/v1/goals/couple/{coupleId}")
     suspend fun getGoalsByCouple(
+        @Header("Authorization") authorization: String,
         @Path("coupleId") coupleId: String,
     ): Response<List<SavingGoalDto>>
 
     @POST("api/v1/goals/{goalId}/contribute-from-wallet")
     suspend fun contributeFromWallet(
+        @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
         @Body request: ContributeRequestDto,
     ): Response<ContributeResponseDto>
 
     @POST("api/v1/goals/{goalId}/contribute")
     suspend fun contributeToGoal(
+        @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
         @Body request: ContributeRequestDto,
     ): Response<ContributeResponseDto>
@@ -156,6 +169,7 @@ interface ApiService {
     // Analytics APIs
     @GET("api/v1/analytics/category-breakdown")
     suspend fun getCategoryBreakdown(
+        @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
         @Query("startDate") startDate: String,
         @Query("endDate") endDate: String,
@@ -163,6 +177,7 @@ interface ApiService {
 
     @GET("api/v1/analytics/spending-trend")
     suspend fun getSpendingTrend(
+        @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
         @Query("year") year: Int,
         @Query("month") month: Int,

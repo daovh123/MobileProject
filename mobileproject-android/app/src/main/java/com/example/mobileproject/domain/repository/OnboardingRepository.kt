@@ -14,6 +14,8 @@ interface OnboardingRepository {
         gender: String,
     ): ProfileResult
 
+    suspend fun getProfile(token: String): ProfileResult
+
     suspend fun getCoupleStatus(token: String): CoupleStatus
 
     suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction

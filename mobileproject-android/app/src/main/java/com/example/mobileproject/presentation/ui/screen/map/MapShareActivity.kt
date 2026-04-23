@@ -36,6 +36,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.service.MapShareForegroundService
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
@@ -118,21 +119,23 @@ class MapShareActivity : AppCompatActivity() {
         coupleId = intent.getStringExtra(EXTRA_COUPLE_ID)
 
         setContent {
-            MapShareScreen(
-                onClose = { finish() },
-                onMapReady = { createdMapView ->
-                    mapView = createdMapView
-                    initMap(createdMapView)
+            MobileProjectTheme {
+                MapShareScreen(
+                    onClose = { finish() },
+                    onMapReady = { createdMapView ->
+                        mapView = createdMapView
+                        initMap(createdMapView)
 
-                    if (pendingStartAfterPermissions) {
-                        pendingStartAfterPermissions = false
-                        loadInitialStateAndStart()
-                    }
-                },
-                onDisposeMap = {
-                    mapView = null
-                },
-            )
+                        if (pendingStartAfterPermissions) {
+                            pendingStartAfterPermissions = false
+                            loadInitialStateAndStart()
+                        }
+                    },
+                    onDisposeMap = {
+                        mapView = null
+                    },
+                )
+            }
         }
 
         if (accessToken.isBlank()) {

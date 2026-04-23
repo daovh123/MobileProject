@@ -6,13 +6,16 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
+import com.example.mobileproject.utils.ApiBaseUrlResolver
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -53,6 +56,9 @@ class MapShareForegroundService : Service() {
 
     private var pendingLatitude: Double? = null
     private var pendingLongitude: Double? = null
+
+    private var lastSentLocation: Location? = null
+    private var lastSentAtElapsedMs: Long = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -160,7 +166,7 @@ class MapShareForegroundService : Service() {
                 pendingLongitude = lng
 
                 broadcastLocation(ACTION_MY_LOCATION, lat, lng)
-                sendLocation(lat, lng)
+                sendLocationIfNeeded(location)
             }
         }
 
@@ -206,7 +212,7 @@ class MapShareForegroundService : Service() {
                 val lat = pendingLatitude
                 val lng = pendingLongitude
                 if (lat != null && lng != null) {
-                    sendLocation(lat, lng)
+                    sendLocationIfNeeded(lat, lng)
                 }
             }
 
@@ -242,16 +248,43 @@ class MapShareForegroundService : Service() {
         runCatching { socket.close(1000, null) }
     }
 
-    private fun sendLocation(latitude: Double, longitude: Double) {
+    private fun sendLocationIfNeeded(location: Location) {
         val socket = webSocket ?: return
 
+        val nowElapsedMs = SystemClock.elapsedRealtime()
+        val lastLocation = lastSentLocation
+
+        val shouldSend = lastLocation == null ||
+            lastSentAtElapsedMs <= 0L ||
+            nowElapsedMs - lastSentAtElapsedMs >= SEND_MAX_INTERVAL_MS ||
+            lastLocation.distanceTo(location) >= SEND_DISTANCE_THRESHOLD_METERS
+
+        if (!shouldSend) {
+            return
+        }
+
+        if (sendLocation(socket, location.latitude, location.longitude)) {
+            lastSentLocation = Location(location)
+            lastSentAtElapsedMs = nowElapsedMs
+        }
+    }
+
+    private fun sendLocationIfNeeded(latitude: Double, longitude: Double) {
+        val location = Location("pending").apply {
+            this.latitude = latitude
+            this.longitude = longitude
+        }
+        sendLocationIfNeeded(location)
+    }
+
+    private fun sendLocation(socket: WebSocket, latitude: Double, longitude: Double): Boolean {
         val payload = JSONObject()
             .put("type", "location")
             .put("latitude", latitude)
             .put("longitude", longitude)
             .toString()
 
-        runCatching { socket.send(payload) }
+        return runCatching { socket.send(payload) }.getOrDefault(false)
     }
 
     private fun handleIncoming(text: String) {
@@ -276,14 +309,7 @@ class MapShareForegroundService : Service() {
     }
 
     private fun buildWebSocketUrl(coupleId: String): String {
-        val base = BuildConfig.API_BASE_URL.trim().removeSuffix("/")
-
-        val wsBase = when {
-            base.startsWith("https://") -> "wss://" + base.removePrefix("https://")
-            base.startsWith("http://") -> "ws://" + base.removePrefix("http://")
-            base.startsWith("wss://") || base.startsWith("ws://") -> base
-            else -> "ws://$base"
-        }
+        val wsBase = ApiBaseUrlResolver.resolveWebSocketBase(BuildConfig.API_BASE_URL)
 
         return "$wsBase/ws/map/share/$coupleId"
     }
@@ -295,6 +321,9 @@ class MapShareForegroundService : Service() {
 
         private const val LOCATION_INTERVAL_MS = 3000L
         private const val RECONNECT_DELAY_MS = 3000L
+
+        private const val SEND_DISTANCE_THRESHOLD_METERS = 100f
+        private const val SEND_MAX_INTERVAL_MS = 5 * 60 * 1000L
 
         private const val ACTION_BASE = "com.example.mobileproject.mapshare"
 

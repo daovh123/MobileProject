@@ -26,9 +26,19 @@ class PlaceImportServiceTest {
   @Mock
   private PlaceRepository placeRepository;
 
+  @Mock
+  private PlaceService placeService;
+
+  @Mock
+  private PlaceCacheService placeCacheService;
+
   @Test
   void importFromFileShouldPersistNormalizedPlaces() throws Exception {
-    PlaceImportService placeImportService = new PlaceImportService(placeRepository, new ObjectMapper());
+    PlaceImportService placeImportService = new PlaceImportService(
+        placeRepository,
+        new ObjectMapper(),
+        placeService,
+        placeCacheService);
     Path tempFile = Files.createTempFile("places-import-", ".json");
 
     String json = """
@@ -70,11 +80,17 @@ class PlaceImportServiceTest {
 
     assertEquals(1, response.importedCount());
     assertEquals(1L, response.totalInDatabase());
+    verify(placeService).rebuildCache();
+    verify(placeCacheService).evictAll();
   }
 
   @Test
   void importFromFileShouldClearExistingDataWhenRequested() throws Exception {
-    PlaceImportService placeImportService = new PlaceImportService(placeRepository, new ObjectMapper());
+    PlaceImportService placeImportService = new PlaceImportService(
+        placeRepository,
+        new ObjectMapper(),
+        placeService,
+        placeCacheService);
     Path tempFile = Files.createTempFile("places-import-clear-", ".json");
 
     String json = """
@@ -98,7 +114,11 @@ class PlaceImportServiceTest {
 
   @Test
   void importFromFileShouldNormalizeImageUrls() throws Exception {
-    PlaceImportService placeImportService = new PlaceImportService(placeRepository, new ObjectMapper());
+    PlaceImportService placeImportService = new PlaceImportService(
+        placeRepository,
+        new ObjectMapper(),
+        placeService,
+        placeCacheService);
     Path tempFile = Files.createTempFile("places-import-image-url-", ".json");
 
     String json = """

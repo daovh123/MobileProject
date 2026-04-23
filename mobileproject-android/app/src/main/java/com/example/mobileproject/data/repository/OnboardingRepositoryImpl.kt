@@ -49,6 +49,21 @@ class OnboardingRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun getProfile(token: String): ProfileResult {
+        val response = apiService.getProfile(authorizationHeader(token))
+        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Khong the lay ho so")
+
+        return ProfileResult(
+            username = body.username,
+            fullName = body.fullName,
+            nickName = body.nickName,
+            birthDate = body.birthDate,
+            gender = body.gender,
+            profileCompleted = body.profileCompleted,
+            coupleConnected = body.coupleConnected,
+        )
+    }
+
     override suspend fun getCoupleStatus(token: String): CoupleStatus {
         val response = apiService.getCoupleStatus(authorizationHeader(token))
         val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Khong the lay trang thai ghep doi")

@@ -1,6 +1,7 @@
 package com.mobileproject.mobileprojectbackend.place;
 
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceDto;
+import com.mobileproject.mobileprojectbackend.place.dto.PlaceImageBackfillResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceImportResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchRequest;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchResponse;
@@ -37,6 +38,9 @@ class PlaceControllerStandaloneTest {
     @Mock
     private PlaceImportService placeImportService;
 
+        @Mock
+        private PlaceImageBackfillService placeImageBackfillService;
+
     @Captor
     private ArgumentCaptor<PlaceSearchRequest> searchRequestCaptor;
 
@@ -44,7 +48,7 @@ class PlaceControllerStandaloneTest {
 
     @BeforeEach
     void setUp() {
-        PlaceController controller = new PlaceController(placeService, placeImportService);
+                PlaceController controller = new PlaceController(placeService, placeImportService, placeImageBackfillService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
@@ -164,6 +168,27 @@ class PlaceControllerStandaloneTest {
 
         verify(placeImportService).importFromFile("D:/data.json", true);
     }
+
+        @Test
+        void backfillImagesShouldForwardParamsToService() throws Exception {
+                when(placeImageBackfillService.backfillGpsCsImages(eq(false), eq(2000)))
+                                .thenReturn(new PlaceImageBackfillResponse(
+                                                true,
+                                                "ok",
+                                                2000,
+                                                3124,
+                                                2000,
+                                                false,
+                                                List.of("p1")));
+
+                mockMvc.perform(post("/api/places/backfill-images")
+                                .param("dryRun", "false")
+                                .param("limit", "2000"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.replacedCount").value(2000));
+
+                verify(placeImageBackfillService).backfillGpsCsImages(false, 2000);
+        }
 
     @Test
     void searchShouldPropagateBadRequestFromService() throws Exception {

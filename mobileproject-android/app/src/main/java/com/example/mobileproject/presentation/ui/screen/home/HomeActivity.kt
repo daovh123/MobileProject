@@ -1,17 +1,40 @@
 package com.example.mobileproject.presentation.ui.screen.home
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
+import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
+import com.example.mobileproject.presentation.ui.screen.app.compose.HomeRoutes
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeActivity : ComponentActivity() {
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (!granted) {
+            Log.w("ChatFCM", "POST_NOTIFICATIONS permission denied")
+        }
+    }
 
     @Inject
     lateinit var authSessionStore: AuthSessionStore
@@ -29,16 +52,117 @@ class HomeActivity : ComponentActivity() {
             accessToken = authSessionStore.load()?.token.orEmpty()
         }
 
+        if (accessToken.isBlank()) {
+            val loginIntent = Intent(this, LoginActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                putExtra(EXTRA_OPEN_CHAT, intent.getBooleanExtra(EXTRA_OPEN_CHAT, false))
+            }
+            startActivity(loginIntent)
+            finish()
+            return
+        }
+
+        requestNotificationPermissionIfNeeded()
+        syncFcmToken(accessToken)
+
         setContent {
-            MaterialTheme {
+            MobileProjectTheme {
                 com.example.mobileproject.presentation.ui.screen.app.compose.HomeScaffold(
                     accessToken = accessToken,
                     apiService = apiService,
                     onNavControllerReady = { controller ->
                         navController = controller
+                        maybeOpenChatFromIntent(intent)
                     },
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        maybeOpenChatFromIntent(intent)
+    }
+
+    private fun maybeOpenChatFromIntent(intent: Intent?) {
+        val controller = navController ?: return
+        if (intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) != true) {
+            return
+        }
+
+        intent.removeExtra(EXTRA_OPEN_CHAT)
+        controller.navigate(HomeRoutes.CHAT) {
+            launchSingleTop = true
+        }
+    }
+
+    private fun syncFcmToken(accessToken: String) {
+        val bearerToken = accessToken.trim()
+        if (bearerToken.isBlank()) {
+            return
+        }
+
+        if (!isFirebaseAvailable()) {
+            Log.i("ChatFCM", "Skip FCM sync because Firebase is not configured")
+            return
+        }
+
+        val messaging = runCatching { FirebaseMessaging.getInstance() }
+            .onFailure { error ->
+                Log.w("ChatFCM", "Skip FCM sync because FirebaseMessaging is unavailable", error)
+            }
+            .getOrNull()
+            ?: return
+
+        messaging.token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("ChatFCM", "Failed to fetch FCM token", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val token = if (task.isSuccessful) task.result?.trim().orEmpty() else ""
+            if (token.isBlank()) {
+                Log.w("ChatFCM", "FCM token is blank")
+                return@addOnCompleteListener
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                runCatching {
+                    apiService.registerFcmToken(
+                        authorization = "Bearer $bearerToken",
+                        request = FcmTokenRequestDto(token = token),
+                    )
+                }.onFailure { error ->
+                    Log.w("ChatFCM", "Failed to register token on backend", error)
+                }
+            }
+        }
+    }
+
+    private fun isFirebaseAvailable(): Boolean {
+        val existingApps = runCatching { FirebaseApp.getApps(this) }
+            .getOrDefault(emptyList())
+        if (existingApps.isNotEmpty()) {
+            return true
+        }
+
+        return runCatching { FirebaseApp.initializeApp(this) }
+            .getOrNull() != null
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return
+        }
+
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!granted) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -58,8 +182,18 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    fun logoutAndOpenLogin() {
+        authSessionStore.clear()
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        startActivity(intent)
+        finish()
+    }
+
     companion object {
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
+        const val EXTRA_OPEN_CHAT: String = "extra_open_chat"
         const val KEY_SELECTED_NAV_ITEM_ID: String = "selected_nav_item_id"
     }
 }

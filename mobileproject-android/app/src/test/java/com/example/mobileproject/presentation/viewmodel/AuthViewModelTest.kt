@@ -107,6 +107,49 @@ class AuthViewModelTest {
         assertFalse(state.isLoading)
         assertNull(state.errorMessage)
         assertTrue(state.logoutCompleted)
+        assertEquals(1, repository.logoutCalls)
+    }
+
+    @Test
+    fun `logout failure still completes logout flow`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            logoutResult = Result.failure(IllegalStateException("Missing or invalid access token"))
+        }
+        val viewModel = AuthViewModel(
+            loginUseCase = LoginUseCase(repository),
+            registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
+        )
+
+        viewModel.logout("stale-token")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage)
+        assertTrue(state.logoutCompleted)
+        assertEquals(1, repository.logoutCalls)
+    }
+
+    @Test
+    fun `logout with blank token still completes logout flow`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            logoutResult = Result.failure(IllegalStateException("should not be called"))
+        }
+        val viewModel = AuthViewModel(
+            loginUseCase = LoginUseCase(repository),
+            registerUseCase = RegisterUseCase(repository),
+            logoutUseCase = LogoutUseCase(repository),
+        )
+
+        viewModel.logout("   ")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage)
+        assertTrue(state.logoutCompleted)
+        assertEquals(0, repository.logoutCalls)
     }
 
     private class FakeAuthRepository : AuthRepository {
@@ -114,6 +157,7 @@ class AuthViewModelTest {
         var loginResult: Result<AuthSession> = Result.failure(IllegalStateException("Login failed"))
         var registerResult: Result<AuthSession> = Result.failure(IllegalStateException("Register failed"))
         var logoutResult: Result<Unit> = Result.success(Unit)
+        var logoutCalls: Int = 0
 
         override suspend fun login(usernameOrEmail: String, password: String): AuthSession {
             return loginResult.getOrThrow()
@@ -124,6 +168,7 @@ class AuthViewModelTest {
         }
 
         override suspend fun logout(token: String) {
+            logoutCalls += 1
             logoutResult.getOrThrow()
         }
     }

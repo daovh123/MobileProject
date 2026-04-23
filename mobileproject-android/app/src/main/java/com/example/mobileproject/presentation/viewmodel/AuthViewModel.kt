@@ -57,19 +57,22 @@ class AuthViewModel @Inject constructor(
     }
 
     fun logout(token: String) {
-        if (token.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
+        val normalizedToken = token.trim()
+        if (normalizedToken.isBlank()) {
+            _uiState.value = AuthUiState(logoutCompleted = true)
             return
         }
 
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
-            runCatching { logoutUseCase(token.trim()) }
+            runCatching { logoutUseCase(normalizedToken) }
                 .onSuccess {
                     _uiState.value = AuthUiState(logoutCompleted = true)
                 }
                 .onFailure {
-                    _uiState.value = AuthUiState(errorMessage = it.message ?: "Dang xuat that bai")
+                    // Backend token can be expired/invalid, but local session is still cleared.
+                    // Treat logout as completed so UI always routes back to Login.
+                    _uiState.value = AuthUiState(logoutCompleted = true)
                 }
         }
     }

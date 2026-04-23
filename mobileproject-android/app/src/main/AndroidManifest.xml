@@ -19,7 +19,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MobileProject"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="${cleartextTrafficPermitted}">
 
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.settings.SettingsActivity"
@@ -67,6 +67,18 @@
             android:name="com.example.mobileproject.presentation.service.MapShareForegroundService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <service
+            android:name=".presentation.notification.ChatFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".presentation.notification.ChatReplyReceiver"
+            android:exported="false" />
 
     </application>
 

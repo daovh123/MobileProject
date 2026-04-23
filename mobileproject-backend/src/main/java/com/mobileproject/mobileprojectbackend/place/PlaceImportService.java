@@ -27,13 +27,21 @@ public class PlaceImportService {
 
     private final PlaceRepository placeRepository;
     private final ObjectMapper objectMapper;
+    private final PlaceService placeService;
+    private final PlaceCacheService placeCacheService;
 
     @Value("${app.place.import.file-path:D:/data.json}")
     private String defaultImportFilePath;
 
-    public PlaceImportService(PlaceRepository placeRepository, ObjectMapper objectMapper) {
+    public PlaceImportService(
+            PlaceRepository placeRepository,
+            ObjectMapper objectMapper,
+            PlaceService placeService,
+            PlaceCacheService placeCacheService) {
         this.placeRepository = placeRepository;
         this.objectMapper = objectMapper;
+        this.placeService = placeService;
+        this.placeCacheService = placeCacheService;
     }
 
     public PlaceImportResponse importFromFile(String filePath, boolean clearBeforeImport) {
@@ -72,6 +80,11 @@ public class PlaceImportService {
             }
 
             saveInBatches(places);
+
+            // Rebuild in-memory cache immediately so first query after import is already
+            // warm.
+            placeService.rebuildCache();
+            placeCacheService.evictAll();
 
             long totalInDb = placeRepository.count();
             String message = "Imported " + places.size() + " places from " + sourceFile;

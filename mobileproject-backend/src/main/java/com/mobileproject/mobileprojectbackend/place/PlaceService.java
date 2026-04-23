@@ -5,6 +5,8 @@ import com.mobileproject.mobileprojectbackend.place.dto.PlaceFilterOptionsRespon
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceFeatureSummaryResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchRequest;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +28,8 @@ import java.util.stream.Stream;
 
 @Service
 public class PlaceService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PlaceService.class);
 
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
@@ -138,6 +142,22 @@ public class PlaceService {
         return new PlaceFilterOptionsResponse(districts, provinces);
     }
 
+    public void invalidateCache() {
+        synchronized (cacheLock) {
+            cachedPlaceData = null;
+        }
+    }
+
+    public int rebuildCache() {
+        CachedPlaceData refreshed = loadCacheData();
+        synchronized (cacheLock) {
+            cachedPlaceData = refreshed;
+        }
+
+        logger.info("Rebuilt places cache with {} records", refreshed.places().size());
+        return refreshed.places().size();
+    }
+
     private List<PlaceView> filterPlaces(SearchCriteria criteria) {
         return getCachedPlaceData().places().stream()
                 .map(place -> toPlaceView(place, criteria.nearLat(), criteria.nearLng()))
@@ -152,10 +172,10 @@ public class PlaceService {
 
     private CachedPlaceData getCachedPlaceData() {
         CachedPlaceData snapshot = cachedPlaceData;
-        if (snapshot == null || snapshot.places().isEmpty()) {
+        if (snapshot == null) {
             synchronized (cacheLock) {
                 snapshot = cachedPlaceData;
-                if (snapshot == null || snapshot.places().isEmpty()) {
+                if (snapshot == null) {
                     cachedPlaceData = loadCacheData();
                     snapshot = cachedPlaceData;
                 }

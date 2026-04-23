@@ -144,6 +144,18 @@ class CoupleViewModelTest {
             return ProfileResult(null, null, null, null, null, false, false)
         }
 
+        override suspend fun getProfile(token: String): ProfileResult {
+            return ProfileResult(
+                username = "me",
+                fullName = "Me",
+                nickName = null,
+                birthDate = "2020-01-01",
+                gender = "OTHER",
+                profileCompleted = true,
+                coupleConnected = false,
+            )
+        }
+
         override suspend fun getCoupleStatus(token: String): CoupleStatus {
             return coupleStatusResult.getOrThrow()
         }

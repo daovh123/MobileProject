@@ -3,13 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services") apply false
+
 }
 
 android {
     namespace = "com.example.mobileproject"
 
     val apiBaseUrl = ((project.findProperty("API_BASE_URL") as? String)
-        ?: "http://10.0.2.2:8080/")
+        ?: "http://localhost:8080/")
         .trim()
         .removeSurrounding("\"")
 
@@ -27,8 +29,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["cleartextTrafficPermitted"] = "true"
+        }
         release {
             isMinifyEnabled = false
+            manifestPlaceholders["cleartextTrafficPermitted"] = "false"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -43,6 +49,12 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
@@ -69,15 +81,31 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("io.coil-kt:coil:2.7.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
+}
+
+val hasGoogleServicesConfig = file("google-services.json").exists() ||
+    file("src\\debug\\google-services.json").exists() ||
+    file("src\\release\\google-services.json").exists()
+
+if (hasGoogleServicesConfig) {
+    apply(plugin = "com.google.gms.google-services")
 }

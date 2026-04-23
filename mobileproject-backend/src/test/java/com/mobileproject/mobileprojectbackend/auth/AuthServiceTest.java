@@ -30,6 +30,9 @@ class AuthServiceTest {
     private AuthUserRepository authUserRepository;
 
     @Mock
+    private AuthUserCacheService authUserCacheService;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -45,6 +48,11 @@ class AuthServiceTest {
         when(authUserRepository.existsByUsername("demo")).thenReturn(false);
         when(authUserRepository.existsByEmail("demo@example.com")).thenReturn(false);
         when(passwordEncoder.encode("123456")).thenReturn("hashed-password");
+        when(authUserCacheService.save(any(AuthUser.class))).thenAnswer(invocation -> {
+            AuthUser user = invocation.getArgument(0);
+            user.setId("u1");
+            return user;
+        });
         when(authTokenService.issueToken("demo")).thenReturn("token-demo");
 
         AuthResponse response = authService.register(request);
@@ -56,7 +64,7 @@ class AuthServiceTest {
         assertFalse(response.coupleConnected());
 
         ArgumentCaptor<AuthUser> userCaptor = ArgumentCaptor.forClass(AuthUser.class);
-        verify(authUserRepository).save(userCaptor.capture());
+        verify(authUserCacheService).save(userCaptor.capture());
 
         AuthUser savedUser = userCaptor.getValue();
         assertEquals("demo", savedUser.getUsername());
@@ -74,7 +82,7 @@ class AuthServiceTest {
 
         assertFalse(response.success());
         assertEquals("Username already exists", response.message());
-        verify(authUserRepository, never()).save(any(AuthUser.class));
+        verify(authUserCacheService, never()).save(any(AuthUser.class));
     }
 
     @Test
@@ -83,8 +91,8 @@ class AuthServiceTest {
 
         AuthUser user = new AuthUser("demo", "demo@example.com", "hashed-password", "2026-01-01T00:00:00Z");
 
-        when(authUserRepository.findByUsername("demo@example.com")).thenReturn(Optional.empty());
-        when(authUserRepository.findByEmail("demo@example.com")).thenReturn(Optional.of(user));
+        when(authUserCacheService.findByUsername("demo@example.com")).thenReturn(Optional.empty());
+        when(authUserCacheService.findByEmail("demo@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(eq("123456"), eq("hashed-password"))).thenReturn(true);
         when(authTokenService.issueToken("demo")).thenReturn("token-demo");
 

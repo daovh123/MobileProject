@@ -35,6 +35,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 
 class CoupleConnectedActivity : ComponentActivity() {
 
@@ -47,7 +48,7 @@ class CoupleConnectedActivity : ComponentActivity() {
         val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         enableImmersiveMode()
         setContent {
-            MaterialTheme {
+            MobileProjectTheme {
                 CoupleConnectedScreen(
                     onGoHome = {
                         startActivity(

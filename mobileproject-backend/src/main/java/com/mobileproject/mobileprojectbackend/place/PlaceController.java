@@ -3,6 +3,7 @@ package com.mobileproject.mobileprojectbackend.place;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceDto;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceFilterOptionsResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceFeatureSummaryResponse;
+import com.mobileproject.mobileprojectbackend.place.dto.PlaceImageBackfillResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceImportResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchRequest;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchResponse;
@@ -24,10 +25,15 @@ public class PlaceController {
 
     private final PlaceService placeService;
     private final PlaceImportService placeImportService;
+    private final PlaceImageBackfillService placeImageBackfillService;
 
-    public PlaceController(PlaceService placeService, PlaceImportService placeImportService) {
+    public PlaceController(
+            PlaceService placeService,
+            PlaceImportService placeImportService,
+            PlaceImageBackfillService placeImageBackfillService) {
         this.placeService = placeService;
         this.placeImportService = placeImportService;
+        this.placeImageBackfillService = placeImageBackfillService;
     }
 
     @PostMapping("/import")
@@ -35,6 +41,14 @@ public class PlaceController {
             @RequestParam(required = false) String filePath,
             @RequestParam(defaultValue = "false") boolean clearBeforeImport) {
         PlaceImportResponse response = placeImportService.importFromFile(filePath, clearBeforeImport);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/backfill-images")
+    public ResponseEntity<PlaceImageBackfillResponse> backfillImages(
+            @RequestParam(defaultValue = "false") boolean dryRun,
+            @RequestParam(defaultValue = "5000") @Min(1) @Max(20000) int limit) {
+        PlaceImageBackfillResponse response = placeImageBackfillService.backfillGpsCsImages(dryRun, limit);
         return ResponseEntity.ok(response);
     }
 

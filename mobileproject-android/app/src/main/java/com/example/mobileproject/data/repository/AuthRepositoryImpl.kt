@@ -15,7 +15,7 @@ import javax.inject.Inject
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val gson: Gson,
-    private val authSessionStore: AuthSessionStore,
+    private val authSessionStore: AuthSessionStore? = null,
 ) : AuthRepository {
 
     override suspend fun login(usernameOrEmail: String, password: String): AuthSession {
@@ -26,7 +26,7 @@ class AuthRepositoryImpl @Inject constructor(
             )
         )
         val session = response.toAuthSessionOrThrow(gson, defaultFailureMessage = "Dang nhap that bai")
-        authSessionStore.save(session)
+        authSessionStore?.save(session)
         return session
     }
 
@@ -42,12 +42,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(token: String) {
-        runCatching {
+        val logoutResult = runCatching {
             val response = apiService.logout(authorizationHeader(token))
             response.toLogoutSuccessOrThrow(gson, defaultFailureMessage = "Dang xuat that bai")
         }
 
-        authSessionStore.clear()
+        authSessionStore?.clear()
+        logoutResult.getOrThrow()
     }
 }
 

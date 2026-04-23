@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -22,53 +23,169 @@ class ProfileViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `saveProfile with blank fields sets validation error`() {
+    fun `saveProfile with blank fullName sets validation error`() {
         val viewModel = ProfileViewModel(FakeOnboardingRepository())
 
-        viewModel.saveProfile(
-            token = "token-1",
+        viewModel.updateDraft(
             fullName = "",
-            nickName = null,
-            birthDate = "",
-            gender = "",
+            nickName = "",
+            birthDate = "2020-02-01",
+            gender = "FEMALE",
         )
+        viewModel.saveProfile("token-1")
 
         val state = viewModel.uiState.value
-        assertEquals("Vui long nhap day du thong tin", state.errorMessage)
-        assertFalse(state.isLoading)
+        assertEquals("Ho ten khong duoc de trong", state.errorMessage)
+        assertFalse(state.isSaving)
         assertNull(state.savedProfile)
     }
 
     @Test
-    fun `saveProfile success exposes saved profile`() = runTest {
+    fun `loadProfile success updates profile and couple state`() = runTest {
         val repository = FakeOnboardingRepository().apply {
-            saveProfileResult = Result.success(
-                ProfileResult(
-                    username = "alice",
-                    fullName = "Alice",
-                    nickName = "Ali",
-                    birthDate = "2020-02-01",
-                    gender = "FEMALE",
-                    profileCompleted = true,
-                    coupleConnected = false,
-                )
-            )
+            getProfileResult = Result.success(defaultProfile)
+            getCoupleStatusResult = Result.success(defaultCoupleStatus.copy(paired = true, partnerUsername = "partner"))
         }
         val viewModel = ProfileViewModel(repository)
 
-        viewModel.saveProfile("token-1", "Alice", "Ali", "2020-02-01", "FEMALE")
+        viewModel.loadProfile("token-1")
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
+        assertFalse(state.isLoadingCouple)
         assertNull(state.errorMessage)
+        assertEquals("Alice", state.fullName)
+        assertEquals("Ali", state.nickName)
+        assertEquals("FEMALE", state.gender)
+        assertTrue(state.coupleStatus?.paired == true)
+    }
+
+    @Test
+    fun `updateDraft marks state dirty when fields change`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            getProfileResult = Result.success(defaultProfile)
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.loadProfile("token-1")
+        advanceUntilIdle()
+        viewModel.updateDraft(
+            fullName = "Alice Updated",
+            nickName = "Ali",
+            birthDate = "2020-02-01",
+            gender = "FEMALE",
+        )
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDirty)
+    }
+
+    @Test
+    fun `saveProfile success clears dirty and emits success message`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            getProfileResult = Result.success(defaultProfile)
+            saveProfileResult = Result.success(defaultProfile.copy(fullName = "Alice Updated"))
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.loadProfile("token-1")
+        advanceUntilIdle()
+        viewModel.updateDraft(
+            fullName = "Alice Updated",
+            nickName = "Ali",
+            birthDate = "2020-02-01",
+            gender = "FEMALE",
+        )
+        viewModel.saveProfile("token-1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSaving)
         assertNotNull(state.savedProfile)
-        assertEquals("FEMALE", state.savedProfile?.gender)
+        assertFalse(state.isDirty)
+        assertEquals("Luu ho so thanh cong", state.saveSuccessMessage)
+        assertEquals("Alice Updated", state.savedProfile?.fullName)
+    }
+
+    @Test
+    fun `saveProfile unauthorized marks sessionExpired`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            getProfileResult = Result.success(defaultProfile)
+            saveProfileResult = Result.failure(IllegalStateException("Unauthorized"))
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.loadProfile("token-1")
+        advanceUntilIdle()
+        viewModel.updateDraft(
+            fullName = "Alice Updated",
+            nickName = "Ali",
+            birthDate = "2020-02-01",
+            gender = "FEMALE",
+        )
+        viewModel.saveProfile("token-1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.sessionExpired)
+        assertNull(state.errorMessage)
+    }
+
+    @Test
+    fun `clearError clears both error and couple error`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            getProfileResult = Result.failure(IllegalStateException("profile failed"))
+            getCoupleStatusResult = Result.failure(IllegalStateException("couple failed"))
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.loadProfile("token-1")
+        advanceUntilIdle()
+        assertNotNull(viewModel.uiState.value.errorMessage)
+        assertNotNull(viewModel.uiState.value.coupleError)
+
+        viewModel.clearError()
+
+        assertNull(viewModel.uiState.value.errorMessage)
+        assertNull(viewModel.uiState.value.coupleError)
     }
 
     private class FakeOnboardingRepository : OnboardingRepository {
 
-        var saveProfileResult: Result<ProfileResult> = Result.failure(IllegalStateException("save failed"))
+        val defaultProfile = ProfileResult(
+            username = "alice",
+            fullName = "Alice",
+            nickName = "Ali",
+            birthDate = "2020-02-01",
+            gender = "FEMALE",
+            profileCompleted = true,
+            coupleConnected = false,
+        )
+
+        val defaultCoupleStatus = CoupleStatus(
+            profileCompleted = true,
+            paired = false,
+            partnerUsername = null,
+            myCoupleCode = null,
+            myCoupleCodeExpiresAt = null,
+            incomingRequestId = null,
+            incomingRequesterUsername = null,
+            incomingRequesterDisplayName = null,
+            incomingCreatedAt = null,
+            outgoingRequestId = null,
+            outgoingRecipientUsername = null,
+            outgoingStatus = null,
+            outgoingUpdatedAt = null,
+            coupleId = null,
+            startAt = null,
+            daysTogether = null,
+            anniversaryTomorrow = null,
+        )
+
+        var getProfileResult: Result<ProfileResult> = Result.success(defaultProfile)
+        var getCoupleStatusResult: Result<CoupleStatus> = Result.success(defaultCoupleStatus)
+        var saveProfileResult: Result<ProfileResult> = Result.success(defaultProfile)
 
         override suspend fun saveProfile(
             token: String,
@@ -80,21 +197,12 @@ class ProfileViewModelTest {
             return saveProfileResult.getOrThrow()
         }
 
+        override suspend fun getProfile(token: String): ProfileResult {
+            return getProfileResult.getOrThrow()
+        }
+
         override suspend fun getCoupleStatus(token: String): CoupleStatus {
-            return CoupleStatus(
-                profileCompleted = true,
-                paired = false,
-                partnerUsername = null,
-                myCoupleCode = null,
-                incomingRequestId = null,
-                incomingRequesterUsername = null,
-                incomingRequesterDisplayName = null,
-                incomingCreatedAt = null,
-                outgoingRequestId = null,
-                outgoingRecipientUsername = null,
-                outgoingStatus = null,
-                outgoingUpdatedAt = null,
-            )
+            return getCoupleStatusResult.getOrThrow()
         }
 
         override suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction {

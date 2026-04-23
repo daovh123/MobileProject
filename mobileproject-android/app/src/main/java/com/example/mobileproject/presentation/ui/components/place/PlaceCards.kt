@@ -1,9 +1,11 @@
 package com.example.mobileproject.presentation.ui.components.place
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -44,17 +46,26 @@ fun PlaceCard(
     onClick: (Place) -> Unit = {},
 ) {
     val fallback = stringResource(R.string.explore_updating)
+    val colorScheme = MaterialTheme.colorScheme
+    val cardShape = RoundedCornerShape(24.dp)
+    val locationText = place.address?.takeIf { it.isNotBlank() } ?: fallback
+    val tagText = place.effectiveTag?.takeIf { it.isNotBlank() } ?: fallback
+    val ratingText = if (place.rating != null && place.reviewCount != null) {
+        stringResource(R.string.explore_rating_format, place.rating, place.reviewCount)
+    } else {
+        stringResource(R.string.explore_rating_unknown)
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(242.dp)
-            .clip(RoundedCornerShape(28.dp))
+            .height(250.dp)
+            .clip(cardShape)
             .clickable { onClick(place) },
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colorResource(R.color.md3_outline)),
-        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface.copy(alpha = 0.95f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.26f)),
+        shape = cardShape,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
@@ -72,39 +83,62 @@ fun PlaceCard(
                         Brush.verticalGradient(
                             listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.33f),
-                                Color.Black.copy(alpha = 0.88f),
+                                Color.Black.copy(alpha = 0.38f),
+                                Color.Black.copy(alpha = 0.86f),
                             )
                         )
                     )
             )
 
-            Surface(
-                color = Color.White.copy(alpha = 0.80f),
-                shape = RoundedCornerShape(14.dp),
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .fillMaxWidth()
                     .padding(12.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = place.effectiveTag?.takeIf { it.isNotBlank() } ?: fallback,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    color = colorResource(R.color.md3_primary),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Surface(
+                    color = colorScheme.primaryContainer.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.25f)),
+                ) {
+                    Text(
+                        text = tagText,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        color = colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Surface(
+                    color = colorScheme.secondaryContainer.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
+                ) {
+                    Text(
+                        text = ratingText,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        color = colorScheme.onSecondaryContainer,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp, bottom = 14.dp, top = 10.dp),
             ) {
                 Text(
                     text = place.name?.takeIf { it.isNotBlank() } ?: fallback,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 2,
@@ -113,36 +147,26 @@ fun PlaceCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = place.address?.takeIf { it.isNotBlank() } ?: fallback,
+                    text = locationText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.90f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = if (place.rating != null && place.reviewCount != null) {
-                            stringResource(R.string.explore_rating_format, place.rating, place.reviewCount)
-                        } else {
-                            stringResource(R.string.explore_rating_unknown)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.20f),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text(
                         text = place.openHours?.takeIf { it.isNotBlank() }
                             ?: stringResource(R.string.explore_open_hours_unknown),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.86f),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -159,17 +183,28 @@ fun TrendingPlaceCard(
     onClick: (Place) -> Unit = {},
 ) {
     val fallback = stringResource(R.string.explore_updating)
+    val colorScheme = MaterialTheme.colorScheme
+    val area = place.province?.takeIf { it.isNotBlank() }
+        ?: place.district?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.explore_unknown_district)
+    val tag = place.effectiveTag?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.explore_unknown_tag)
+    val ratingText = if (place.rating != null && place.reviewCount != null) {
+        stringResource(R.string.explore_rating_format, place.rating, place.reviewCount)
+    } else {
+        stringResource(R.string.explore_rating_unknown)
+    }
 
     Card(
         modifier = modifier
             .width(238.dp)
-            .aspectRatio(238f / 170f)
-            .clip(RoundedCornerShape(24.dp))
+            .aspectRatio(238f / 168f)
+            .clip(RoundedCornerShape(22.dp))
             .clickable { onClick(place) },
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colorResource(R.color.md3_outline)),
-        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface.copy(alpha = 0.95f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.24f)),
+        shape = RoundedCornerShape(22.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
@@ -187,28 +222,25 @@ fun TrendingPlaceCard(
                         Brush.verticalGradient(
                             listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.33f),
-                                Color.Black.copy(alpha = 0.88f),
+                                Color.Black.copy(alpha = 0.36f),
+                                Color.Black.copy(alpha = 0.82f),
                             )
                         )
                     )
             )
 
             Surface(
-                color = Color.White.copy(alpha = 0.85f),
+                color = colorScheme.secondaryContainer.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.2f)),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
             ) {
                 Text(
-                    text = if (place.rating != null && place.reviewCount != null) {
-                        stringResource(R.string.explore_rating_format, place.rating, place.reviewCount)
-                    } else {
-                        stringResource(R.string.explore_rating_unknown)
-                    },
+                    text = ratingText,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = colorResource(R.color.md3_primary),
+                    color = colorScheme.onSecondaryContainer,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -223,7 +255,7 @@ fun TrendingPlaceCard(
             ) {
                 Text(
                     text = place.name?.takeIf { it.isNotBlank() } ?: fallback,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 2,
@@ -231,11 +263,6 @@ fun TrendingPlaceCard(
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
-                val area = place.province?.takeIf { it.isNotBlank() }
-                    ?: place.district?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.explore_unknown_district)
-                val tag = place.effectiveTag?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.explore_unknown_tag)
                 Text(
                     text = stringResource(R.string.explore_tag_district_format, tag, area),
                     style = MaterialTheme.typography.bodySmall,
@@ -250,10 +277,7 @@ fun TrendingPlaceCard(
 
 @Composable
 private fun PlaceImagePlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.background(colorResource(R.color.md3_tertiary_container)),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = modifier.background(colorResource(R.color.md3_tertiary_container)), contentAlignment = Alignment.Center) {
         Icon(
             painter = painterResource(R.drawable.ic_restaurant_24),
             contentDescription = null,
