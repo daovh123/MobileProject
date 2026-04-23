@@ -1,6 +1,7 @@
 package com.example.mobileproject.presentation.notification
 
 import com.example.mobileproject.BuildConfig
+import com.example.mobileproject.utils.ApiBaseUrlResolver
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -63,14 +64,7 @@ object ChatQuickReplySender {
     }
 
     private fun buildWebSocketUrl(): String {
-        val base = BuildConfig.API_BASE_URL.trim().removeSuffix("/")
-
-        val wsBase = when {
-            base.startsWith("https://") -> "wss://" + base.removePrefix("https://")
-            base.startsWith("http://") -> "ws://" + base.removePrefix("http://")
-            base.startsWith("wss://") || base.startsWith("ws://") -> base
-            else -> "ws://$base"
-        }
+        val wsBase = ApiBaseUrlResolver.resolveWebSocketBase(BuildConfig.API_BASE_URL)
 
         return "$wsBase/ws/chat"
     }

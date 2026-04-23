@@ -9,7 +9,6 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
@@ -19,6 +18,8 @@ import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.ui.screen.app.compose.HomeRoutes
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,7 +66,7 @@ class HomeActivity : ComponentActivity() {
         syncFcmToken(accessToken)
 
         setContent {
-            MaterialTheme {
+            MobileProjectTheme {
                 com.example.mobileproject.presentation.ui.screen.app.compose.HomeScaffold(
                     accessToken = accessToken,
                     apiService = apiService,
@@ -102,7 +103,19 @@ class HomeActivity : ComponentActivity() {
             return
         }
 
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+        if (!isFirebaseAvailable()) {
+            Log.i("ChatFCM", "Skip FCM sync because Firebase is not configured")
+            return
+        }
+
+        val messaging = runCatching { FirebaseMessaging.getInstance() }
+            .onFailure { error ->
+                Log.w("ChatFCM", "Skip FCM sync because FirebaseMessaging is unavailable", error)
+            }
+            .getOrNull()
+            ?: return
+
+        messaging.token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Log.w("ChatFCM", "Failed to fetch FCM token", task.exception)
                 return@addOnCompleteListener
@@ -125,6 +138,17 @@ class HomeActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun isFirebaseAvailable(): Boolean {
+        val existingApps = runCatching { FirebaseApp.getApps(this) }
+            .getOrDefault(emptyList())
+        if (existingApps.isNotEmpty()) {
+            return true
+        }
+
+        return runCatching { FirebaseApp.initializeApp(this) }
+            .getOrNull() != null
     }
 
     private fun requestNotificationPermissionIfNeeded() {

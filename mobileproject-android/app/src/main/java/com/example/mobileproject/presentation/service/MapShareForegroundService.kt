@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
+import com.example.mobileproject.utils.ApiBaseUrlResolver
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -308,14 +309,7 @@ class MapShareForegroundService : Service() {
     }
 
     private fun buildWebSocketUrl(coupleId: String): String {
-        val base = BuildConfig.API_BASE_URL.trim().removeSuffix("/")
-
-        val wsBase = when {
-            base.startsWith("https://") -> "wss://" + base.removePrefix("https://")
-            base.startsWith("http://") -> "ws://" + base.removePrefix("http://")
-            base.startsWith("wss://") || base.startsWith("ws://") -> base
-            else -> "ws://$base"
-        }
+        val wsBase = ApiBaseUrlResolver.resolveWebSocketBase(BuildConfig.API_BASE_URL)
 
         return "$wsBase/ws/map/share/$coupleId"
     }

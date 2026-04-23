@@ -12,6 +12,8 @@ import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +49,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -65,10 +68,16 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.service.MapShareForegroundService
+import com.example.mobileproject.presentation.ui.components.core.AppMetricChip
+import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
+import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
+import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
+import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.map.MapShareActivity
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -483,119 +492,181 @@ private fun HomeContent(
     onCenterPartner: () -> Unit,
     mapView: MapView?,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorResource(R.color.md3_surface_variant))
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.page_home),
-            style = MaterialTheme.typography.headlineMedium,
-            color = colorResource(R.color.md3_primary),
-        )
+    var revealStep by remember { mutableStateOf(0) }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = SeedDataProvider.homeHighlights.getOrNull(0).orEmpty(),
-                    color = colorResource(R.color.md3_on_surface),
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = SeedDataProvider.homeHighlights.getOrNull(1).orEmpty(),
-                    color = colorResource(R.color.md3_on_surface_variant),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = SeedDataProvider.homeHighlights.getOrNull(2).orEmpty(),
-                    color = colorResource(R.color.md3_on_surface_variant),
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-                PairSection(
-                    state = state,
-                    accessToken = accessToken,
-                    onPairNow = onPairNow,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
+    LaunchedEffect(state.paired, state.isLoading) {
+        revealStep = 0
+        delay(60)
+        revealStep = 1
+        delay(80)
+        revealStep = 2
+        delay(90)
+        revealStep = 3
         if (state.paired) {
-            Spacer(modifier = Modifier.height(16.dp))
-            DaysTogetherCard(
-                daysTogether = daysTogether,
-                showAnniversaryHint = state.anniversaryTomorrow == true,
+            delay(90)
+            revealStep = 4
+        }
+    }
+
+    val pairStatus = when {
+        accessToken.isBlank() -> "Session off"
+        state.paired -> "Connected"
+        state.isLoading -> "Syncing"
+        else -> "Pending"
+    }
+    val codeValue = state.myCoupleCode?.takeIf { it.isNotBlank() } ?: "--"
+
+    AppScreenBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AppSectionHeader(
+                title = stringResource(R.string.page_home),
+                subtitle = if (state.paired) {
+                    stringResource(R.string.home_pair_connected_subtitle)
+                } else {
+                    stringResource(R.string.home_pair_subtitle)
+                },
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp),
+            AnimatedVisibility(visible = revealStep >= 1) {
+                AppSurfaceCard(
+                    modifier = Modifier.animateContentSize(),
                 ) {
-                    val activeMapView = mapView
-                    if (activeMapView != null) {
-                        AndroidView(
-                            factory = { activeMapView },
-                            modifier = Modifier.fillMaxSize(),
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = SeedDataProvider.homeHighlights.getOrNull(0).orEmpty(),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
                         )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(colorResource(R.color.md3_surface_variant)),
-                            contentAlignment = Alignment.Center,
+                        Text(
+                            text = SeedDataProvider.homeHighlights.getOrNull(1).orEmpty(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = SeedDataProvider.homeHighlights.getOrNull(2).orEmpty(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text(
-                                text = stringResource(R.string.home_pair_loading_button),
-                                color = colorResource(R.color.md3_on_surface_variant),
+                            AppMetricChip(
+                                value = daysTogether.toString(),
+                                label = stringResource(R.string.home_days_together_label),
+                                modifier = Modifier.weight(1f),
+                            )
+                            AppMetricChip(
+                                value = pairStatus,
+                                label = stringResource(R.string.home_pair_title),
+                                modifier = Modifier.weight(1f),
+                            )
+                            AppMetricChip(
+                                value = codeValue,
+                                label = "Pair code",
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     }
+                }
+            }
 
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+            AnimatedVisibility(visible = revealStep >= 2) {
+                AppSurfaceCard(
+                    modifier = Modifier.animateContentSize(),
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
+                        PairSection(
+                            state = state,
+                            accessToken = accessToken,
+                            onPairNow = onPairNow,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+
+            if (state.paired) {
+                AnimatedVisibility(visible = revealStep >= 3) {
+                    DaysTogetherCard(
+                        daysTogether = daysTogether,
+                        showAnniversaryHint = state.anniversaryTomorrow == true,
+                    )
+                }
+
+                AnimatedVisibility(visible = revealStep >= 4) {
+                    AppSurfaceCard(
+                        modifier = Modifier.animateContentSize(),
                     ) {
-                        SmallFloatingActionButton(
-                            onClick = onCenterPartner,
-                            containerColor = colorResource(R.color.md3_surface),
-                            contentColor = colorResource(R.color.md3_primary),
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_avatar_24),
-                                contentDescription = stringResource(R.string.map_share_partner_marker),
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            AppSectionHeader(
+                                title = stringResource(R.string.map_share_title),
+                                subtitle = stringResource(R.string.home_pair_connected_note),
                             )
-                        }
 
-                        SmallFloatingActionButton(
-                            onClick = onCenterMe,
-                            containerColor = colorResource(R.color.md3_surface),
-                            contentColor = colorResource(R.color.md3_primary),
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_location_24),
-                                contentDescription = stringResource(R.string.map_share_me_marker),
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(240.dp)
+                                    .clip(RoundedCornerShape(18.dp)),
+                            ) {
+                                val activeMapView = mapView
+                                if (activeMapView != null) {
+                                    AndroidView(
+                                        factory = { activeMapView },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(colorResource(R.color.md3_surface_variant)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.home_pair_loading_button),
+                                            color = colorResource(R.color.md3_on_surface_variant),
+                                        )
+                                    }
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    SmallFloatingActionButton(
+                                        onClick = onCenterPartner,
+                                        containerColor = colorResource(R.color.md3_surface),
+                                        contentColor = colorResource(R.color.md3_primary),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_avatar_24),
+                                            contentDescription = stringResource(R.string.map_share_partner_marker),
+                                        )
+                                    }
+
+                                    SmallFloatingActionButton(
+                                        onClick = onCenterMe,
+                                        containerColor = colorResource(R.color.md3_surface),
+                                        contentColor = colorResource(R.color.md3_primary),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_location_24),
+                                            contentDescription = stringResource(R.string.map_share_me_marker),
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -735,13 +806,12 @@ private fun PairSection(
 
         if (showPairButton) {
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
+            AppPrimaryButton(
+                text = pairButtonText,
                 onClick = onPairNow,
                 enabled = pairButtonEnabled,
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = pairButtonText)
-            }
+            )
         }
     }
 }

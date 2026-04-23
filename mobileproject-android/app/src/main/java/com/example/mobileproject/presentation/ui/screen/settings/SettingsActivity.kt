@@ -23,6 +23,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import dagger.hilt.android.AndroidEntryPoint
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -46,10 +47,12 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         setContent {
-            SettingsActivityScreen(
-                accessToken = accessToken,
-                onClose = { finish() },
-            )
+            MobileProjectTheme {
+                SettingsActivityScreen(
+                    accessToken = accessToken,
+                    onClose = { finish() },
+                )
+            }
         }
     }
 }

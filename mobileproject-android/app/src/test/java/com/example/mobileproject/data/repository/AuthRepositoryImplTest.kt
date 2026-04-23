@@ -10,6 +10,7 @@ import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
+import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -218,6 +219,13 @@ class AuthRepositoryImplTest {
         }
 
         override suspend fun clearHistory(authorization: String): Response<Unit> {
+            return Response.success(Unit)
+        }
+
+        override suspend fun registerFcmToken(
+            authorization: String,
+            request: FcmTokenRequestDto,
+        ): Response<Unit> {
             return Response.success(Unit)
         }
     }

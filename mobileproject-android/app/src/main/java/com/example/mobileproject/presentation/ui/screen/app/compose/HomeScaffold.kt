@@ -2,23 +2,27 @@ package com.example.mobileproject.presentation.ui.screen.app.compose
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -37,12 +42,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
@@ -113,6 +117,16 @@ fun HomeScaffold(
     val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val snackbarHostState = remember { SnackbarHostState() }
+    val colorScheme = MaterialTheme.colorScheme
+    val scaffoldBackgroundBrush = remember(colorScheme) {
+        Brush.verticalGradient(
+            colors = listOf(
+                colorScheme.surface,
+                colorScheme.surfaceVariant.copy(alpha = 0.95f),
+                colorScheme.background,
+            ),
+        )
+    }
 
     val openChatActionLabel = stringResource(R.string.chat_in_app_open_action)
     val inAppMessageFormat = stringResource(R.string.chat_in_app_message_format)
@@ -175,17 +189,17 @@ fun HomeScaffold(
                     if (isChatRoute) {
                         Text(
                             text = stringResource(R.string.chat_title),
-                            color = colorResource(R.color.md3_primary),
+                            color = colorScheme.primary,
                         )
                     } else if (isProfileRoute) {
                         Text(
                             text = stringResource(R.string.profile_title),
-                            color = colorResource(R.color.md3_primary),
+                            color = colorScheme.primary,
                         )
                     } else if (!isMemoriesRoute) {
                         Text(
                             text = stringResource(currentItem.titleRes),
-                            color = colorResource(R.color.md3_primary),
+                            color = colorScheme.primary,
                         )
                     }
                 },
@@ -195,7 +209,7 @@ fun HomeScaffold(
                             Icon(
                                 painter = painterResource(R.drawable.ic_close_24),
                                 contentDescription = stringResource(R.string.cd_close),
-                                tint = colorResource(R.color.md3_primary),
+                                tint = colorScheme.primary,
                             )
                         }
                     } else {
@@ -213,7 +227,7 @@ fun HomeScaffold(
                             Icon(
                                 painter = painterResource(R.drawable.ic_avatar_24),
                                 contentDescription = stringResource(R.string.cd_open_profile),
-                                tint = colorResource(R.color.md3_primary),
+                                tint = colorScheme.primary,
                             )
                         }
                     }
@@ -224,17 +238,21 @@ fun HomeScaffold(
                             Icon(
                                 painter = painterResource(R.drawable.ic_notifications_24),
                                 contentDescription = stringResource(R.string.action_notifications),
-                                tint = colorResource(R.color.md3_primary),
+                                tint = colorScheme.primary,
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isMemoriesRoute) {
-                        colorResource(R.color.auth_bg_top)
+                        colorScheme.surfaceColorAtElevation(2.dp)
                     } else {
-                        colorResource(R.color.md3_surface)
+                        colorScheme.surface.copy(alpha = 0.94f)
                     },
+                    scrolledContainerColor = colorScheme.surfaceColorAtElevation(4.dp),
+                    titleContentColor = colorScheme.primary,
+                    navigationIconContentColor = colorScheme.primary,
+                    actionIconContentColor = colorScheme.primary,
                 ),
             )
         },
@@ -245,10 +263,11 @@ fun HomeScaffold(
                         .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 6.dp)
                         .navigationBarsPadding(),
                     colors = CardDefaults.cardColors(
-                        containerColor = colorResource(R.color.nav_glass_surface),
+                        containerColor = colorScheme.surface.copy(alpha = 0.86f),
                     ),
-                    border = BorderStroke(1.dp, colorResource(R.color.nav_glass_stroke)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 9.dp),
+                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.32f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = MaterialTheme.shapes.large,
                 ) {
                     NavigationBar(
                         containerColor = Color.Transparent,
@@ -275,76 +294,124 @@ fun HomeScaffold(
                                 },
                                 label = null,
                                 alwaysShowLabel = false,
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = colorScheme.onSecondaryContainer,
+                                    unselectedIconColor = colorScheme.onSurfaceVariant,
+                                    indicatorColor = colorScheme.secondaryContainer.copy(alpha = 0.92f),
+                                ),
                             )
                         }
                     }
                 }
             }
         },
-        containerColor = colorResource(R.color.md3_surface_variant),
+        containerColor = Color.Transparent,
     ) { innerPadding ->
         Box(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize(),
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = HomeRoutes.HOME,
-                modifier = Modifier.fillMaxSize(),
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(scaffoldBackgroundBrush),
+            )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(280.dp)
+                    .offset(x = 90.dp, y = (-110).dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                colorScheme.primary.copy(alpha = 0.18f),
+                                Color.Transparent,
+                            ),
+                        ),
+                        shape = CircleShape,
+                    ),
+            )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .size(300.dp)
+                    .offset(x = (-110).dp, y = 130.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                colorScheme.tertiary.copy(alpha = 0.14f),
+                                Color.Transparent,
+                            ),
+                        ),
+                        shape = CircleShape,
+                    ),
+            )
+
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
             ) {
-                composable(HomeRoutes.HOME) {
-                    HomeScreen(
-                        accessToken = accessToken,
-                        apiService = apiService,
-                    )
-                }
-                composable(HomeRoutes.WALLET) {
-                    WalletScreen()
-                }
-                composable(HomeRoutes.EXPLORE) {
-                    ExploreRoute(accessToken = accessToken)
-                }
-                composable(HomeRoutes.MEMORIES) {
-                    MemoriesScreen(
-                        accessToken = accessToken,
-                        onNavigateToExplore = {
-                            navController.navigate(HomeRoutes.EXPLORE) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                NavHost(
+                    navController = navController,
+                    startDestination = HomeRoutes.HOME,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    composable(HomeRoutes.HOME) {
+                        HomeScreen(
+                            accessToken = accessToken,
+                            apiService = apiService,
+                        )
+                    }
+                    composable(HomeRoutes.WALLET) {
+                        WalletScreen()
+                    }
+                    composable(HomeRoutes.EXPLORE) {
+                        ExploreRoute(accessToken = accessToken)
+                    }
+                    composable(HomeRoutes.MEMORIES) {
+                        MemoriesScreen(
+                            accessToken = accessToken,
+                            onNavigateToExplore = {
+                                navController.navigate(HomeRoutes.EXPLORE) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
+                            },
+                        )
+                    }
+                    composable(HomeRoutes.SETTINGS) {
+                        SettingsScreen(accessToken = accessToken)
+                    }
+                    composable(HomeRoutes.PROFILE) {
+                        ProfileScreen(
+                            accessToken = accessToken,
+                            onNavigateBack = { navController.popBackStack() },
+                            onLogout = {
+                                (context as? HomeActivity)?.logoutAndOpenLogin()
+                            },
+                        )
+                    }
+                    composable(HomeRoutes.CHAT) {
+                        ChatScreen(accessToken = accessToken)
+                    }
+                }
+
+                if (!isChatRoute) {
+                    DraggableChatButton(
+                        onClick = {
+                            navController.navigate(HomeRoutes.CHAT) {
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         },
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
-                composable(HomeRoutes.SETTINGS) {
-                    SettingsScreen(accessToken = accessToken)
-                }
-                composable(HomeRoutes.PROFILE) {
-                    ProfileScreen(
-                        accessToken = accessToken,
-                        onNavigateBack = { navController.popBackStack() },
-                        onLogout = {
-                            (context as? HomeActivity)?.logoutAndOpenLogin()
-                        },
-                    )
-                }
-                composable(HomeRoutes.CHAT) {
-                    ChatScreen(accessToken = accessToken)
-                }
-            }
-
-            if (!isChatRoute) {
-                DraggableChatButton(
-                    onClick = {
-                        navController.navigate(HomeRoutes.CHAT) {
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
             }
         }
     }
@@ -356,6 +423,7 @@ private fun DraggableChatButton(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier) {
+        val colorScheme = MaterialTheme.colorScheme
         val density = LocalDensity.current
         val buttonSize = 56.dp
         val buttonSizePx = with(density) { buttonSize.toPx() }
@@ -394,14 +462,17 @@ private fun DraggableChatButton(
                     }
                 }
                 .clickable(onClick = onClick),
-            shape = androidx.compose.foundation.shape.CircleShape,
-            color = colorResource(R.color.md3_primary),
-            shadowElevation = 10.dp,
+            shape = CircleShape,
+            color = colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.3f)),
+            shadowElevation = 8.dp,
+            tonalElevation = 4.dp,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.chat_fab_label),
-                    color = colorResource(R.color.md3_on_primary),
+                    color = colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

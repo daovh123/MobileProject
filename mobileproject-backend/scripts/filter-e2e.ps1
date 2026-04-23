@@ -5,6 +5,68 @@ param(
 $ErrorActionPreference = "Stop"
 $results = @()
 
+function Read-HttpErrorResponse {
+    param(
+        [object]$HttpResponse
+    )
+
+    if ($null -eq $HttpResponse) {
+        return [pscustomobject]@{
+            StatusCode = 0
+            Body       = ""
+        }
+    }
+
+    if ($HttpResponse -is [System.Net.Http.HttpResponseMessage]) {
+        $statusCode = [int]$HttpResponse.StatusCode
+        $bodyText = ""
+        if ($null -ne $HttpResponse.Content) {
+            try {
+                $bodyText = $HttpResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+            }
+            catch {
+                $bodyText = ""
+            }
+        }
+
+        return [pscustomobject]@{
+            StatusCode = $statusCode
+            Body       = $bodyText
+        }
+    }
+
+    if ($HttpResponse.PSObject.Methods.Name -contains "GetResponseStream") {
+        $statusCode = [int]$HttpResponse.StatusCode
+        $bodyText = ""
+        $stream = $HttpResponse.GetResponseStream()
+        if ($null -ne $stream) {
+            $reader = New-Object System.IO.StreamReader($stream)
+            $bodyText = $reader.ReadToEnd()
+            $reader.Close()
+        }
+
+        return [pscustomobject]@{
+            StatusCode = $statusCode
+            Body       = $bodyText
+        }
+    }
+
+    $fallbackStatus = 0
+    if ($HttpResponse.PSObject.Properties.Name -contains "StatusCode") {
+        try {
+            $fallbackStatus = [int]$HttpResponse.StatusCode
+        }
+        catch {
+            $fallbackStatus = 0
+        }
+    }
+
+    return [pscustomobject]@{
+        StatusCode = $fallbackStatus
+        Body       = ""
+    }
+}
+
 function Invoke-TestCase {
     param(
         [string]$Name,
@@ -20,19 +82,16 @@ function Invoke-TestCase {
         $response = Invoke-WebRequest -Uri $Url -Method Get -UseBasicParsing
         $statusCode = [int]$response.StatusCode
         $bodyText = $response.Content
-    } catch {
+    }
+    catch {
         $httpResponse = $_.Exception.Response
-        if ($null -eq $httpResponse) {
+        $parsedResponse = Read-HttpErrorResponse -HttpResponse $httpResponse
+        if ($parsedResponse.StatusCode -eq 0) {
             throw
         }
 
-        $statusCode = [int]$httpResponse.StatusCode
-        $stream = $httpResponse.GetResponseStream()
-        if ($null -ne $stream) {
-            $reader = New-Object System.IO.StreamReader($stream)
-            $bodyText = $reader.ReadToEnd()
-            $reader.Close()
-        }
+        $statusCode = $parsedResponse.StatusCode
+        $bodyText = $parsedResponse.Body
     }
 
     $passed = $statusCode -eq $ExpectedStatus
@@ -40,7 +99,8 @@ function Invoke-TestCase {
 
     if (-not $passed) {
         $message = "Expected status $ExpectedStatus but got $statusCode"
-    } elseif ($null -ne $ValidateBody) {
+    }
+    elseif ($null -ne $ValidateBody) {
         try {
             $jsonBody = $null
             if (-not [string]::IsNullOrWhiteSpace($bodyText)) {
@@ -48,21 +108,23 @@ function Invoke-TestCase {
             }
             & $ValidateBody $jsonBody
             $message = "OK"
-        } catch {
+        }
+        catch {
             $passed = $false
             $message = "Body validation failed: $($_.Exception.Message)"
         }
-    } else {
+    }
+    else {
         $message = "OK"
     }
 
     $script:results += [pscustomobject]@{
-        Name = $Name
-        Passed = $passed
-        Status = $statusCode
+        Name     = $Name
+        Passed   = $passed
+        Status   = $statusCode
         Expected = $ExpectedStatus
-        Message = $message
-        Url = $Url
+        Message  = $message
+        Url      = $Url
     }
 }
 
@@ -201,21 +263,22 @@ try {
     $auditMessage = "totals(all,1+,2+,3+,4+,5+)=" + ($totals -join ",") + "; twoPlusPage5Star=$twoPageFiveStarCount"
 
     $results += [pscustomobject]@{
-        Name = "ha-noi-rating-audit"
-        Passed = $auditPassed
-        Status = if ($auditPassed) { 200 } else { 500 }
+        Name     = "ha-noi-rating-audit"
+        Passed   = $auditPassed
+        Status   = if ($auditPassed) { 200 } else { 500 }
         Expected = 200
-        Message = $auditMessage
-        Url = $ratingAuditBase
+        Message  = $auditMessage
+        Url      = $ratingAuditBase
     }
-} catch {
+}
+catch {
     $results += [pscustomobject]@{
-        Name = "ha-noi-rating-audit"
-        Passed = $false
-        Status = 500
+        Name     = "ha-noi-rating-audit"
+        Passed   = $false
+        Status   = 500
         Expected = 200
-        Message = "Audit execution failed: $($_.Exception.Message)"
-        Url = "$BaseUrl/api/places"
+        Message  = "Audit execution failed: $($_.Exception.Message)"
+        Url      = "$BaseUrl/api/places"
     }
 }
 

@@ -58,6 +58,17 @@ public class FcmPushService {
             return;
         }
 
+        if (path.startsWith("classpath:")) {
+            String classpathResource = path.substring("classpath:".length()).trim();
+            boolean exists = hasClasspathResource(classpathResource);
+            if (!exists) {
+                LOGGER.warn("Firebase classpath resource not found at {}", path);
+            } else {
+                LOGGER.info("Firebase credentials loaded from {}", path);
+            }
+            return;
+        }
+
         boolean exists = Files.exists(Path.of(path));
         if (!exists) {
             LOGGER.warn("Firebase credentials file not found at {}", path);
@@ -215,13 +226,28 @@ public class FcmPushService {
     private GoogleCredentials loadCredentialsOrNull() {
         String path = credentialsPath == null ? "" : credentialsPath.trim();
         if (!path.isBlank()) {
-            try (InputStream stream = Files.newInputStream(Path.of(path))) {
-                pathReadFailureLogged = false;
-                return GoogleCredentials.fromStream(stream);
-            } catch (Exception ex) {
-                if (!pathReadFailureLogged) {
-                    pathReadFailureLogged = true;
+            if (path.startsWith("classpath:")) {
+                String classpathResource = path.substring("classpath:".length()).trim();
+                String normalizedClasspathResource = normalizeClasspathResource(classpathResource);
+                try (InputStream stream = FcmPushService.class.getClassLoader().getResourceAsStream(normalizedClasspathResource)) {
+                    if (stream != null) {
+                        pathReadFailureLogged = false;
+                        LOGGER.info("Using Firebase credentials from classpath resource {}", normalizedClasspathResource);
+                        return GoogleCredentials.fromStream(stream);
+                    }
+                    LOGGER.warn("Firebase classpath resource {} was not found", normalizedClasspathResource);
+                } catch (Exception ex) {
                     LOGGER.warn("Failed to read Firebase credentials from firebase.credentials.path={}. Trying fallback sources.", path);
+                }
+            } else {
+                try (InputStream stream = Files.newInputStream(Path.of(path))) {
+                    pathReadFailureLogged = false;
+                    return GoogleCredentials.fromStream(stream);
+                } catch (Exception ex) {
+                    if (!pathReadFailureLogged) {
+                        pathReadFailureLogged = true;
+                        LOGGER.warn("Failed to read Firebase credentials from firebase.credentials.path={}. Trying fallback sources.", path);
+                    }
                 }
             }
         }
@@ -249,5 +275,25 @@ public class FcmPushService {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    private boolean hasClasspathResource(String classpathResource) {
+        String normalizedClasspathResource = normalizeClasspathResource(classpathResource);
+        try (InputStream stream = FcmPushService.class.getClassLoader().getResourceAsStream(normalizedClasspathResource)) {
+            return stream != null;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private String normalizeClasspathResource(String classpathResource) {
+        if (classpathResource == null || classpathResource.isBlank()) {
+            return "firebase-service-account.json";
+        }
+        String normalized = classpathResource.replace("\\", "/").trim();
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        return normalized;
     }
 }

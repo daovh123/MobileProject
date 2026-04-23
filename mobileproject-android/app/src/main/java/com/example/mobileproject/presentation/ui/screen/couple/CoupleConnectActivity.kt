@@ -47,6 +47,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
+import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -62,7 +63,7 @@ class CoupleConnectActivity : ComponentActivity() {
         val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         enableImmersiveMode()
         setContent {
-            MaterialTheme {
+            MobileProjectTheme {
                 val coupleViewModel: CoupleViewModel = hiltViewModel()
                 CoupleConnectScreen(
                     accessToken = accessToken,

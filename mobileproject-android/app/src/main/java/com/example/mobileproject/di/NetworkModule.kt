@@ -1,9 +1,11 @@
 package com.example.mobileproject.di
 
 import android.content.Context
+import android.util.Log
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.datasource.remote.PlaceApiService
+import com.example.mobileproject.utils.ApiBaseUrlResolver
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -35,6 +37,14 @@ object NetworkModule {
         val cache = Cache(cacheDirectory, PLACE_HTTP_CACHE_SIZE_BYTES)
 
         return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                try {
+                    Log.i("NetworkModule", "Outgoing request: ${request.method} ${request.url}")
+                } catch (_: Throwable) {
+                }
+                chain.proceed(request)
+            }
             .cache(cache)
             .addNetworkInterceptor { chain ->
                 val request = chain.request()
@@ -58,8 +68,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(gson: Gson, okHttpClient: OkHttpClient): Retrofit {
+        val configured = ApiBaseUrlResolver.resolveHttpBase(BuildConfig.API_BASE_URL)
+        Log.i("NetworkModule", "Retrofit baseUrl=$configured")
+
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(configured)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

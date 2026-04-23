@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.domain.entity.ChatMessage
+import com.example.mobileproject.utils.ApiBaseUrlResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -265,14 +266,7 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun buildWebSocketUrl(): String {
-        val base = BuildConfig.API_BASE_URL.trim().removeSuffix("/")
-
-        val wsBase = when {
-            base.startsWith("https://") -> "wss://" + base.removePrefix("https://")
-            base.startsWith("http://") -> "ws://" + base.removePrefix("http://")
-            base.startsWith("wss://") || base.startsWith("ws://") -> base
-            else -> "ws://$base"
-        }
+        val wsBase = ApiBaseUrlResolver.resolveWebSocketBase(BuildConfig.API_BASE_URL)
 
         return "$wsBase/ws/chat"
     }

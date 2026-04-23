@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +80,13 @@ import coil.compose.AsyncImage
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
+import com.example.mobileproject.presentation.ui.components.core.AppEmptyState
+import com.example.mobileproject.presentation.ui.components.core.AppFormTextField
+import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
+import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
+import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
+import com.example.mobileproject.presentation.ui.components.core.AppStateMessage
+import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
 import com.example.mobileproject.presentation.ui.components.place.PlaceCard
 import com.example.mobileproject.presentation.ui.components.place.TrendingPlaceCard
 import com.example.mobileproject.presentation.viewmodel.ExplorePlaceType
@@ -93,6 +101,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Locale
 
 private const val LOAD_MORE_THRESHOLD: Int = 6
@@ -328,216 +337,241 @@ fun ExploreScreen(
 
     val areaDisplayOptions = remember(context) { buildAreaDisplayOptions(context) }
     val ratingOptions = remember(context) { buildRatingOptions(context) }
+    var revealFeed by rememberSaveable { mutableStateOf(false) }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        state = listState,
-        contentPadding = PaddingValues(bottom = 26.dp, top = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        item {
-            ExploreSearchBar(
-                query = uiState.query,
-                isAdvancedExpanded = isAdvancedExpanded,
-                onQueryChange = exploreViewModel::onQueryChanged,
-                onToggleAdvanced = { isAdvancedExpanded = !isAdvancedExpanded },
-                onSearch = { exploreViewModel.search() },
-            )
-        }
+    LaunchedEffect(Unit) {
+        delay(90)
+        revealFeed = true
+    }
 
-        item {
-            ExploreTypeChipsRow(
-                selectedType = uiState.selectedType,
-                nearMeSelected = uiState.nearMeOnly,
-                onTypeSelected = exploreViewModel::onTypeChanged,
-                onNearMeChanged = { checked ->
-                    exploreViewModel.onNearMeChanged(checked)
-                    if (checked) {
-                        isAdvancedExpanded = true
-                        ensureCurrentLocation()
-                    }
-                },
-            )
-        }
-
-        if (isAdvancedExpanded) {
+    AppScreenBackground(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            state = listState,
+            contentPadding = PaddingValues(bottom = 26.dp, top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
-                ExploreAdvancedFilters(
-                    selectedProvinceQuery = uiState.selectedProvince,
-                    areaOptions = areaDisplayOptions,
-                    onProvinceSelected = { label ->
-                        exploreViewModel.onProvinceChanged(normalizeProvinceSelection(label, context))
-                    },
-                    selectedMinRating = uiState.selectedMinRating,
-                    ratingOptions = ratingOptions,
-                    onMinRatingSelected = { index ->
-                        exploreViewModel.onMinRatingChanged(minRatingFromPosition(index))
-                    },
-                    radiusKmInput = uiState.radiusKmInput,
-                    onRadiusChange = exploreViewModel::onRadiusChanged,
-                    onRandom = {
-                        if (uiState.nearMeOnly && (uiState.currentLat == null || uiState.currentLng == null)) {
-                            ensureCurrentLocation()
-                        }
-                        exploreViewModel.randomPlace()
-                    },
+                AppSectionHeader(
+                    title = stringResource(R.string.explore_feed_title),
+                    subtitle = stringResource(R.string.explore_search_hint),
                 )
             }
-        }
 
-        val randomSuggestion = uiState.randomSuggestion
-        if (randomSuggestion != null) {
             item {
-                val areaLabel = randomSuggestion.province
-                    ?.takeIf { it.isNotBlank() }
-                    ?: randomSuggestion.district
-                        ?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.explore_updating)
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_tertiary_container)),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(
-                            R.string.explore_random_result_format,
-                            valueOrUpdating(randomSuggestion.name, context),
-                            areaLabel,
-                        ),
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        color = colorResource(R.color.md3_on_tertiary_container),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-        }
-
-        val hasTrending = uiState.trending.isNotEmpty()
-        if (hasTrending) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.explore_trending_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.md3_on_surface),
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(onClick = { isTrendingCollapsed = !isTrendingCollapsed }) {
-                        Icon(
-                            painter = painterResource(
-                                if (isTrendingCollapsed) R.drawable.ic_expand_more_24 else R.drawable.ic_expand_less_24,
-                            ),
-                            contentDescription = stringResource(
-                                if (isTrendingCollapsed) R.string.explore_trending_expand else R.string.explore_trending_collapse,
-                            ),
-                            tint = colorResource(R.color.md3_on_surface),
-                        )
-                    }
-                }
-            }
-
-            if (!isTrendingCollapsed) {
-                item {
-                    LazyRow(
-                        contentPadding = PaddingValues(start = 2.dp, end = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                AppSurfaceCard {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        items(uiState.trending, key = { it.id }) { place ->
-                            TrendingPlaceCard(
-                                place = place,
-                                onClick = {
-                                    selectedPlace = it
-                                    showPlaceDetail = true
+                        ExploreSearchBar(
+                            query = uiState.query,
+                            isAdvancedExpanded = isAdvancedExpanded,
+                            onQueryChange = exploreViewModel::onQueryChanged,
+                            onToggleAdvanced = { isAdvancedExpanded = !isAdvancedExpanded },
+                            onSearch = { exploreViewModel.search() },
+                        )
+
+                        ExploreTypeChipsRow(
+                            selectedType = uiState.selectedType,
+                            nearMeSelected = uiState.nearMeOnly,
+                            onTypeSelected = exploreViewModel::onTypeChanged,
+                            onNearMeChanged = { checked ->
+                                exploreViewModel.onNearMeChanged(checked)
+                                if (checked) {
+                                    isAdvancedExpanded = true
+                                    ensureCurrentLocation()
+                                }
+                            },
+                        )
+
+                        AnimatedVisibility(visible = isAdvancedExpanded) {
+                            ExploreAdvancedFilters(
+                                selectedProvinceQuery = uiState.selectedProvince,
+                                areaOptions = areaDisplayOptions,
+                                onProvinceSelected = { label ->
+                                    exploreViewModel.onProvinceChanged(normalizeProvinceSelection(label, context))
+                                },
+                                selectedMinRating = uiState.selectedMinRating,
+                                ratingOptions = ratingOptions,
+                                onMinRatingSelected = { index ->
+                                    exploreViewModel.onMinRatingChanged(minRatingFromPosition(index))
+                                },
+                                radiusKmInput = uiState.radiusKmInput,
+                                onRadiusChange = exploreViewModel::onRadiusChanged,
+                                onRandom = {
+                                    if (uiState.nearMeOnly && (uiState.currentLat == null || uiState.currentLng == null)) {
+                                        ensureCurrentLocation()
+                                    }
+                                    exploreViewModel.randomPlace()
                                 },
                             )
                         }
                     }
                 }
             }
-        }
 
-        if (uiState.isLoading || uiState.isRandomLoading) {
-            item {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
-        }
+            val randomSuggestion = uiState.randomSuggestion
+            if (randomSuggestion != null) {
+                item {
+                    val areaLabel = randomSuggestion.province
+                        ?.takeIf { it.isNotBlank() }
+                        ?: randomSuggestion.district
+                            ?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.explore_updating)
 
-        val errorMessage = uiState.errorMessage
-        if (!uiState.isLoading && !uiState.isRandomLoading && !errorMessage.isNullOrBlank()) {
-            item {
-                Text(
-                    text = stringResource(R.string.explore_error_message, errorMessage),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = colorResource(R.color.md3_on_surface_variant),
-                )
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    TextButton(onClick = exploreViewModel::retry) {
-                        Text(text = stringResource(R.string.explore_retry))
+                    AppSurfaceCard {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_restaurant_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(8.dp),
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.explore_random_result_format,
+                                    valueOrUpdating(randomSuggestion.name, context),
+                                    areaLabel,
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        item {
-            Text(
-                text = stringResource(R.string.explore_feed_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.md3_on_surface),
-            )
-        }
+            val hasTrending = uiState.trending.isNotEmpty()
+            if (hasTrending) {
+                item {
+                    AppSurfaceCard {
+                        Column(modifier = Modifier.padding(vertical = 10.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.explore_trending_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(onClick = { isTrendingCollapsed = !isTrendingCollapsed }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (isTrendingCollapsed) R.drawable.ic_expand_more_24 else R.drawable.ic_expand_less_24,
+                                        ),
+                                        contentDescription = stringResource(
+                                            if (isTrendingCollapsed) R.string.explore_trending_expand else R.string.explore_trending_collapse,
+                                        ),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
 
-        if (uiState.loadedPlaces > 0) {
-            item {
-                Text(
-                    text = stringResource(
-                        R.string.explore_results_count,
-                        uiState.loadedPlaces,
-                        uiState.totalPlaces,
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = colorResource(R.color.md3_on_surface_variant),
-                )
+                            AnimatedVisibility(visible = !isTrendingCollapsed) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    items(uiState.trending, key = { it.id }) { place ->
+                                        TrendingPlaceCard(
+                                            place = place,
+                                            onClick = {
+                                                selectedPlace = it
+                                                showPlaceDetail = true
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
 
-        if (!uiState.isLoading && !uiState.isRandomLoading && errorMessage.isNullOrBlank() && uiState.places.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.explore_empty_message),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = colorResource(R.color.md3_on_surface_variant),
-                )
+            if (uiState.loadedPlaces > 0) {
+                item {
+                    Text(
+                        text = stringResource(
+                            R.string.explore_results_count,
+                            uiState.loadedPlaces,
+                            uiState.totalPlaces,
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        }
 
-        items(uiState.places, key = { it.id }) { place ->
-            PlaceCard(
-                place = place,
-                onClick = {
-                    selectedPlace = it
-                    showPlaceDetail = true
-                },
-            )
-        }
+            if (uiState.isLoading || uiState.isRandomLoading) {
+                item {
+                    AppSurfaceCard {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                        )
+                    }
+                }
+            }
 
-        if (uiState.isPaging) {
-            item {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                )
+            val errorMessage = uiState.errorMessage
+            if (!uiState.isLoading && !uiState.isRandomLoading && !errorMessage.isNullOrBlank()) {
+                item {
+                    AppStateMessage(
+                        title = stringResource(R.string.explore_retry),
+                        message = stringResource(R.string.explore_error_message, errorMessage),
+                        actionText = stringResource(R.string.explore_retry),
+                        onAction = exploreViewModel::retry,
+                    )
+                }
+            }
+
+            if (!uiState.isLoading && !uiState.isRandomLoading && errorMessage.isNullOrBlank() && uiState.places.isEmpty()) {
+                item {
+                    AppEmptyState(
+                        title = stringResource(R.string.explore_empty_message),
+                        subtitle = stringResource(R.string.explore_random_action),
+                    )
+                }
+            }
+
+            if (revealFeed) {
+                items(uiState.places, key = { it.id }) { place ->
+                    PlaceCard(
+                        place = place,
+                        onClick = {
+                            selectedPlace = it
+                            showPlaceDetail = true
+                        },
+                    )
+                }
+            }
+
+            if (uiState.isPaging) {
+                item {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -551,24 +585,24 @@ private fun ExploreSearchBar(
     onToggleAdvanced: () -> Unit,
     onSearch: () -> Unit,
 ) {
-    OutlinedTextField(
+    AppFormTextField(
         value = query,
         onValueChange = onQueryChange,
+        label = stringResource(R.string.explore_search_action),
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
         placeholder = {
             Text(text = stringResource(R.string.explore_search_hint))
         },
-        leadingIcon = {
+        leading = {
             IconButton(onClick = onSearch) {
                 Icon(
                     painter = painterResource(R.drawable.ic_search_24),
                     contentDescription = stringResource(R.string.explore_search_action),
-                    tint = colorResource(R.color.md3_primary),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         },
-        trailingIcon = {
+        trailing = {
             IconButton(onClick = onToggleAdvanced) {
                 Icon(
                     painter = painterResource(
@@ -577,13 +611,12 @@ private fun ExploreSearchBar(
                     contentDescription = stringResource(
                         if (isAdvancedExpanded) R.string.explore_filter_toggle_hide else R.string.explore_filter_toggle_show,
                     ),
-                    tint = colorResource(R.color.md3_primary),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-        shape = RoundedCornerShape(16.dp),
     )
 }
 
@@ -648,57 +681,37 @@ private fun ExploreAdvancedFilters(
 ) {
     val context = LocalContext.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface_variant)),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            DropdownSelector(
-                label = stringResource(R.string.explore_area_hint),
-                value = provinceLabelForQuery(selectedProvinceQuery, context),
-                options = areaOptions,
-                onSelected = onProvinceSelected,
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        DropdownSelector(
+            label = stringResource(R.string.explore_area_hint),
+            value = provinceLabelForQuery(selectedProvinceQuery, context),
+            options = areaOptions,
+            onSelected = onProvinceSelected,
+        )
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            DropdownSelectorByIndex(
+                label = stringResource(R.string.explore_min_rating_hint),
+                value = ratingLabel(selectedMinRating, context),
+                options = ratingOptions,
+                onSelectedIndex = onMinRatingSelected,
+                modifier = Modifier.weight(1f),
             )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DropdownSelectorByIndex(
-                    label = stringResource(R.string.explore_min_rating_hint),
-                    value = ratingLabel(selectedMinRating, context),
-                    options = ratingOptions,
-                    onSelectedIndex = onMinRatingSelected,
-                    modifier = Modifier.weight(1f),
-                )
-
-                OutlinedTextField(
-                    value = radiusKmInput,
-                    onValueChange = onRadiusChange,
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    placeholder = { Text(stringResource(R.string.explore_radius_hint)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                    shape = RoundedCornerShape(16.dp),
-                )
-            }
-
-            Button(
-                onClick = onRandom,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.md3_primary_container),
-                    contentColor = colorResource(R.color.md3_on_primary_container),
-                ),
-                shape = RoundedCornerShape(14.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_restaurant_24),
-                    contentDescription = null,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(R.string.explore_random_action))
-            }
+            AppFormTextField(
+                value = radiusKmInput,
+                onValueChange = onRadiusChange,
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.explore_radius_hint),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            )
         }
+
+        AppPrimaryButton(
+            text = stringResource(R.string.explore_random_action),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onRandom,
+        )
     }
 }
 
@@ -713,15 +726,14 @@ private fun DropdownSelector(
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        OutlinedTextField(
+        AppFormTextField(
             value = value,
             onValueChange = {},
             modifier = Modifier
                 .fillMaxWidth(),
+            label = label,
             readOnly = true,
-            singleLine = true,
-            placeholder = { Text(label) },
-            trailingIcon = {
+            trailing = {
                 IconButton(onClick = { expanded = true }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_expand_more_24),
@@ -729,7 +741,6 @@ private fun DropdownSelector(
                     )
                 }
             },
-            shape = RoundedCornerShape(16.dp),
         )
 
         androidx.compose.material3.DropdownMenu(
@@ -767,14 +778,13 @@ private fun DropdownSelectorByIndex(
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        OutlinedTextField(
+        AppFormTextField(
             value = value,
             onValueChange = {},
             modifier = Modifier.fillMaxWidth(),
+            label = label,
             readOnly = true,
-            singleLine = true,
-            placeholder = { Text(label) },
-            trailingIcon = {
+            trailing = {
                 IconButton(onClick = { expanded = true }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_expand_more_24),
@@ -782,7 +792,6 @@ private fun DropdownSelectorByIndex(
                     )
                 }
             },
-            shape = RoundedCornerShape(16.dp),
         )
 
         androidx.compose.material3.DropdownMenu(
