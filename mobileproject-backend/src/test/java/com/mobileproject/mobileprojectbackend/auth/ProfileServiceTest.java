@@ -11,6 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +28,9 @@ class ProfileServiceTest {
 
         @Mock
         private AuthUserCacheService authUserCacheService;
+
+        @Mock
+        private AuthUserRepository authUserRepository;
 
         @InjectMocks
         private ProfileService profileService;
@@ -50,6 +55,7 @@ class ProfileServiceTest {
                 assertEquals("Ani", response.nickName());
                 assertEquals("2026-04-01", response.birthDate());
                 assertEquals("FEMALE", response.gender());
+                assertEquals("demo@example.com", response.email());
                 assertTrue(response.profileCompleted());
                 assertTrue(response.coupleConnected());
         }
@@ -62,7 +68,7 @@ class ProfileServiceTest {
 
                 ProfileResponse response = profileService.upsertProfile(
                                 "Bearer token",
-                                new ProfileUpsertRequest("  Nguyen Van A  ", "  ", "01/04/2026", "nam"));
+                                new ProfileUpsertRequest("  Nguyen Van A  ", "  ", "01/04/2026", "nam", null));
 
                 assertTrue(response.success());
                 assertEquals("demo", response.username());
@@ -92,7 +98,7 @@ class ProfileServiceTest {
                                 ResponseStatusException.class,
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
-                                                new ProfileUpsertRequest("   ", "Ani", "2026-12-31", "female")));
+                                                new ProfileUpsertRequest("   ", "Ani", "2026-12-31", "female", null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
@@ -107,7 +113,7 @@ class ProfileServiceTest {
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
                                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026/31/12",
-                                                                "female")));
+                                                                "female", null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
@@ -122,8 +128,59 @@ class ProfileServiceTest {
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
                                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-12-31",
-                                                                "unknown")));
+                                                                "unknown", null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        }
+
+        @Test
+        void upsertProfileUpdatesEmailWhenProvided() {
+                AuthUser user = new AuthUser("demo", "old@example.com", "hash", "2026-01-01T00:00:00Z");
+                user.setId("user-1");
+                when(authIdentityService.requireCurrentUser("Bearer token")).thenReturn(user);
+                when(authUserCacheService.save(user)).thenReturn(user);
+                when(authUserRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+
+                ProfileResponse response = profileService.upsertProfile(
+                                "Bearer token",
+                                new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female",
+                                                "  New@Example.com  "));
+
+                assertEquals("new@example.com", response.email());
+                assertEquals("new@example.com", user.getEmail());
+        }
+
+        @Test
+        void upsertProfileRejectsDuplicateEmail() {
+                AuthUser user = new AuthUser("demo", "old@example.com", "hash", "2026-01-01T00:00:00Z");
+                user.setId("user-1");
+                AuthUser other = new AuthUser("other", "taken@example.com", "hash", "2026-01-01T00:00:00Z");
+                other.setId("user-2");
+                when(authIdentityService.requireCurrentUser("Bearer token")).thenReturn(user);
+                when(authUserRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(other));
+
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> profileService.upsertProfile(
+                                                "Bearer token",
+                                                new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female",
+                                                                "taken@example.com")));
+
+                assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        }
+
+        @Test
+        void upsertProfileKeepsEmailWhenBlank() {
+                AuthUser user = new AuthUser("demo", "keep@example.com", "hash", "2026-01-01T00:00:00Z");
+                user.setId("user-1");
+                when(authIdentityService.requireCurrentUser("Bearer token")).thenReturn(user);
+                when(authUserCacheService.save(user)).thenReturn(user);
+
+                ProfileResponse response = profileService.upsertProfile(
+                                "Bearer token",
+                                new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female", "   "));
+
+                assertEquals("keep@example.com", response.email());
+                assertEquals("keep@example.com", user.getEmail());
         }
 }

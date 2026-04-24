@@ -2,6 +2,7 @@ package com.example.mobileproject.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Patterns
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.ProfileResult
@@ -53,6 +54,7 @@ class ProfileViewModel @Inject constructor(
                         nickName = profile.nickName ?: "",
                         birthDate = profile.birthDate ?: "",
                         gender = profile.gender ?: "",
+                        email = profile.email ?: "",
                         isDirty = false,
                     )
                 }
@@ -75,7 +77,13 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateDraft(fullName: String, nickName: String, birthDate: String, gender: String) {
+    fun updateDraft(
+        fullName: String,
+        nickName: String,
+        birthDate: String,
+        gender: String,
+        email: String = _uiState.value.email,
+    ) {
         val initial = _uiState.value.initialProfile
         _uiState.update { state ->
             state.copy(
@@ -83,10 +91,12 @@ class ProfileViewModel @Inject constructor(
                 nickName = nickName,
                 birthDate = birthDate,
                 gender = gender,
+                email = email,
                 isDirty = fullName.trim() != (initial?.fullName?.trim() ?: "") ||
                     nickName.trim() != (initial?.nickName?.trim() ?: "") ||
                     birthDate != (initial?.birthDate ?: "") ||
-                    gender != (initial?.gender ?: ""),
+                    gender != (initial?.gender ?: "") ||
+                    email.trim() != (initial?.email?.trim() ?: ""),
             )
         }
     }
@@ -102,6 +112,7 @@ class ProfileViewModel @Inject constructor(
         val nickName = state.nickName
         val birthDate = state.birthDate
         val gender = state.gender
+        val email = state.email
 
         // Validation
         if (fullName.isBlank()) {
@@ -133,6 +144,10 @@ class ProfileViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Gioi tinh khong hop le") }
             return
         }
+        if (email.isNotBlank() && !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+            _uiState.update { it.copy(errorMessage = "Email khong hop le") }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
@@ -143,6 +158,7 @@ class ProfileViewModel @Inject constructor(
                     nickName = nickName.trim().takeIf { it.isNotBlank() },
                     birthDate = birthDate.trim(),
                     gender = gender.trim(),
+                    email = email.trim().takeIf { it.isNotBlank() },
                 )
             }.onSuccess { profile ->
                 authSessionStore?.updateProfileState(
@@ -202,6 +218,7 @@ data class ProfileUiState(
     val nickName: String = "",
     val birthDate: String = "",
     val gender: String = "",
+    val email: String = "",
     val isDirty: Boolean = false,
     val errorMessage: String? = null,
     val saveSuccessMessage: String? = null,

@@ -8,6 +8,7 @@ public record ProfileResponse(
         String nickName,
         String birthDate,
         String gender,
+        String email,
         boolean profileCompleted,
         boolean coupleConnected
 ) {
@@ -17,8 +18,9 @@ public record ProfileResponse(
                                           String nickName,
                                           String birthDate,
                                           String gender,
+                                          String email,
                                           boolean profileCompleted,
                                           boolean coupleConnected) {
-        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, profileCompleted, coupleConnected);
+        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, email, profileCompleted, coupleConnected);
     }
 }

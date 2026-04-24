@@ -243,4 +243,8 @@
     <string name="settings_logout_button">Đăng xuất tài khoản</string>
     <string name="settings_logout_hint">Bạn sẽ quay về màn hình đăng nhập sau khi đăng xuất.</string>
     <string name="settings_logout_processing">Đang đăng xuất...</string>
+    <string name="settings_profile_section_title">Thông tin cá nhân</string>
+    <string name="settings_profile_section_subtitle">Cập nhật thông tin của bạn</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_email_invalid">Email không hợp lệ</string>
 </resources>

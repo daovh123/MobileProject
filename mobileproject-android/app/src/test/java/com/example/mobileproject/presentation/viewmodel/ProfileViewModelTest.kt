@@ -193,6 +193,7 @@ class ProfileViewModelTest {
             nickName: String?,
             birthDate: String,
             gender: String,
+            email: String?,
         ): ProfileResult {
             return saveProfileResult.getOrThrow()
         }

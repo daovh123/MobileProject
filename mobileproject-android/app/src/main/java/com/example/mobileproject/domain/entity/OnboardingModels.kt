@@ -8,6 +8,7 @@ data class ProfileResult(
     val gender: String?,
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
+    val email: String? = null,
 )
 
 data class CoupleRequestAction(

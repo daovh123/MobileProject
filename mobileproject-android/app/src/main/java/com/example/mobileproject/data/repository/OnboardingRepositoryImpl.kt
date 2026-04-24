@@ -26,6 +26,7 @@ class OnboardingRepositoryImpl @Inject constructor(
         nickName: String?,
         birthDate: String,
         gender: String,
+        email: String?,
     ): ProfileResult {
         val response = apiService.upsertProfile(
             authorizationHeader(token),
@@ -34,6 +35,7 @@ class OnboardingRepositoryImpl @Inject constructor(
                 nickName = nickName,
                 birthDate = birthDate,
                 gender = gender,
+                email = email,
             )
         )
         val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Luu ho so that bai")
@@ -46,6 +48,7 @@ class OnboardingRepositoryImpl @Inject constructor(
             gender = body.gender,
             profileCompleted = body.profileCompleted,
             coupleConnected = body.coupleConnected,
+            email = body.email,
         )
     }
 
@@ -61,6 +64,7 @@ class OnboardingRepositoryImpl @Inject constructor(
             gender = body.gender,
             profileCompleted = body.profileCompleted,
             coupleConnected = body.coupleConnected,
+            email = body.email,
         )
     }
 

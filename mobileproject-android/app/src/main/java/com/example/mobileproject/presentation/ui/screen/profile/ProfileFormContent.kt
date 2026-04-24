@@ -1,6 +1,8 @@
 package com.example.mobileproject.presentation.ui.screen.profile
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.mobileproject.R
@@ -75,7 +79,14 @@ fun ProfileFormContent(
             placeholder = { Text(text = stringResource(R.string.profile_select_date)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { showDatePicker = true },
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(pass = PointerEventPass.Initial)
+                        if (waitForUpOrCancellation(pass = PointerEventPass.Initial) != null) {
+                            showDatePicker = true
+                        }
+                    }
+                },
         )
 
         Text(

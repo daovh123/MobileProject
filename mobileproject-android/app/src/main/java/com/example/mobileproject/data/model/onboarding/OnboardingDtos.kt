@@ -5,6 +5,7 @@ data class ProfileUpsertRequestDto(
     val nickName: String?,
     val birthDate: String,
     val gender: String,
+    val email: String? = null,
 )
 
 data class ProfileResponseDto(
@@ -17,6 +18,7 @@ data class ProfileResponseDto(
     val gender: String?,
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
+    val email: String? = null,
 )
 
 data class CoupleCodeResponseDto(
