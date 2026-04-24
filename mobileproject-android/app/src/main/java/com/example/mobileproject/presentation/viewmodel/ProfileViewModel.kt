@@ -1,19 +1,25 @@
 package com.example.mobileproject.presentation.viewmodel
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.util.Patterns
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
+import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,6 +51,7 @@ class ProfileViewModel @Inject constructor(
             val coupleResult = coupleDeferred.await()
 
             profileResult.onSuccess { profile ->
+                val bitmap = profile.avatarUrl?.let { decodeBase64DataUrl(it) }
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,
@@ -56,6 +63,9 @@ class ProfileViewModel @Inject constructor(
                         gender = profile.gender ?: "",
                         email = profile.email ?: "",
                         isDirty = false,
+                        avatarUrl = profile.avatarUrl,
+                        avatarBitmap = bitmap,
+                        avatarFrameId = profile.avatarFrameId,
                     )
                 }
             }.onFailure { error ->
@@ -187,6 +197,77 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun uploadAvatar(token: String, imageBytes: ByteArray, contentType: String) {
+        if (token.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploadingAvatar = true, avatarUploadError = null) }
+            runCatching {
+                onboardingRepository.uploadAvatar(token, imageBytes, contentType)
+            }.onSuccess { dataUrl ->
+                val bitmap = decodeBase64DataUrl(dataUrl)
+                _uiState.update { it.copy(isUploadingAvatar = false, avatarUrl = dataUrl, avatarBitmap = bitmap) }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isUploadingAvatar = false,
+                        avatarUploadError = error.message ?: "Tai anh that bai",
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadAvatarFrames(token: String) {
+        if (token.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingFrames = true) }
+            runCatching {
+                onboardingRepository.getAvatarFrames(token)
+            }.onSuccess { frames ->
+                _uiState.update { it.copy(isLoadingFrames = false, availableFrames = frames) }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoadingFrames = false,
+                        avatarUploadError = error.message ?: "Khong the tai danh sach khung anh",
+                    )
+                }
+            }
+        }
+    }
+
+    fun selectFrame(token: String, frameId: String?) {
+        if (token.isBlank()) return
+        viewModelScope.launch {
+            runCatching {
+                onboardingRepository.setAvatarFrame(token, frameId)
+            }.onSuccess { profile ->
+                _uiState.update {
+                    it.copy(
+                        avatarFrameId = profile.avatarFrameId,
+                        showFrameSelector = false,
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(avatarUploadError = error.message ?: "Dat khung anh that bai")
+                }
+            }
+        }
+    }
+
+    fun showFrameSelector() {
+        _uiState.update { it.copy(showFrameSelector = true) }
+    }
+
+    fun hideFrameSelector() {
+        _uiState.update { it.copy(showFrameSelector = false) }
+    }
+
+    fun clearAvatarError() {
+        _uiState.update { it.copy(avatarUploadError = null) }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null, coupleError = null) }
     }
@@ -197,6 +278,15 @@ class ProfileViewModel @Inject constructor(
 
     fun clearSessionExpired() {
         _uiState.update { it.copy(sessionExpired = false) }
+    }
+
+    private suspend fun decodeBase64DataUrl(dataUrl: String): Bitmap? = withContext(Dispatchers.Default) {
+        runCatching {
+            val base64 = dataUrl.substringAfter(",", missingDelimiterValue = "")
+            if (base64.isBlank()) return@runCatching null
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }.getOrNull()
     }
 }
 
@@ -226,4 +316,12 @@ data class ProfileUiState(
     val isLoadingCouple: Boolean = false,
     val coupleStatus: CoupleStatus? = null,
     val coupleError: String? = null,
+    val avatarUrl: String? = null,
+    val avatarBitmap: Bitmap? = null,
+    val avatarFrameId: String? = null,
+    val isUploadingAvatar: Boolean = false,
+    val availableFrames: List<AvatarFrame> = emptyList(),
+    val isLoadingFrames: Boolean = false,
+    val showFrameSelector: Boolean = false,
+    val avatarUploadError: String? = null,
 )

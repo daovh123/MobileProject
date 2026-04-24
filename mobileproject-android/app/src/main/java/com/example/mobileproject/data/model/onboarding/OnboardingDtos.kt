@@ -19,6 +19,25 @@ data class ProfileResponseDto(
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
     val email: String? = null,
+    val avatarUrl: String? = null,
+    val avatarFrameId: String? = null,
+)
+
+data class AvatarUploadResponseDto(
+    val success: Boolean,
+    val message: String,
+    val avatarUrl: String?,
+)
+
+data class AvatarFrameDto(
+    val id: String,
+    val name: String,
+    val resourceKey: String,
+    val color: String,
+)
+
+data class AvatarFrameRequestDto(
+    val frameId: String?,
 )
 
 data class CoupleCodeResponseDto(

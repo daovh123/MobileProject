@@ -27,8 +27,7 @@ public class GroqChatClient {
     public GroqChatClient(
             ObjectMapper objectMapper,
             @Value("${groq.api-key:}") String apiKey,
-            @Value("${groq.model:llama3-8b-8192}") String model
-    ) {
+            @Value("${groq.model:llama3-8b-8192}") String model) {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey == null ? "" : apiKey.trim();
         this.model = model == null || model.isBlank() ? "llama3-8b-8192" : model.trim();
@@ -40,8 +39,7 @@ public class GroqChatClient {
     public String chat(List<Message> messages) throws Exception {
         if (apiKey.isBlank()) {
             throw new IllegalStateException(
-                    "Chưa cấu hình Groq API key. Hãy set GROQ_API_KEY (env hoặc secrets.properties) trên backend."
-            );
+                    "Chưa cấu hình Groq API key. Hãy set GROQ_API_KEY (env hoặc secrets.properties) trên backend.");
         }
 
         ObjectNode root = objectMapper.createObjectNode();
@@ -86,7 +84,7 @@ public class GroqChatClient {
         String content = choices.get(0)
                 .path("message")
                 .path("content")
-                .asText("");
+                .asString("");
 
         return content == null ? "" : content.trim();
     }
@@ -103,9 +101,9 @@ public class GroqChatClient {
 
         try {
             JsonNode node = objectMapper.readTree(trimmed);
-            String message = node.path("error").path("message").asText(null);
+            String message = node.path("error").path("message").asString(null);
             if (message == null || message.isBlank()) {
-                message = node.path("message").asText(null);
+                message = node.path("message").asString(null);
             }
             if (message != null && !message.isBlank()) {
                 return message.trim();

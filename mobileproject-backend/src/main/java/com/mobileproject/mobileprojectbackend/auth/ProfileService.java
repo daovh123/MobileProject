@@ -29,13 +29,16 @@ public class ProfileService {
     private final AuthIdentityService authIdentityService;
     private final AuthUserCacheService authUserCacheService;
     private final AuthUserRepository authUserRepository;
+    private final AvatarFrameCatalog avatarFrameCatalog;
 
     public ProfileService(AuthIdentityService authIdentityService,
                           AuthUserCacheService authUserCacheService,
-                          AuthUserRepository authUserRepository) {
+                          AuthUserRepository authUserRepository,
+                          AvatarFrameCatalog avatarFrameCatalog) {
         this.authIdentityService = authIdentityService;
         this.authUserCacheService = authUserCacheService;
         this.authUserRepository = authUserRepository;
+        this.avatarFrameCatalog = avatarFrameCatalog;
     }
 
     public ProfileResponse upsertProfile(String authorizationHeader, ProfileUpsertRequest request) {
@@ -66,6 +69,32 @@ public class ProfileService {
         return toProfileResponse(user, "Profile fetched successfully");
     }
 
+    public ProfileResponse updateAvatarUrl(String authorizationHeader, String avatarUrl) {
+        AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
+        user.setAvatarUrl(avatarUrl);
+        AuthUser saved = authUserCacheService.save(user);
+        return toProfileResponse(saved, "Avatar updated successfully");
+    }
+
+    public ProfileResponse updateAvatarFrame(String authorizationHeader, String frameId) {
+        AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
+
+        if (frameId != null && !frameId.isBlank()) {
+            boolean valid = avatarFrameCatalog.findById(frameId).isPresent();
+            if (!valid) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Unknown frame id: " + frameId);
+            }
+            user.setAvatarFrameId(frameId);
+        } else {
+            user.setAvatarFrameId(null);
+        }
+
+        AuthUser saved = authUserCacheService.save(user);
+        return toProfileResponse(saved, "Avatar frame updated successfully");
+    }
+
     private ProfileResponse toProfileResponse(AuthUser user, String message) {
         return ProfileResponse.success(
                 message,
@@ -76,7 +105,9 @@ public class ProfileService {
                 user.getGender(),
                 user.getEmail(),
                 user.isProfileCompleted(),
-                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank());
+                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank(),
+                user.getAvatarUrl(),
+                user.getAvatarFrameId());
     }
 
     private void applyEmailUpdate(AuthUser user, String rawEmail) {

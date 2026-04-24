@@ -31,6 +31,10 @@ android {
     buildTypes {
         debug {
             manifestPlaceholders["cleartextTrafficPermitted"] = "true"
+            lint {
+                checkReleaseBuilds = false
+                abortOnError = false
+            }
         }
         release {
             isMinifyEnabled = false

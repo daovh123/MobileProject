@@ -28,13 +28,11 @@ public class FcmPushService {
     private final Object initLock = new Object();
     private volatile boolean firebaseInitialized = false;
     private volatile long lastInitAttemptEpochMs = 0L;
-    private volatile boolean missingFirebaseConfigLogged = false;
     private volatile boolean pathReadFailureLogged = false;
 
     public FcmPushService(
             UserFcmTokenRepository userFcmTokenRepository,
-            @Value("${firebase.credentials.path:}") String credentialsPath
-    ) {
+            @Value("${firebase.credentials.path:}") String credentialsPath) {
         this.userFcmTokenRepository = userFcmTokenRepository;
         this.credentialsPath = credentialsPath;
     }
@@ -44,7 +42,8 @@ public class FcmPushService {
         String path = credentialsPath == null ? "" : credentialsPath.trim();
         if (path.isBlank()) {
             if (hasClasspathCredentials()) {
-                LOGGER.info("Firebase credentials path is empty; will use classpath resource firebase-service-account.json");
+                LOGGER.info(
+                        "Firebase credentials path is empty; will use classpath resource firebase-service-account.json");
             } else {
                 LOGGER.warn("Firebase credentials path is empty. Set FIREBASE_CREDENTIALS_PATH to enable FCM push.");
             }
@@ -68,17 +67,89 @@ public class FcmPushService {
         }
     }
 
-    // ... (Các phương thức sendChatMessagePush và firebaseMessagingOrNull giữ nguyên) ...
+    public void sendChatMessagePush(String receiverUserId, String coupleId, String senderUsername, String text,
+            String messageId, Instant createdAt) {
+        if (receiverUserId == null || receiverUserId.isBlank()) {
+            return;
+        }
 
-    public void sendChatMessagePush(String receiverUserId, String coupleId, String senderUsername, String text, String messageId, Instant createdAt) {
-        // Giữ nguyên code cũ của bạn ở đây...
-        // (Lược bớt để tập trung vào phần merge bị conflict)
+        String normalizedText = text == null ? "" : text.trim();
+        if (normalizedText.isBlank()) {
+            return;
+        }
+
+        String normalizedReceiverUserId = receiverUserId.trim();
+        UserFcmToken userToken = userFcmTokenRepository.findById(normalizedReceiverUserId).orElse(null);
+        if (userToken == null || userToken.getToken() == null || userToken.getToken().isBlank()) {
+            return;
+        }
+
+        FirebaseMessaging firebaseMessaging = firebaseMessagingOrNull();
+        if (firebaseMessaging == null) {
+            return;
+        }
+
+        String safeSenderUsername = senderUsername == null || senderUsername.isBlank()
+                ? "Partner"
+                : senderUsername.trim();
+        String safeCoupleId = coupleId == null ? "" : coupleId.trim();
+        String safeMessageId = messageId == null ? "" : messageId.trim();
+        String safeCreatedAt = (createdAt == null ? Instant.now() : createdAt).toString();
+
+        Message message = Message.builder()
+                .setToken(userToken.getToken().trim())
+                .putData("type", "chat_message")
+                .putData("channelId", CHAT_CHANNEL_ID)
+                .putData("coupleId", safeCoupleId)
+                .putData("senderUsername", safeSenderUsername)
+                .putData("conversationTitle", safeSenderUsername)
+                .putData("text", normalizedText)
+                .putData("body", normalizedText)
+                .putData("messageId", safeMessageId)
+                .putData("createdAt", safeCreatedAt)
+                .build();
+
+        try {
+            String responseId = firebaseMessaging.send(message);
+            LOGGER.debug(
+                    "Sent FCM chat push to user={} coupleId={} responseId={}",
+                    normalizedReceiverUserId,
+                    safeCoupleId,
+                    responseId);
+        } catch (FirebaseMessagingException exception) {
+            if (isInvalidToken(exception)) {
+                userFcmTokenRepository.deleteById(normalizedReceiverUserId);
+                LOGGER.info("Removed invalid FCM token for user={}", normalizedReceiverUserId);
+                return;
+            }
+            LOGGER.warn("Failed to send FCM chat push to user={}: {}", normalizedReceiverUserId,
+                    exception.getMessage());
+        } catch (Exception exception) {
+            LOGGER.warn("Unexpected error while sending FCM chat push to user={}", normalizedReceiverUserId, exception);
+        }
     }
 
     private FirebaseMessaging firebaseMessagingOrNull() {
-        try { ensureInitialized(); } catch (Exception ex) { return null; }
-        if (FirebaseApp.getApps().isEmpty()) return null;
-        try { return FirebaseMessaging.getInstance(); } catch (Exception ex) { return null; }
+        try {
+            ensureInitialized();
+        } catch (Exception ex) {
+            return null;
+        }
+        if (FirebaseApp.getApps().isEmpty())
+            return null;
+        try {
+            return FirebaseMessaging.getInstance();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private boolean isInvalidToken(FirebaseMessagingException exception) {
+        if (exception == null) {
+            return false;
+        }
+        MessagingErrorCode errorCode = exception.getMessagingErrorCode();
+        return MessagingErrorCode.UNREGISTERED.equals(errorCode);
     }
 
     private void ensureInitialized() throws Exception {
@@ -87,7 +158,8 @@ public class FcmPushService {
             return;
         }
         long now = System.currentTimeMillis();
-        if ((now - lastInitAttemptEpochMs) < INIT_RETRY_INTERVAL_MS) return;
+        if ((now - lastInitAttemptEpochMs) < INIT_RETRY_INTERVAL_MS)
+            return;
 
         synchronized (initLock) {
             if (firebaseInitialized || !FirebaseApp.getApps().isEmpty()) {
@@ -97,7 +169,8 @@ public class FcmPushService {
             lastInitAttemptEpochMs = System.currentTimeMillis();
 
             GoogleCredentials credentials = loadCredentialsOrNull();
-            if (credentials == null) return;
+            if (credentials == null)
+                return;
 
             FirebaseOptions options = FirebaseOptions.builder().setCredentials(credentials).build();
             FirebaseApp.initializeApp(options);
@@ -135,12 +208,19 @@ public class FcmPushService {
         }
 
         // Fallback 1: Default classpath file
-        try (InputStream stream = FcmPushService.class.getClassLoader().getResourceAsStream("firebase-service-account.json")) {
-            if (stream != null) return GoogleCredentials.fromStream(stream);
-        } catch (Exception ignored) {}
+        try (InputStream stream = FcmPushService.class.getClassLoader()
+                .getResourceAsStream("firebase-service-account.json")) {
+            if (stream != null)
+                return GoogleCredentials.fromStream(stream);
+        } catch (Exception ignored) {
+        }
 
         // Fallback 2: Application Default Credentials
-        try { return GoogleCredentials.getApplicationDefault(); } catch (Exception ex) { return null; }
+        try {
+            return GoogleCredentials.getApplicationDefault();
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     // Helper methods từ nhánh feature/UI-advance

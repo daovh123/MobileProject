@@ -183,7 +183,7 @@ class AuthIntegrationTest {
                     .andExpect(jsonPath("$.status").value("PENDING"))
                     .andReturn();
 
-            String requestId = readJson(createRequestResult).path("requestId").asText();
+            String requestId = readJson(createRequestResult).path("requestId").asString();
 
             mockMvc.perform(get("/api/auth/couple/status")
                     .header("Authorization", "Bearer " + tokenA))
@@ -238,7 +238,7 @@ class AuthIntegrationTest {
                     .andExpect(jsonPath("$.status").value("PENDING"))
                     .andReturn();
 
-            String requestId = readJson(createRequestResult).path("requestId").asText();
+            String requestId = readJson(createRequestResult).path("requestId").asString();
 
             mockMvc.perform(post("/api/auth/couple/requests/{requestId}/decision", requestId)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -298,7 +298,7 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andReturn();
 
-        String token = readJson(loginResult).path("token").asText();
+        String token = readJson(loginResult).path("token").asString();
         assertNotNull(token);
         assertFalse(token.isBlank());
         return token;
@@ -332,7 +332,7 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.myCodeExpiresAt").isNotEmpty())
                 .andReturn();
 
-        String code = readJson(result).path("myCode").asText();
+        String code = readJson(result).path("myCode").asString();
         assertNotNull(code);
         assertTrue(code.matches("\\d{3}-\\d{3}"));
         return code;

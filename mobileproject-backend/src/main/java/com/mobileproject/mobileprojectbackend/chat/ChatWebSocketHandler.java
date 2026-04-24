@@ -27,7 +27,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
-    private static final String[] AI_MENTIONS_LOWER = {"@miniai", "@mimiai"};
+    private static final String[] AI_MENTIONS_LOWER = { "@miniai", "@mimiai" };
     private static final String AI_SENDER_USER_ID = "ai:mimi";
     private static final String AI_USERNAME = "MiniAI";
     private static final int AI_CONTEXT_LIMIT = 20;
@@ -43,8 +43,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             ChatMessageRepository chatMessageRepository,
             ObjectMapper objectMapper,
             GroqChatClient groqChatClient,
-            FcmPushService fcmPushService
-    ) {
+            FcmPushService fcmPushService) {
         this.chatMessageRepository = chatMessageRepository;
         this.objectMapper = objectMapper;
         this.groqChatClient = groqChatClient;
@@ -103,15 +102,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             ChatMessage saved = chatMessageRepository.save(entity);
             broadcastMessage(coupleId, saved);
 
-                // Always emit FCM push and let the client decide foreground/background presentation.
-                fcmPushService.sendChatMessagePush(
+            // Always emit FCM push and let the client decide foreground/background
+            // presentation.
+            fcmPushService.sendChatMessagePush(
                     receiverUserId,
                     coupleId,
                     usernameOf(session),
                     saved.getText(),
                     saved.getId(),
-                    saved.getCreatedAt()
-                );
+                    saved.getCreatedAt());
 
             if (containsAiMention(saved.getText())) {
                 triggerAiReplyAsync(session, coupleId, saved);
@@ -252,7 +251,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (value == null || value.isNull()) {
             return null;
         }
-        String text = value.asText(null);
+        String text = value.asString(null);
         if (text == null || text.isBlank()) {
             return null;
         }
@@ -278,7 +277,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         dto.put("text", message.getText());
         dto.put("senderUsername", senderUsername);
         dto.put("mine", mine);
-        dto.put("createdAt", message.getCreatedAt() != null ? message.getCreatedAt().toString() : Instant.now().toString());
+        dto.put("createdAt",
+                message.getCreatedAt() != null ? message.getCreatedAt().toString() : Instant.now().toString());
         return dto;
     }
 
@@ -382,9 +382,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         CompletableFuture.runAsync(() -> {
             try {
-                List<ChatMessage> recent = new ArrayList<>(chatMessageRepository.findTop50ByCoupleIdOrderByCreatedAtDesc(coupleId));
+                List<ChatMessage> recent = new ArrayList<>(
+                        chatMessageRepository.findTop50ByCoupleIdOrderByCreatedAtDesc(coupleId));
                 Collections.reverse(recent);
-                List<GroqChatClient.Message> aiMessages = buildAiContext(session, recent, latestUserMessage.getId(), prompt);
+                List<GroqChatClient.Message> aiMessages = buildAiContext(session, recent, latestUserMessage.getId(),
+                        prompt);
 
                 String aiReply = groqChatClient.chat(aiMessages);
                 if (aiReply.isBlank()) {
@@ -445,16 +447,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             WebSocketSession session,
             List<ChatMessage> recentMessages,
             String latestMessageId,
-            String latestPrompt
-    ) {
+            String latestPrompt) {
         String myUserId = userIdOf(session);
         String partnerUserId = partnerUserIdOf(session);
 
         List<GroqChatClient.Message> messages = new ArrayList<>();
         messages.add(new GroqChatClient.Message(
                 "system",
-                "Bạn là MiniAI, trợ lý thân thiện trong cuộc trò chuyện của một cặp đôi. Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt. Không nhắc lại email/username trong câu trả lời. Nếu thiếu thông tin, hãy hỏi lại 1 câu."
-        ));
+                "Bạn là MiniAI, trợ lý thân thiện trong cuộc trò chuyện của một cặp đôi. Trả lời ngắn gọn, rõ ràng, bằng tiếng Việt. Không nhắc lại email/username trong câu trả lời. Nếu thiếu thông tin, hãy hỏi lại 1 câu."));
 
         if (recentMessages == null || recentMessages.isEmpty()) {
             messages.add(new GroqChatClient.Message("user", latestPrompt));

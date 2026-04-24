@@ -322,6 +322,8 @@ public class AuthUserCacheService {
         put(hash, "birthDate", user.getBirthDate());
         put(hash, "gender", user.getGender());
         put(hash, "partnerUserId", user.getPartnerUserId());
+        put(hash, "avatarUrl", user.getAvatarUrl());
+        put(hash, "avatarFrameId", user.getAvatarFrameId());
         hash.put("profileCompleted", Boolean.toString(user.isProfileCompleted()));
         return hash;
     }
@@ -343,6 +345,8 @@ public class AuthUserCacheService {
         user.setBirthDate(nullableValue(values.get("birthDate")));
         user.setGender(nullableValue(values.get("gender")));
         user.setPartnerUserId(nullableValue(values.get("partnerUserId")));
+        user.setAvatarUrl(nullableValue(values.get("avatarUrl")));
+        user.setAvatarFrameId(nullableValue(values.get("avatarFrameId")));
         user.setProfileCompleted(Boolean.parseBoolean(nullableValue(values.get("profileCompleted"))));
         return user;
     }
@@ -360,6 +364,8 @@ public class AuthUserCacheService {
         copy.setGender(source.getGender());
         copy.setProfileCompleted(source.isProfileCompleted());
         copy.setPartnerUserId(source.getPartnerUserId());
+        copy.setAvatarUrl(source.getAvatarUrl());
+        copy.setAvatarFrameId(source.getAvatarFrameId());
         return copy;
     }
 

@@ -34,13 +34,13 @@ public class AnalyticsService {
         System.out.println("endDate: " + endDate);
 
         Criteria criteria = new Criteria();
-        
+
         criteria = criteria.and("type").is("EXPENSE");
-        
+
         if (coupleId != null && !coupleId.isBlank()) {
             criteria = criteria.and("coupleId").is(coupleId);
         }
-        
+
         if (startDate != null && endDate != null) {
             criteria = criteria.and("created_at").gte(startDate).lte(endDate);
         }
@@ -51,30 +51,27 @@ public class AnalyticsService {
                         .sum("amount").as("totalAmount"),
                 Aggregation.project()
                         .and("_id").as("category")
-                        .and("totalAmount").as("totalAmount")
-        );
+                        .and("totalAmount").as("totalAmount"));
 
         AggregationResults<CategoryBreakdownItem> results = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                CategoryBreakdownItem.class
-        );
+                CategoryBreakdownItem.class);
 
         System.out.println("Results count: " + results.getMappedResults().size());
         return results.getMappedResults();
     }
 
     public List<SpendingTrendItem> getSpendingTrend(String coupleId, Integer year, Integer month) {
-        ZonedDateTime startOfMonth = null;
-        ZonedDateTime endOfMonth = null;
-        
-        if (year != null && month != null) {
-            startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
-            endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+        if (year == null || month == null) {
+            return List.of();
         }
 
-        Instant startInstant = startOfMonth != null ? startOfMonth.toInstant() : null;
-        Instant endInstant = endOfMonth != null ? endOfMonth.toInstant() : null;
+        ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
+        ZonedDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+
+        Instant startInstant = startOfMonth.toInstant();
+        Instant endInstant = endOfMonth.toInstant();
 
         System.out.println("=== DEBUG getSpendingTrend ===");
         System.out.println("coupleId: " + coupleId);
@@ -83,16 +80,14 @@ public class AnalyticsService {
         System.out.println("endInstant: " + endInstant);
 
         Criteria criteria = new Criteria();
-        
+
         criteria = criteria.and("type").is("EXPENSE");
-        
+
         if (coupleId != null && !coupleId.isBlank()) {
             criteria = criteria.and("coupleId").is(coupleId);
         }
-        
-        if (startInstant != null && endInstant != null) {
-            criteria = criteria.and("created_at").gte(startInstant).lte(endInstant);
-        }
+
+        criteria = criteria.and("created_at").gte(startInstant).lte(endInstant);
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
@@ -102,19 +97,20 @@ public class AnalyticsService {
                 Aggregation.unwind("dates"),
                 Aggregation.project()
                         .and("dates").as("date")
-                        .and("totalAmount").as("totalAmount")
-        );
+                        .and("totalAmount").as("totalAmount"));
 
-        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
+        AggregationResults<?> rawResults = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                Map.class
-        );
+                Map.class);
 
         System.out.println("Raw results count: " + rawResults.getMappedResults().size());
 
         Map<Integer, Long> dailySpending = new HashMap<>();
-        for (Map result : rawResults.getMappedResults()) {
+        for (Object rawResult : rawResults.getMappedResults()) {
+            if (!(rawResult instanceof Map<?, ?> result)) {
+                continue;
+            }
             Object dateObj = result.get("date");
             if (dateObj instanceof Number) {
                 int day = ((Number) dateObj).intValue();

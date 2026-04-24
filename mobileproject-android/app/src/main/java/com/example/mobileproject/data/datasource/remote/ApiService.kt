@@ -16,6 +16,9 @@ import com.example.mobileproject.data.model.goal.GoalResponseDto
 import com.example.mobileproject.data.model.goal.SavingGoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
 import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
+import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
+import com.example.mobileproject.data.model.onboarding.AvatarFrameRequestDto
+import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
@@ -23,6 +26,7 @@ import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.ProductDto
+import okhttp3.MultipartBody
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
@@ -165,6 +169,25 @@ interface ApiService {
         @Path("goalId") goalId: String,
         @Body request: ContributeRequestDto,
     ): Response<ContributeResponseDto>
+
+    // Avatar APIs
+    @Multipart
+    @POST("api/auth/profile/avatar")
+    suspend fun uploadAvatar(
+        @Header("Authorization") authorization: String,
+        @Part file: MultipartBody.Part,
+    ): Response<AvatarUploadResponseDto>
+
+    @GET("api/auth/profile/frames")
+    suspend fun getAvatarFrames(
+        @Header("Authorization") authorization: String,
+    ): Response<List<AvatarFrameDto>>
+
+    @PUT("api/auth/profile/frame")
+    suspend fun setAvatarFrame(
+        @Header("Authorization") authorization: String,
+        @Body request: AvatarFrameRequestDto,
+    ): Response<ProfileResponseDto>
 
     // Analytics APIs
     @GET("api/v1/analytics/category-breakdown")
