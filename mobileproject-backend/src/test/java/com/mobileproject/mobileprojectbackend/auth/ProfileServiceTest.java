@@ -32,6 +32,9 @@ class ProfileServiceTest {
         @Mock
         private AuthUserRepository authUserRepository;
 
+        @Mock
+        private AvatarFrameCatalog avatarFrameCatalog;
+
         @InjectMocks
         private ProfileService profileService;
 
@@ -182,5 +185,32 @@ class ProfileServiceTest {
 
                 assertEquals("keep@example.com", response.email());
                 assertEquals("keep@example.com", user.getEmail());
+        }
+
+        @Test
+        void updateAvatarFrameWithValidFramePersistsSelection() {
+                AuthUser user = new AuthUser("demo", "demo@example.com", "hash", "2026-01-01T00:00:00Z");
+                when(authIdentityService.requireCurrentUser("Bearer token")).thenReturn(user);
+                when(avatarFrameCatalog.findById("frame_rose"))
+                                .thenReturn(Optional.of(new AvatarFrame("frame_rose", "Rose", "rose", "#E91E63")));
+                when(authUserCacheService.save(user)).thenReturn(user);
+
+                ProfileResponse response = profileService.updateAvatarFrame("Bearer token", "frame_rose");
+
+                assertEquals("frame_rose", response.avatarFrameId());
+                assertEquals("frame_rose", user.getAvatarFrameId());
+        }
+
+        @Test
+        void updateAvatarFrameWithUnknownFrameThrowsBadRequest() {
+                AuthUser user = new AuthUser("demo", "demo@example.com", "hash", "2026-01-01T00:00:00Z");
+                when(authIdentityService.requireCurrentUser("Bearer token")).thenReturn(user);
+                when(avatarFrameCatalog.findById("frame_unknown")).thenReturn(Optional.empty());
+
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
+                                () -> profileService.updateAvatarFrame("Bearer token", "frame_unknown"));
+
+                assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
 }

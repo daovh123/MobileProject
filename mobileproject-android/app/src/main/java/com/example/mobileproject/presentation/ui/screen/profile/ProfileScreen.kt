@@ -59,8 +59,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
@@ -78,6 +76,7 @@ fun ProfileScreen(
 
     LaunchedEffect(accessToken) {
         viewModel.loadProfile(accessToken)
+        viewModel.loadAvatarFrames(accessToken)
     }
 
     LaunchedEffect(uiState.errorMessage) {
@@ -153,7 +152,6 @@ fun ProfileScreen(
                     viewModel.uploadAvatar(accessToken, imageBytes, contentType)
                 },
                 onShowFrameSelector = {
-                    viewModel.loadAvatarFrames(accessToken)
                     viewModel.showFrameSelector()
                 },
                 onHideFrameSelector = { viewModel.hideFrameSelector() },
@@ -362,6 +360,7 @@ private fun HeaderCard(
                                 .size(96.dp)
                                 .clip(CircleShape),
                         )
+                    } else {
                         Box(
                             modifier = Modifier
                                 .size(96.dp)

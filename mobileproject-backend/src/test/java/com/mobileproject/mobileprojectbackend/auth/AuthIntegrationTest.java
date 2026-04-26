@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -22,10 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.startsWith;
 
 @SpringBootTest(properties = "app.auth.token-secret=test-token-secret-for-spring-tests")
 @AutoConfigureMockMvc
@@ -114,6 +117,67 @@ class AuthIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Authorization", "Bearer " + token)
                     .content(objectMapper.writeValueAsString(payload)))
+                    .andExpect(status().isBadRequest());
+        } finally {
+            cleanupUser(normalizedUsername);
+        }
+    }
+
+    @Test
+    void avatarUploadAndFrameUpdateFlowShouldPersistProfileAvatarState() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String username = "it_avatar_" + suffix;
+        String email = username + "@example.com";
+        String normalizedUsername = username.toLowerCase(Locale.ROOT);
+
+        try {
+            String token = registerAndLogin(username, email);
+
+            MockMultipartFile avatarFile = new MockMultipartFile(
+                    "file",
+                    "avatar.png",
+                    "image/png",
+                    new byte[] { 1, 2, 3, 4, 5, 6 });
+
+            mockMvc.perform(multipart("/api/auth/profile/avatar")
+                    .file(avatarFile)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.avatarUrl", startsWith("data:image/png;base64,")));
+
+            mockMvc.perform(put("/api/auth/profile/frame")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .content(objectMapper.writeValueAsString(Map.of("frameId", "frame_rose"))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.avatarFrameId").value("frame_rose"));
+
+            mockMvc.perform(get("/api/auth/profile")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.avatarFrameId").value("frame_rose"))
+                    .andExpect(jsonPath("$.avatarUrl", startsWith("data:image/png;base64,")));
+        } finally {
+            cleanupUser(normalizedUsername);
+        }
+    }
+
+    @Test
+    void setAvatarFrameWithUnknownIdReturnsBadRequest() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String username = "it_avatar_invalid_" + suffix;
+        String email = username + "@example.com";
+        String normalizedUsername = username.toLowerCase(Locale.ROOT);
+
+        try {
+            String token = registerAndLogin(username, email);
+
+            mockMvc.perform(put("/api/auth/profile/frame")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .content(objectMapper.writeValueAsString(Map.of("frameId", "frame_unknown"))))
                     .andExpect(status().isBadRequest());
         } finally {
             cleanupUser(normalizedUsername);
