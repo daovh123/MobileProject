@@ -10,13 +10,13 @@ public record TransactionResponse(
         String type,
         String category,
         String note,
-        Long totalBalance,
+        Long currentBalance,  // Renamed from totalBalance for clarity in mobile context
         Instant createdAt
 ) {
     public static TransactionResponse success(String transactionId, Long amount, String type,
-                                                String category, String note, Long totalBalance) {
+                                                String category, String note, Long currentBalance) {
         return new TransactionResponse(true, "Transaction saved successfully", transactionId,
-                amount, type, category, note, totalBalance, Instant.now());
+                amount, type, category, note, currentBalance, Instant.now());
     }
 
     public static TransactionResponse failure(String message) {

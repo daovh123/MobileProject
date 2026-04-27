@@ -1,7 +1,6 @@
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -23,7 +21,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -46,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,6 +55,7 @@ import com.example.mobileproject.domain.entity.TransactionType
 import com.example.mobileproject.presentation.viewmodel.AnalyticsViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
 import com.example.mobileproject.presentation.viewmodel.TransactionViewModel
+import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -66,7 +63,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
-    coupleId: String = "5e85766e-7659-4403-afcb-f7db316b6f21",
+    walletViewModel: WalletViewModel = hiltViewModel(),
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     goalViewModel: GoalViewModel = hiltViewModel(),
     analyticsViewModel: AnalyticsViewModel = hiltViewModel()
@@ -77,13 +74,19 @@ fun WalletScreen(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
 
+    val walletState by walletViewModel.uiState.collectAsState()
     val transactionState by transactionViewModel.uiState.collectAsState()
     val goalState by goalViewModel.uiState.collectAsState()
     val analyticsState by analyticsViewModel.uiState.collectAsState()
 
+    // Lấy coupleId từ walletState (nếu ViewModel đã tự load)
+    val coupleId = walletState.wallet?.idCouple ?: ""
+
     LaunchedEffect(coupleId) {
-        transactionViewModel.loadTransactions(coupleId)
-        goalViewModel.loadGoals(coupleId)
+        if (coupleId.isNotEmpty()) {
+            transactionViewModel.loadTransactions(coupleId)
+            goalViewModel.loadGoals(coupleId)
+        }
     }
 
     val tabs = listOf("Ví", "Mục tiêu", "Thống kê")
@@ -121,15 +124,19 @@ fun WalletScreen(
 
             when (selectedTab) {
                 0 -> WalletTab(
-                    totalBalance = transactionState.totalBalance,
-                    isLoading = transactionState.isLoading,
-                    transactions = transactionState.transactions
+                    walletName = walletState.wallet?.name ?: "Ví chung",
+                    totalBalance = walletState.wallet?.balance ?: 0L,
+                    isLoading = walletState.isLoading,
+                    transactions = transactionState.transactions,
+                    error = walletState.error
                 )
                 1 -> GoalsTab(
                     goals = goalState.goals,
                     isLoading = goalState.isLoading,
                     onContribute = { goalId, amount ->
-                        goalViewModel.contributeFromWallet(goalId, amount, coupleId, null)
+                        if (coupleId.isNotEmpty()) {
+                            goalViewModel.contributeFromWallet(goalId, amount, coupleId, null)
+                        }
                     }
                 )
                 2 -> AnalyticsTab(
@@ -137,7 +144,9 @@ fun WalletScreen(
                     isLoading = analyticsState.isLoading,
                     coupleId = coupleId,
                     onLoadAnalytics = { startDate, endDate ->
-                        analyticsViewModel.loadCategoryBreakdown(coupleId, startDate, endDate)
+                        if (coupleId.isNotEmpty()) {
+                            analyticsViewModel.loadCategoryBreakdown(coupleId, startDate, endDate)
+                        }
                     }
                 )
             }
@@ -155,12 +164,16 @@ fun WalletScreen(
                     showAddTransactionSheet = false
                 },
                 onAddExpense = { amount, category, note ->
-                    transactionViewModel.createTransaction(coupleId, amount, "EXPENSE", category, note)
+                    if (coupleId.isNotEmpty()) {
+                        transactionViewModel.createTransaction(coupleId, amount, "EXPENSE", category, note)
+                    }
                     scope.launch { sheetState.hide() }
                     showAddTransactionSheet = false
                 },
                 onAddIncome = { amount, targetType, goalId, note ->
-                    transactionViewModel.processIncome(coupleId, amount, targetType, goalId, note)
+                    if (coupleId.isNotEmpty()) {
+                        transactionViewModel.processIncome(coupleId, amount, targetType, goalId, note)
+                    }
                     scope.launch { sheetState.hide() }
                     showAddTransactionSheet = false
                 }
@@ -179,7 +192,9 @@ fun WalletScreen(
                     showAddGoalSheet = false
                 },
                 onCreateGoal = { name, targetAmount, deadline ->
-                    goalViewModel.createGoal(coupleId, name, targetAmount, deadline)
+                    if (coupleId.isNotEmpty()) {
+                        goalViewModel.createGoal(coupleId, name, targetAmount, deadline)
+                    }
                     scope.launch { sheetState.hide() }
                     showAddGoalSheet = false
                 }
@@ -190,15 +205,26 @@ fun WalletScreen(
 
 @Composable
 private fun WalletTab(
+    walletName: String,
     totalBalance: Long,
     isLoading: Boolean,
-    transactions: List<Transaction>
+    transactions: List<Transaction>,
+    error: String?
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
     ) {
+        if (error != null) {
+            Text(
+                text = "Lỗi: $error", 
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary)),
@@ -209,7 +235,7 @@ private fun WalletTab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Số dư ví",
+                    text = walletName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorResource(R.color.md3_on_primary).copy(alpha = 0.7f)
                 )
@@ -566,6 +592,15 @@ private fun AddTransactionSheet(
             label = { Text("Số tiền") },
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Loại: ")
+            Button(onClick = { isIncome = !isIncome }) {
+                Text(if (isIncome) "Thu nhập" else "Chi tiêu")
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 

@@ -6,6 +6,7 @@ import com.example.mobileproject.core.result.Resource
 import com.example.mobileproject.domain.entity.Transaction
 import com.example.mobileproject.domain.entity.TransactionResponse
 import com.example.mobileproject.domain.repository.TransactionRepository
+import com.example.mobileproject.domain.usecase.wallet.UpdateWalletBalanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ data class TransactionUiState(
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val updateWalletBalanceUseCase: UpdateWalletBalanceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransactionUiState())
@@ -40,11 +42,16 @@ class TransactionViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = transactionRepository.createTransaction(coupleId, amount, type, category, note)) {
                 is Resource.Success -> {
+                    val currentBalance = result.data.totalBalance ?: 0L
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         transactionResponse = result.data,
-                        totalBalance = result.data.totalBalance ?: 0L
+                        totalBalance = currentBalance
                     )
+                    // Update Wallet Balance in WalletRepository
+                    updateWalletBalanceUseCase(currentBalance)
+                    // Reload transactions to sync list
+                    loadTransactions(coupleId)
                 }
                 is Resource.Error -> {
                     _uiState.value = _uiState.value.copy(
@@ -68,11 +75,16 @@ class TransactionViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = transactionRepository.processIncome(coupleId, amount, targetType, goalId, note)) {
                 is Resource.Success -> {
+                    val currentBalance = result.data.totalBalance ?: 0L
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         transactionResponse = result.data,
-                        totalBalance = result.data.totalBalance ?: 0L
+                        totalBalance = currentBalance
                     )
+                    // Update Wallet Balance in WalletRepository
+                    updateWalletBalanceUseCase(currentBalance)
+                    // Reload transactions to sync list
+                    loadTransactions(coupleId)
                 }
                 is Resource.Error -> {
                     _uiState.value = _uiState.value.copy(

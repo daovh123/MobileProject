@@ -19,6 +19,7 @@ data class TransactionResponseDto(
     @SerializedName("category") val category: String?,
     @SerializedName("note") val note: String?,
     @SerializedName("totalBalance") val totalBalance: Long?,
+    @SerializedName("currentBalance") val currentBalance: Long?,
     @SerializedName("createdAt") val createdAt: String?
 )
 

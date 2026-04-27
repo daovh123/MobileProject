@@ -23,6 +23,7 @@ import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.ProductDto
+import com.example.mobileproject.data.model.remote.WalletResponse
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
@@ -120,10 +121,17 @@ interface ApiService {
         @Body request: FcmTokenRequestDto,
     ): Response<Unit>
 
+    // Wallet APIs
+    @GET("api/v1/wallet/{coupleId}")
+    suspend fun getWallet(
+        @Header("Authorization") authorization: String,
+        @Path("coupleId", encoded = true) coupleId: String
+    ): Response<WalletResponse>
+
     // Transaction APIs
     @POST("api/v1/transactions")
     suspend fun createTransaction(
-        @Header("Authorization") authorization: String, // Thêm Header nếu cần xác thực
+        @Header("Authorization") authorization: String,
         @Body request: TransactionRequestDto,
     ): Response<TransactionResponseDto>
 

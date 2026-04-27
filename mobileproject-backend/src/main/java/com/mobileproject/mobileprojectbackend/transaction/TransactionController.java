@@ -3,6 +3,7 @@ package com.mobileproject.mobileprojectbackend.transaction;
 import com.mobileproject.mobileprojectbackend.transaction.dto.IncomeRequest;
 import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionRequest;
 import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/transactions")
 public class TransactionController {
@@ -46,6 +48,7 @@ public class TransactionController {
 
     @PostMapping
     public ResponseEntity<TransactionResponse> createTransaction(@RequestBody TransactionRequest request) {
+        log.info("Payload nhận được: {}", request);
         TransactionResponse response = transactionService.saveTransaction(
                 request.coupleId(),
                 request.amount(),
@@ -63,6 +66,7 @@ public class TransactionController {
 
     @PostMapping("/income")
     public ResponseEntity<TransactionResponse> processIncome(@RequestBody IncomeRequest request) {
+        log.info("Payload nhận được: {}", request);
         TransactionResponse response = transactionService.processIncome(
                 request.coupleId(),
                 request.amount(),
