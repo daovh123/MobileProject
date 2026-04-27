@@ -42,15 +42,18 @@ class TransactionViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = transactionRepository.createTransaction(coupleId, amount, type, category, note)) {
                 is Resource.Success -> {
-                    val currentBalance = result.data.totalBalance ?: 0L
+                    val currentBalance = result.data.totalBalance
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         transactionResponse = result.data,
-                        totalBalance = currentBalance
+                        totalBalance = currentBalance ?: _uiState.value.totalBalance
                     )
-                    // Update Wallet Balance in WalletRepository
-                    updateWalletBalanceUseCase(currentBalance)
-                    // Reload transactions to sync list
+                    
+                    // CHỈ CẬP NHẬT VÍ NẾU BACKEND TRẢ VỀ GIÁ TRỊ KHÁC NULL
+                    if (currentBalance != null) {
+                        updateWalletBalanceUseCase(currentBalance)
+                    }
+                    
                     loadTransactions(coupleId)
                 }
                 is Resource.Error -> {
@@ -75,15 +78,17 @@ class TransactionViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = transactionRepository.processIncome(coupleId, amount, targetType, goalId, note)) {
                 is Resource.Success -> {
-                    val currentBalance = result.data.totalBalance ?: 0L
+                    val currentBalance = result.data.totalBalance
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         transactionResponse = result.data,
-                        totalBalance = currentBalance
+                        totalBalance = currentBalance ?: _uiState.value.totalBalance
                     )
-                    // Update Wallet Balance in WalletRepository
-                    updateWalletBalanceUseCase(currentBalance)
-                    // Reload transactions to sync list
+                    
+                    if (currentBalance != null) {
+                        updateWalletBalanceUseCase(currentBalance)
+                    }
+
                     loadTransactions(coupleId)
                 }
                 is Resource.Error -> {

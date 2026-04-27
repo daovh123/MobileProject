@@ -18,7 +18,7 @@ data class TransactionResponseDto(
     @SerializedName("type") val type: String?,
     @SerializedName("category") val category: String?,
     @SerializedName("note") val note: String?,
-    @SerializedName("totalBalance") val totalBalance: Long?,
+    // BACKEND TRẢ VỀ currentBalance, PHẢI KHỚP CHÍNH XÁC TÊN NÀY
     @SerializedName("currentBalance") val currentBalance: Long?,
     @SerializedName("createdAt") val createdAt: String?
 )
