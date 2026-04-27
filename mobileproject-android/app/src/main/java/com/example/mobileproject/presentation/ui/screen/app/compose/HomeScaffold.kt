@@ -61,6 +61,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.notification.ChatInAppNotificationBus
 import com.example.mobileproject.presentation.notification.ChatNotificationGate
+import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
@@ -78,6 +79,7 @@ object HomeRoutes {
     const val SETTINGS: String = "settings"
     const val PROFILE: String = "profile"
     const val CHAT: String = "chat"
+    const val ADD_EXPENSE: String = "add_expense"
 }
 
 private data class HomeBottomItem(
@@ -116,6 +118,8 @@ fun HomeScaffold(
     val isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES
     val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
+    val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
+    
     val snackbarHostState = remember { SnackbarHostState() }
     val colorScheme = MaterialTheme.colorScheme
     val scaffoldBackgroundBrush = remember(colorScheme) {
@@ -164,7 +168,7 @@ fun HomeScaffold(
     val activity = context as? Activity
 
     BackHandler {
-        if (currentRoute == HomeRoutes.CHAT) {
+        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
@@ -184,80 +188,82 @@ fun HomeScaffold(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            TopAppBar(
-                title = {
-                    if (isChatRoute) {
-                        Text(
-                            text = stringResource(R.string.chat_title),
-                            color = colorScheme.primary,
-                        )
-                    } else if (isProfileRoute) {
-                        Text(
-                            text = stringResource(R.string.profile_title),
-                            color = colorScheme.primary,
-                        )
-                    } else if (!isMemoriesRoute) {
-                        Text(
-                            text = stringResource(currentItem.titleRes),
-                            color = colorScheme.primary,
-                        )
-                    }
-                },
-                navigationIcon = {
-                    if (isChatRoute) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_close_24),
-                                contentDescription = stringResource(R.string.cd_close),
-                                tint = colorScheme.primary,
+            if (!isAddExpenseRoute) {
+                TopAppBar(
+                    title = {
+                        if (isChatRoute) {
+                            Text(
+                                text = stringResource(R.string.chat_title),
+                                color = colorScheme.primary,
+                            )
+                        } else if (isProfileRoute) {
+                            Text(
+                                text = stringResource(R.string.profile_title),
+                                color = colorScheme.primary,
+                            )
+                        } else if (!isMemoriesRoute) {
+                            Text(
+                                text = stringResource(currentItem.titleRes),
+                                color = colorScheme.primary,
                             )
                         }
-                    } else {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(HomeRoutes.PROFILE) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_avatar_24),
-                                contentDescription = stringResource(R.string.cd_open_profile),
-                                tint = colorScheme.primary,
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    if (!isChatRoute) {
-                        IconButton(onClick = { /* TODO: notifications */ }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_notifications_24),
-                                contentDescription = stringResource(R.string.action_notifications),
-                                tint = colorScheme.primary,
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isMemoriesRoute) {
-                        colorScheme.surfaceColorAtElevation(2.dp)
-                    } else {
-                        colorScheme.surface.copy(alpha = 0.94f)
                     },
-                    scrolledContainerColor = colorScheme.surfaceColorAtElevation(4.dp),
-                    titleContentColor = colorScheme.primary,
-                    navigationIconContentColor = colorScheme.primary,
-                    actionIconContentColor = colorScheme.primary,
-                ),
-            )
+                    navigationIcon = {
+                        if (isChatRoute) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_close_24),
+                                    contentDescription = stringResource(R.string.cd_close),
+                                    tint = colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    navController.navigate(HomeRoutes.PROFILE) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_avatar_24),
+                                    contentDescription = stringResource(R.string.cd_open_profile),
+                                    tint = colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        if (!isChatRoute) {
+                            IconButton(onClick = { /* TODO: notifications */ }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_notifications_24),
+                                    contentDescription = stringResource(R.string.action_notifications),
+                                    tint = colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = if (isMemoriesRoute) {
+                            colorScheme.surfaceColorAtElevation(2.dp)
+                        } else {
+                            colorScheme.surface.copy(alpha = 0.94f)
+                        },
+                        scrolledContainerColor = colorScheme.surfaceColorAtElevation(4.dp),
+                        titleContentColor = colorScheme.primary,
+                        navigationIconContentColor = colorScheme.primary,
+                        actionIconContentColor = colorScheme.primary,
+                    ),
+                )
+            }
         },
         bottomBar = {
-            if (!isChatRoute && !isProfileRoute) {
+            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute) {
                 Card(
                     modifier = Modifier
                         .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 6.dp)
@@ -366,7 +372,16 @@ fun HomeScaffold(
                         )
                     }
                     composable(HomeRoutes.WALLET) {
-                        WalletScreen()
+                        WalletScreen(
+                            onNavigateToAddExpense = {
+                                navController.navigate(HomeRoutes.ADD_EXPENSE)
+                            }
+                        )
+                    }
+                    composable(HomeRoutes.ADD_EXPENSE) {
+                        AddExpenseScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
                     }
                     composable(HomeRoutes.EXPLORE) {
                         ExploreRoute(accessToken = accessToken)
@@ -402,7 +417,7 @@ fun HomeScaffold(
                     }
                 }
 
-                if (!isChatRoute) {
+                if (!isChatRoute && !isAddExpenseRoute) {
                     DraggableChatButton(
                         onClick = {
                             navController.navigate(HomeRoutes.CHAT) {
