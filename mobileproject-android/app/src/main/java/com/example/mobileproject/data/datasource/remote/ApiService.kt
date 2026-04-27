@@ -174,20 +174,19 @@ interface ApiService {
         @Body request: ContributeRequestDto,
     ): Response<ContributeResponseDto>
 
-    // Analytics APIs
-    @GET("api/v1/analytics/category-breakdown")
+    // Analytics APIs - CẬP NHẬT ĐỂ KHỚP VỚI BACKEND
+    @GET("api/v1/analytics/expense-by-category")
     suspend fun getCategoryBreakdown(
         @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
-        @Query("startDate") startDate: String,
-        @Query("endDate") endDate: String,
+        @Query("month") month: Int,
+        @Query("year") year: Int,
     ): Response<List<CategoryBreakdownDto>>
 
-    @GET("api/v1/analytics/spending-trend")
-    suspend fun getSpendingTrend(
+    @GET("api/v1/analytics/monthly-trend")
+    suspend fun getMonthlyTrend(
         @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
-        @Query("year") year: Int,
-        @Query("month") month: Int,
+        @Query("year") year: Int
     ): Response<List<SpendingTrendDto>>
 }
