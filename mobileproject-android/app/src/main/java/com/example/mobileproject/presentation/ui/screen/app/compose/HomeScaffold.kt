@@ -69,6 +69,8 @@ import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 
 object HomeRoutes {
@@ -80,6 +82,8 @@ object HomeRoutes {
     const val PROFILE: String = "profile"
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
+    const val TOP_UP: String = "top_up"
+    const val RECENT_TRANSACTIONS: String = "recent_transactions"
 }
 
 private data class HomeBottomItem(
@@ -119,6 +123,8 @@ fun HomeScaffold(
     val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
+    val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
+    val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
     
     val snackbarHostState = remember { SnackbarHostState() }
     val colorScheme = MaterialTheme.colorScheme
@@ -168,7 +174,7 @@ fun HomeScaffold(
     val activity = context as? Activity
 
     BackHandler {
-        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE) {
+        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE || currentRoute == HomeRoutes.TOP_UP || currentRoute == HomeRoutes.RECENT_TRANSACTIONS) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
@@ -188,7 +194,7 @@ fun HomeScaffold(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            if (!isAddExpenseRoute) {
+            if (!isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
                 TopAppBar(
                     title = {
                         if (isChatRoute) {
@@ -263,7 +269,7 @@ fun HomeScaffold(
             }
         },
         bottomBar = {
-            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute) {
+            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
                 Card(
                     modifier = Modifier
                         .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 6.dp)
@@ -375,11 +381,27 @@ fun HomeScaffold(
                         WalletScreen(
                             onNavigateToAddExpense = {
                                 navController.navigate(HomeRoutes.ADD_EXPENSE)
+                            },
+                            onNavigateToTopUp = {
+                                navController.navigate(HomeRoutes.TOP_UP)
+                            },
+                            onSeeAllTransactions = {
+                                navController.navigate(HomeRoutes.RECENT_TRANSACTIONS)
                             }
                         )
                     }
                     composable(HomeRoutes.ADD_EXPENSE) {
                         AddExpenseScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.TOP_UP) {
+                        TopUpScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.RECENT_TRANSACTIONS) {
+                        RecentTransactionsScreen(
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
@@ -417,7 +439,7 @@ fun HomeScaffold(
                     }
                 }
 
-                if (!isChatRoute && !isAddExpenseRoute) {
+                if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
                     DraggableChatButton(
                         onClick = {
                             navController.navigate(HomeRoutes.CHAT) {

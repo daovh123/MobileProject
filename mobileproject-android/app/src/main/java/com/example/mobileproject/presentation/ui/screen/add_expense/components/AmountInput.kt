@@ -24,7 +24,7 @@ fun AmountInput(
     onAmountChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    androidx.compose.material3.Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
@@ -47,24 +47,35 @@ fun AmountInput(
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            val fontSize = when {
+                amount.length > 12 -> 32.sp
+                amount.length > 9 -> 44.sp
+                amount.length > 6 -> 56.sp
+                else -> 64.sp
+            }
+
             BasicTextField(
                 value = amount,
                 onValueChange = onAmountChange,
                 textStyle = TextStyle(
-                    fontSize = 64.sp,
+                    fontSize = fontSize,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFF8A80),
                     textAlign = TextAlign.Center
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         if (amount.isEmpty()) {
                             Text(
                                 text = "0.00",
                                 style = TextStyle(
-                                    fontSize = 64.sp,
+                                    fontSize = fontSize,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFF8A80).copy(alpha = 0.3f),
                                     textAlign = TextAlign.Center
@@ -77,21 +88,4 @@ fun AmountInput(
             )
         }
     }
-}
-
-@Composable
-private fun Card(
-    modifier: Modifier,
-    shape: androidx.compose.ui.graphics.Shape,
-    colors: androidx.compose.material3.CardColors,
-    elevation: androidx.compose.material3.CardElevation,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    androidx.compose.material3.Card(
-        modifier = modifier,
-        shape = shape,
-        colors = colors,
-        elevation = elevation,
-        content = content
-    )
 }

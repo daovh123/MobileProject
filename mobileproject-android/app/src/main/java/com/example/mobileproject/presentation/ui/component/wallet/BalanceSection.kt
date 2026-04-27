@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.DecimalFormat
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -31,7 +32,7 @@ fun BalanceSection(
             letterSpacing = 1.sp
         )
         Text(
-            text = formatCurrency(balance),
+            text = formatSimpleAmount(balance),
             style = MaterialTheme.typography.displayMedium.copy(
                 fontWeight = FontWeight.Black,
                 fontSize = 40.sp
@@ -41,8 +42,7 @@ fun BalanceSection(
     }
 }
 
-private fun formatCurrency(amount: Long): String {
-    // Sửa Warning: Dùng Locale.getDefault() để tránh deprecated constructor
-    val formatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
+fun formatSimpleAmount(amount: Long): String {
+    val formatter = DecimalFormat("#,###")
     return formatter.format(amount)
 }

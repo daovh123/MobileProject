@@ -57,17 +57,26 @@ class WalletViewModel @Inject constructor(
                 val walletFlow = getWalletUseCase(coupleId, token)
                 val categoryFlow = getCategoryBreakdownUseCase(coupleId, month, year)
                 
+                // Lấy danh sách giao dịch
                 val transactionsResource = transactionRepository.getTransactions(coupleId)
 
                 combine(walletFlow, categoryFlow) { walletResult, categoryResult ->
                     _uiState.update { state ->
+                        val allTrans = if (transactionsResource is com.example.mobileproject.core.result.Resource.Success) {
+                            transactionsResource.data
+                        } else emptyList()
+
+                        // Sắp xếp các category theo chi tiêu từ lớn đến bé
+                        val sortedCategories = categoryResult.getOrNull()
+                            ?.sortedByDescending { it.totalAmount }
+                            ?: emptyList()
+
                         state.copy(
                             isLoading = false,
                             wallet = walletResult.getOrNull(),
-                            categoryBreakdown = categoryResult.getOrNull() ?: emptyList(),
-                            recentTransactions = if (transactionsResource is com.example.mobileproject.core.result.Resource.Success) {
-                                transactionsResource.data.take(5)
-                            } else emptyList(),
+                            categoryBreakdown = sortedCategories,
+                            allTransactions = allTrans,
+                            recentTransactions = allTrans.take(5),
                             error = if (walletResult.isFailure) walletResult.exceptionOrNull()?.message else null
                         )
                     }

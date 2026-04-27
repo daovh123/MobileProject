@@ -11,5 +11,6 @@ data class WalletUiState(
     val categoryBreakdown: List<CategoryBreakdown> = emptyList(),
     val spendingTrend: List<SpendingTrend> = emptyList(),
     val recentTransactions: List<Transaction> = emptyList(),
+    val allTransactions: List<Transaction> = emptyList(),
     val error: String? = null
 )

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,8 @@ import java.text.DateFormatSymbols
 @Composable
 fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
+    onNavigateToTopUp: () -> Unit,
+    onSeeAllTransactions: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -48,10 +51,10 @@ fun WalletScreen(
         Scaffold(
             containerColor = Color(0xFFFFF0F0),
             floatingActionButton = {
-                // Tự vẽ FAB để có overlay tối nền
+                // FAB overlay logic
             }
         ) { paddingValues ->
-            if (uiState.isLoading) {
+            if (uiState.isLoading && uiState.wallet == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFFFF8A80))
                 }
@@ -79,8 +82,8 @@ fun WalletScreen(
 
                     item {
                         RecentActivitySection(
-                            transactions = uiState.recentTransactions,
-                            onSeeAllClick = { /* TODO: Navigate to history */ }
+                            transactions = uiState.allTransactions,
+                            onSeeAllClick = onSeeAllTransactions
                         )
                     }
                 }
@@ -184,7 +187,10 @@ fun WalletScreen(
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color.White,
-                        modifier = Modifier.clickable { /* TODO: Top Up */ }
+                        modifier = Modifier.clickable { 
+                            isFabExpanded = false
+                            onNavigateToTopUp() 
+                        }
                     ) {
                         Text(
                             text = "Top Up",
@@ -195,13 +201,16 @@ fun WalletScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     FloatingActionButton(
-                        onClick = { /* TODO: Top Up */ },
+                        onClick = { 
+                            isFabExpanded = false
+                            onNavigateToTopUp() 
+                        },
                         containerColor = Color.White,
                         contentColor = Color(0xFFFF8A80),
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(painter = painterResource(R.drawable.ic_wallet_24), contentDescription = null)
+                        Icon(imageVector = Icons.Default.Bolt, contentDescription = null)
                     }
                 }
             }
