@@ -4,9 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,9 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +33,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
+import com.example.mobileproject.presentation.ui.components.auth.AuthBackdrop
+import com.example.mobileproject.presentation.ui.components.auth.AuthBrandMark
+import com.example.mobileproject.presentation.ui.components.auth.AuthFormSurface
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
@@ -106,122 +102,95 @@ private fun PersonalInfoScreen(
         }
     }
 
-    val primaryText = colorResource(R.color.auth_text_primary)
-    val secondaryText = colorResource(R.color.auth_text_secondary)
-    val pink = colorResource(R.color.auth_pink)
+    val colorScheme = MaterialTheme.colorScheme
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        colorResource(R.color.auth_bg_top),
-                        colorResource(R.color.auth_bg_bottom)
-                    )
-                )
-            )
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-    ) {
+    AuthBackdrop(modifier = Modifier.fillMaxSize()) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
         ) {
-            Surface(
-                shape = CircleShape,
-                color = pink,
-                shadowElevation = 0.dp,
-                modifier = Modifier.size(80.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = "❤", color = Color.White, style = MaterialTheme.typography.headlineSmall)
-                }
-            }
-
+            Spacer(modifier = Modifier.height(12.dp))
+            AuthBrandMark()
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = stringResource(R.string.profile_setup_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = primaryText
+                color = colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.profile_setup_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = secondaryText,
-                textAlign = TextAlign.Center
+                color = colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
-            Surface(
-                shape = RoundedCornerShape(36.dp),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ProfileFormContent(
-                        fullName = uiState.fullName,
-                        nickName = uiState.nickName,
-                        birthDate = uiState.birthDate,
-                        gender = uiState.gender,
-                        isSaving = uiState.isSaving,
-                        onFullNameChange = {
-                            profileViewModel.updateDraft(
-                                fullName = it,
-                                nickName = uiState.nickName,
-                                birthDate = uiState.birthDate,
-                                gender = uiState.gender,
-                            )
-                            profileViewModel.clearError()
-                        },
-                        onNickNameChange = {
-                            profileViewModel.updateDraft(
-                                fullName = uiState.fullName,
-                                nickName = it,
-                                birthDate = uiState.birthDate,
-                                gender = uiState.gender,
-                            )
-                            profileViewModel.clearError()
-                        },
-                        onBirthDateChange = {
-                            profileViewModel.updateDraft(
-                                fullName = uiState.fullName,
-                                nickName = uiState.nickName,
-                                birthDate = it,
-                                gender = uiState.gender,
-                            )
-                            profileViewModel.clearError()
-                        },
-                        onGenderChange = {
-                            profileViewModel.updateDraft(
-                                fullName = uiState.fullName,
-                                nickName = uiState.nickName,
-                                birthDate = uiState.birthDate,
-                                gender = it,
-                            )
-                            profileViewModel.clearError()
-                        },
-                        onSave = {
-                            submitRequested = true
-                            profileViewModel.saveProfile(token = accessToken)
-                        },
-                        saveEnabled = !uiState.isSaving,
-                    )
-
-                    val errorMessage = uiState.errorMessage
-                    if (!errorMessage.isNullOrBlank()) {
-                        Text(
-                            text = errorMessage,
-                            color = colorResource(R.color.auth_pink),
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
+            Spacer(modifier = Modifier.height(24.dp))
+            AuthFormSurface {
+                ProfileFormContent(
+                    fullName = uiState.fullName,
+                    nickName = uiState.nickName,
+                    birthDate = uiState.birthDate,
+                    gender = uiState.gender,
+                    isSaving = uiState.isSaving,
+                    onFullNameChange = {
+                        profileViewModel.updateDraft(
+                            fullName = it,
+                            nickName = uiState.nickName,
+                            birthDate = uiState.birthDate,
+                            gender = uiState.gender,
                         )
-                    }
+                        profileViewModel.clearError()
+                    },
+                    onNickNameChange = {
+                        profileViewModel.updateDraft(
+                            fullName = uiState.fullName,
+                            nickName = it,
+                            birthDate = uiState.birthDate,
+                            gender = uiState.gender,
+                        )
+                        profileViewModel.clearError()
+                    },
+                    onBirthDateChange = {
+                        profileViewModel.updateDraft(
+                            fullName = uiState.fullName,
+                            nickName = uiState.nickName,
+                            birthDate = it,
+                            gender = uiState.gender,
+                        )
+                        profileViewModel.clearError()
+                    },
+                    onGenderChange = {
+                        profileViewModel.updateDraft(
+                            fullName = uiState.fullName,
+                            nickName = uiState.nickName,
+                            birthDate = uiState.birthDate,
+                            gender = it,
+                        )
+                        profileViewModel.clearError()
+                    },
+                    onSave = {
+                        submitRequested = true
+                        profileViewModel.saveProfile(token = accessToken)
+                    },
+                    saveEnabled = !uiState.isSaving,
+                )
+
+                val errorMessage = uiState.errorMessage
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        color = colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }

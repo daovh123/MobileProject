@@ -66,6 +66,10 @@
     <string name="couple_generate_code">Tạo mã cặp</string>
     <string name="couple_enter_partner_code">Nhập mã đối tác</string>
     <string name="couple_partner_code_hint">VD. 000-000</string>
+    <string name="couple_copy_share">Sao chép và chia sẻ</string>
+    <string name="couple_connect_now">Kết nối ngay</string>
+    <string name="couple_do_it_later">Làm sau</string>
+    <string name="or">HOẶC</string>
     <string name="couple_connect_profiles">Kết nối hồ sơ</string>
     <string name="couple_processing">Đang xử lý...</string>
     <string name="couple_code_expires_at">Mã này hết hạn lúc: %1$s</string>
@@ -88,6 +92,8 @@
     <string name="home_pair_connected_title">Hai bạn đã ghép đôi thành công</string>
     <string name="home_pair_connected_subtitle">Không gian chung đã sẵn sàng để hai bạn đồng hành.</string>
     <string name="home_pair_connected_badge">TRẠNG THÁI KẾT NỐI</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_offers">Offers</string>
     <string name="home_pair_partner_name">Đối phương: %1$s</string>
     <string name="home_pair_partner_unknown">Người ấy</string>
     <string name="home_pair_connected_note">Từ giờ các khoản chi, kế hoạch và kỷ niệm có thể đi cùng nhau trong một nơi.</string>
@@ -247,4 +253,13 @@
     <string name="settings_profile_section_subtitle">Cập nhật thông tin của bạn</string>
     <string name="profile_email">Email</string>
     <string name="profile_email_invalid">Email không hợp lệ</string>
+
+    <!-- Navigation Bar Content Descriptions -->
+    <string name="cd_home">Trang chủ</string>
+    <string name="cd_explore">Khám phá</string>
+    <string name="nav_memories">Kỷ niệm</string>
+    <string name="cd_memories">Kỷ niệm</string>
+    <string name="cd_wallet">Ví</string>
+    <string name="cd_profile">Hồ sơ</string>
+    <string name="memories_title">Kỉ niệm</string>
 </resources>

@@ -36,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,14 +52,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.mobileproject.presentation.ui.icons.LucideHeart
+import com.example.mobileproject.presentation.ui.icons.LucideMapPin
+import com.example.mobileproject.presentation.ui.icons.LucideUser
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -102,6 +105,7 @@ fun HomeScreen(
 
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
 
     var currentCoupleId by remember { mutableStateOf<String?>(null) }
 
@@ -628,12 +632,12 @@ private fun HomeContent(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .background(colorResource(R.color.md3_surface_variant)),
+                                            .background(colorScheme.surfaceVariant),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
                                             text = stringResource(R.string.home_pair_loading_button),
-                                            color = colorResource(R.color.md3_on_surface_variant),
+                                            color = colorScheme.onSurfaceVariant,
                                         )
                                     }
                                 }
@@ -646,22 +650,22 @@ private fun HomeContent(
                                 ) {
                                     SmallFloatingActionButton(
                                         onClick = onCenterPartner,
-                                        containerColor = colorResource(R.color.md3_surface),
-                                        contentColor = colorResource(R.color.md3_primary),
+                                        containerColor = colorScheme.surface,
+                                        contentColor = colorScheme.primary,
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_avatar_24),
+                                            imageVector = LucideUser,
                                             contentDescription = stringResource(R.string.map_share_partner_marker),
                                         )
                                     }
 
                                     SmallFloatingActionButton(
                                         onClick = onCenterMe,
-                                        containerColor = colorResource(R.color.md3_surface),
-                                        contentColor = colorResource(R.color.md3_primary),
+                                        containerColor = colorScheme.surface,
+                                        contentColor = colorScheme.primary,
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_location_24),
+                                            imageVector = LucideMapPin,
                                             contentDescription = stringResource(R.string.map_share_me_marker),
                                         )
                                     }
@@ -682,6 +686,7 @@ private fun PairSection(
     onPairNow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val noSession = accessToken.isBlank()
 
     val titleText: String
@@ -721,14 +726,14 @@ private fun PairSection(
     Column(modifier = modifier) {
         Text(
             text = titleText,
-            color = colorResource(R.color.md3_primary),
+            color = colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = subtitleText,
-            color = colorResource(R.color.md3_on_surface_variant),
+            color = colorScheme.onSurfaceVariant,
         )
 
         if (!noSession && !state.paired) {
@@ -737,7 +742,7 @@ private fun PairSection(
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = stringResource(R.string.home_pair_my_code, myCode),
-                    color = colorResource(R.color.md3_primary),
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -746,14 +751,14 @@ private fun PairSection(
         if (showConnectedCard) {
             Spacer(modifier = Modifier.height(12.dp))
             Card(
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
                 shape = RoundedCornerShape(14.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = stringResource(R.string.home_pair_connected_badge),
-                        color = colorResource(R.color.md3_on_primary_container),
+                        color = colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold,
                     )
 
@@ -761,14 +766,14 @@ private fun PairSection(
                     val partnerDisplayName = state.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
                     Text(
                         text = stringResource(R.string.home_pair_partner_name, partnerDisplayName),
-                        color = colorResource(R.color.md3_on_primary_container),
+                        color = colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold,
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.home_pair_connected_note),
-                        color = colorResource(R.color.md3_on_surface_variant),
+                        color = colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -793,9 +798,9 @@ private fun PairSection(
                 !state.errorMessage.isNullOrBlank() ||
                 state.outgoingStatus.equals("REJECTED", ignoreCase = true)
             ) {
-                colorResource(R.color.auth_pink)
+                colorScheme.primary
             } else {
-                colorResource(R.color.md3_on_surface_variant)
+                colorScheme.onSurfaceVariant
             }
 
             Text(
@@ -821,9 +826,10 @@ private fun DaysTogetherCard(
     daysTogether: Long,
     showAnniversaryHint: Boolean,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
@@ -836,13 +842,13 @@ private fun DaysTogetherCard(
             Text(
                 text = daysTogether.toString(),
                 style = MaterialTheme.typography.displayMedium,
-                color = colorResource(R.color.md3_primary),
+                color = colorScheme.primary,
                 fontWeight = FontWeight.Bold,
             )
 
             Text(
                 text = stringResource(R.string.home_days_together_label),
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
             )
 
@@ -851,28 +857,28 @@ private fun DaysTogetherCard(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
+                AvatarChip(containerColor = colorScheme.primaryContainer)
                 Spacer(modifier = Modifier.width(12.dp))
                 AvatarChip(
-                    containerColor = colorResource(R.color.md3_surface_variant),
-                    iconRes = R.drawable.ic_favorite_24,
-                    iconTint = colorResource(R.color.md3_primary),
+                    containerColor = colorScheme.surfaceVariant,
+                    icon = LucideHeart,
+                    iconTint = colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
+                AvatarChip(containerColor = colorScheme.primaryContainer)
             }
 
             if (showAnniversaryHint) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
                     shape = RoundedCornerShape(999.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.home_days_anniversary_tomorrow),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        color = colorResource(R.color.md3_on_primary_container),
+                        color = colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -884,8 +890,8 @@ private fun DaysTogetherCard(
 @Composable
 private fun AvatarChip(
     containerColor: Color,
-    iconRes: Int = R.drawable.ic_avatar_24,
-    iconTint: Color = colorResource(R.color.md3_on_primary_container),
+    icon: ImageVector = LucideUser,
+    iconTint: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -895,7 +901,7 @@ private fun AvatarChip(
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Icon(
-                painter = painterResource(iconRes),
+                imageVector = icon,
                 contentDescription = stringResource(R.string.cd_avatar),
                 tint = iconTint,
                 modifier = Modifier.size(24.dp),
