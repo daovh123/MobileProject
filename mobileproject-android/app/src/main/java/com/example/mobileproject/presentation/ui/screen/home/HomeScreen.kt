@@ -1,84 +1,44 @@
 package com.example.mobileproject.presentation.ui.screen.home
 
-import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.os.Build
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
-import com.example.mobileproject.presentation.seed.SeedDataProvider
-import com.example.mobileproject.presentation.service.MapShareForegroundService
-import com.example.mobileproject.presentation.ui.components.core.AppMetricChip
-import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
-import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
-import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
-import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
+import com.example.mobileproject.domain.entity.GoalStatus
+import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
-import com.example.mobileproject.presentation.ui.screen.map.MapShareActivity
+import com.example.mobileproject.presentation.ui.screen.home.components.AddGoalBottomSheet
+import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
+import com.example.mobileproject.presentation.viewmodel.WalletViewModel
+import com.example.mobileproject.utils.formatSimpleAmount
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -90,68 +50,39 @@ import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 private const val DEFAULT_ZOOM: Double = 17.0
-private const val MAP_BOOTSTRAP_THROTTLE_MS: Long = 10_000L
 
 @Composable
 fun HomeScreen(
     accessToken: String,
     apiService: ApiService,
+    onSeeAllGoals: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
+    
+    val walletViewModel: WalletViewModel = hiltViewModel()
+    val walletState by walletViewModel.uiState.collectAsState()
 
-    var currentCoupleId by remember { mutableStateOf<String?>(null) }
+    val savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
+    val savingGoalState by savingGoalViewModel.uiState.collectAsState()
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
+    var isAddGoalSheetVisible by remember { mutableStateOf(false) }
 
     fun createMapViewIfNeeded(): MapView {
-        mapView?.let { existing ->
-            return existing
-        }
-
+        mapView?.let { return it }
         return MapView(context).apply {
             Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(DEFAULT_ZOOM)
-        }.also { created ->
-            mapView = created
-        }
+        }.also { mapView = it }
     }
 
     var myMarker by remember { mutableStateOf<Marker?>(null) }
-    var partnerMarker by remember { mutableStateOf<Marker?>(null) }
     var hasCenteredOnce by remember { mutableStateOf(false) }
-
-    var mapBootstrapInFlight by remember { mutableStateOf(false) }
-    var lastMapBootstrapAttemptMs by remember { mutableStateOf(0L) }
-    var serviceStartedForCoupleId by remember { mutableStateOf<String?>(null) }
-
-    var hasRequestedSharingPermissions by remember { mutableStateOf(false) }
-    var pendingSharingPermissionRequest by remember { mutableStateOf<List<String>>(emptyList()) }
-
-    fun updateMarker(
-        existing: Marker?,
-        titleRes: Int,
-        lat: Double,
-        lng: Double,
-        onCreated: (Marker) -> Unit,
-    ): Marker? {
-        val activeMapView = mapView ?: return existing
-        val point = GeoPoint(lat, lng)
-        val marker = existing ?: Marker(activeMapView).also {
-            it.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            it.title = context.getString(titleRes)
-            activeMapView.overlays.add(it)
-            onCreated(it)
-        }
-        marker.position = point
-        activeMapView.invalidate()
-        return marker
-    }
 
     fun centerOn(point: GeoPoint) {
         val activeMapView = mapView ?: return
@@ -160,782 +91,342 @@ fun HomeScreen(
         activeMapView.controller.setCenter(point)
     }
 
-    fun centerIfNeeded(lat: Double, lng: Double) {
-        val activeMapView = mapView ?: return
-        if (hasCenteredOnce) {
-            return
-        }
-        hasCenteredOnce = true
-        activeMapView.controller.setZoom(DEFAULT_ZOOM)
-        activeMapView.controller.setCenter(GeoPoint(lat, lng))
-    }
-
-    fun missingSharingPermissions(): List<String> {
-        val required = buildList {
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
-        return required.filter { permission ->
-            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    fun maybeStartSharingService() {
-        val coupleId = currentCoupleId?.trim().orEmpty()
-        if (accessToken.isBlank() || coupleId.isBlank()) {
-            return
-        }
-        if (serviceStartedForCoupleId == coupleId) {
-            return
-        }
-
-        val missing = missingSharingPermissions()
-        if (missing.isNotEmpty()) {
-            if (!hasRequestedSharingPermissions) {
-                hasRequestedSharingPermissions = true
-                pendingSharingPermissionRequest = missing
-            }
-            return
-        }
-
-        MapShareForegroundService.start(context, accessToken, coupleId)
-        serviceStartedForCoupleId = coupleId
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants ->
-        pendingSharingPermissionRequest = emptyList()
-        val grantedAll = grants.values.all { it }
-        if (!grantedAll) {
-            Toast.makeText(context, context.getString(R.string.map_share_permission_denied), Toast.LENGTH_SHORT).show()
-            return@rememberLauncherForActivityResult
-        }
-
-        maybeStartSharingService()
-    }
-
-    LaunchedEffect(pendingSharingPermissionRequest) {
-        if (pendingSharingPermissionRequest.isNotEmpty()) {
-            permissionLauncher.launch(pendingSharingPermissionRequest.toTypedArray())
-        }
-    }
-
-    val openFullScreenMap by rememberUpdatedState {
-        if (accessToken.isBlank()) {
-            return@rememberUpdatedState
-        }
-
-        val intent = Intent(context, MapShareActivity::class.java)
-            .putExtra(MapShareActivity.EXTRA_ACCESS_TOKEN, accessToken)
-            .putExtra(MapShareActivity.EXTRA_KEEP_SHARING_ACTIVE, true)
-
-        val coupleId = currentCoupleId?.trim().orEmpty()
-        if (coupleId.isNotBlank()) {
-            intent.putExtra(MapShareActivity.EXTRA_COUPLE_ID, coupleId)
-        }
-
-        context.startActivity(intent)
-    }
-
-    val gestureDetector = remember {
-        GestureDetector(
-            context,
-            object : GestureDetector.SimpleOnGestureListener() {
-                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                    openFullScreenMap()
-                    return true
-                }
-            },
-        )
-    }
-
-    DisposableEffect(mapView, gestureDetector) {
-        val activeMapView = mapView
-        if (activeMapView == null) {
-            return@DisposableEffect onDispose { }
-        }
-
-        activeMapView.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            false
-        }
-
-        onDispose {
-            activeMapView.setOnTouchListener(null)
-        }
-    }
-
-    val mapUpdatesReceiver = remember {
-        object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent == null) {
-                    return
-                }
-
-                when (intent.action) {
-                    MapShareForegroundService.ACTION_MY_LOCATION -> {
-                        val lat = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LATITUDE, Double.NaN)
-                        val lng = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LONGITUDE, Double.NaN)
-                        if (!lat.isNaN() && !lng.isNaN()) {
-                            myMarker = updateMarker(
-                                existing = myMarker,
-                                titleRes = R.string.map_share_me_marker,
-                                lat = lat,
-                                lng = lng,
-                                onCreated = { created -> myMarker = created },
-                            )
-                            centerIfNeeded(lat, lng)
-                        }
-                    }
-
-                    MapShareForegroundService.ACTION_PARTNER_LOCATION -> {
-                        val lat = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LATITUDE, Double.NaN)
-                        val lng = intent.getDoubleExtra(MapShareForegroundService.EXTRA_LONGITUDE, Double.NaN)
-                        if (!lat.isNaN() && !lng.isNaN()) {
-                            partnerMarker = updateMarker(
-                                existing = partnerMarker,
-                                titleRes = R.string.map_share_partner_marker,
-                                lat = lat,
-                                lng = lng,
-                                onCreated = { created -> partnerMarker = created },
-                            )
-                            if (!hasCenteredOnce) {
-                                centerIfNeeded(lat, lng)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    DisposableEffect(coupleState.paired) {
-        if (!coupleState.paired) {
-            return@DisposableEffect onDispose { }
-        }
-
-        val filter = IntentFilter().apply {
-            addAction(MapShareForegroundService.ACTION_MY_LOCATION)
-            addAction(MapShareForegroundService.ACTION_PARTNER_LOCATION)
-        }
-
-        ContextCompat.registerReceiver(
-            context,
-            mapUpdatesReceiver,
-            filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
-
-        onDispose {
-            runCatching { context.unregisterReceiver(mapUpdatesReceiver) }
-        }
-    }
-
-    DisposableEffect(lifecycleOwner, mapView) {
-        val activeMapView = mapView
-        if (activeMapView == null) {
-            return@DisposableEffect onDispose { }
-        }
-
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> activeMapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> activeMapView.onPause()
-                Lifecycle.Event.ON_DESTROY -> runCatching { activeMapView.onDetach() }
-                else -> Unit
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    LaunchedEffect(Unit) {
+        walletViewModel.loadData()
+        savingGoalViewModel.loadGoals()
     }
 
     LaunchedEffect(coupleState.paired) {
-        if (coupleState.paired) {
-            createMapViewIfNeeded()
-        } else {
-            myMarker = null
-            partnerMarker = null
-            hasCenteredOnce = false
-            mapView?.let { activeMapView ->
-                runCatching {
-                    activeMapView.onPause()
-                    activeMapView.onDetach()
-                }
-            }
-            mapView = null
-        }
+        if (coupleState.paired) createMapViewIfNeeded()
     }
 
     LaunchedEffect(accessToken) {
-        if (accessToken.isNotBlank()) {
-            coupleViewModel.loadStatus(accessToken)
-        }
+        if (accessToken.isNotBlank()) coupleViewModel.loadStatus(accessToken)
     }
 
-    LaunchedEffect(coupleState.paired, accessToken) {
-        if (!coupleState.paired || accessToken.isBlank()) {
-            return@LaunchedEffect
-        }
+    // Formula: shared balance = wallet balance + in-progress goals currentAmount - achieved goals currentAmount
+    val goals = savingGoalState.goals
+    val walletBalance = walletState.wallet?.balance ?: 0L
+    val inProgressAmount = goals.filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
+    val achievedAmount = goals.filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
+    val displaySharedBalance = walletBalance + inProgressAmount - achievedAmount
 
-        createMapViewIfNeeded()
-
-        val now = System.currentTimeMillis()
-        if (mapBootstrapInFlight) {
-            return@LaunchedEffect
-        }
-        if (now - lastMapBootstrapAttemptMs < MAP_BOOTSTRAP_THROTTLE_MS) {
-            return@LaunchedEffect
-        }
-
-        lastMapBootstrapAttemptMs = now
-        mapBootstrapInFlight = true
-
-        try {
-            val tokenHeader = "Bearer ${accessToken.trim()}"
-            val response = runCatching { apiService.getMapLastLocations(tokenHeader) }.getOrNull()
-            val body = response?.body()
-            if (response == null || !response.isSuccessful || body == null || !body.success) {
-                return@LaunchedEffect
-            }
-
-            val resolvedCoupleId = body.coupleId?.trim().orEmpty()
-            if (resolvedCoupleId.isNotBlank()) {
-                currentCoupleId = resolvedCoupleId
-            }
-
-            body.myLocation?.let { loc ->
-                val lat = loc.latitude
-                val lng = loc.longitude
-                if (lat != null && lng != null) {
-                    myMarker = updateMarker(
-                        existing = myMarker,
-                        titleRes = R.string.map_share_me_marker,
-                        lat = lat,
-                        lng = lng,
-                        onCreated = { created -> myMarker = created },
-                    )
-                    centerIfNeeded(lat, lng)
+    Box(modifier = Modifier.fillMaxSize()) {
+        HomeContent(
+            state = coupleState,
+            walletBalance = displaySharedBalance,
+            actualWalletBalance = walletBalance,
+            daysTogether = coupleState.daysTogether?.coerceAtLeast(1) ?: computeDaysTogetherFromStartAt(coupleState.startAt) ?: 1L,
+            goals = goals,
+            onPairNow = {
+                if (accessToken.isNotBlank()) {
+                    context.startActivity(Intent(context, CoupleConnectActivity::class.java).putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken))
                 }
-            }
+            },
+            onCenterMe = { myMarker?.position?.let { centerOn(it) } },
+            onSeeAllGoals = onSeeAllGoals,
+            mapView = mapView,
+            accessToken = accessToken
+        )
 
-            body.partnerLocation?.let { loc ->
-                val lat = loc.latitude
-                val lng = loc.longitude
-                if (lat != null && lng != null) {
-                    partnerMarker = updateMarker(
-                        existing = partnerMarker,
-                        titleRes = R.string.map_share_partner_marker,
-                        lat = lat,
-                        lng = lng,
-                        onCreated = { created -> partnerMarker = created },
-                    )
-                    if (!hasCenteredOnce) {
-                        centerIfNeeded(lat, lng)
-                    }
+        // FAB to add Goal
+        FloatingActionButton(
+            onClick = { isAddGoalSheetVisible = true },
+            containerColor = Color(0xFFFF8A80),
+            contentColor = Color.White,
+            shape = CircleShape,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+                .size(64.dp)
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Goal", modifier = Modifier.size(32.dp))
+        }
+
+        if (isAddGoalSheetVisible) {
+            AddGoalBottomSheet(
+                onDismiss = { isAddGoalSheetVisible = false },
+                onConfirm = { name, target, category, deadline ->
+                    savingGoalViewModel.createGoal(name, category, target, deadline)
+                    isAddGoalSheetVisible = false
                 }
-            }
-
-            maybeStartSharingService()
-        } finally {
-            mapBootstrapInFlight = false
-        }
-    }
-
-    LaunchedEffect(coupleState.paired) {
-        if (!coupleState.paired && serviceStartedForCoupleId != null) {
-            MapShareForegroundService.stop(context)
-            serviceStartedForCoupleId = null
-        }
-    }
-
-    HomeContent(
-        state = coupleState,
-        accessToken = accessToken,
-        onPairNow = {
-            if (accessToken.isBlank()) {
-                return@HomeContent
-            }
-            context.startActivity(
-                Intent(context, CoupleConnectActivity::class.java)
-                    .putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken),
             )
-        },
-        daysTogether = coupleState.daysTogether?.coerceAtLeast(1)
-            ?: computeDaysTogetherFromStartAt(coupleState.startAt)
-            ?: 1L,
-        onCenterMe = {
-            val point = myMarker?.position ?: return@HomeContent
-            centerOn(point)
-        },
-        onCenterPartner = {
-            val point = partnerMarker?.position ?: return@HomeContent
-            centerOn(point)
-        },
-        mapView = mapView,
-    )
+        }
+    }
 }
 
 @Composable
 private fun HomeContent(
     state: CoupleUiState,
-    accessToken: String,
+    walletBalance: Long,
+    actualWalletBalance: Long,
     daysTogether: Long,
+    goals: List<SavingGoal>,
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
-    onCenterPartner: () -> Unit,
+    onSeeAllGoals: () -> Unit,
     mapView: MapView?,
+    accessToken: String
 ) {
-    var revealStep by remember { mutableStateOf(0) }
-
-    LaunchedEffect(state.paired, state.isLoading) {
-        revealStep = 0
-        delay(60)
-        revealStep = 1
-        delay(80)
-        revealStep = 2
-        delay(90)
-        revealStep = 3
-        if (state.paired) {
-            delay(90)
-            revealStep = 4
-        }
-    }
-
-    val pairStatus = when {
-        accessToken.isBlank() -> "Session off"
-        state.paired -> "Connected"
-        state.isLoading -> "Syncing"
-        else -> "Pending"
-    }
-    val codeValue = state.myCoupleCode?.takeIf { it.isNotBlank() } ?: "--"
-
-    AppScreenBackground {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF0F0))
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AppSectionHeader(
-                title = stringResource(R.string.page_home),
-                subtitle = if (state.paired) {
-                    stringResource(R.string.home_pair_connected_subtitle)
-                } else {
-                    stringResource(R.string.home_pair_subtitle)
-                },
-            )
+            // 1. Shared Balance Section (Calculated)
+            SharedBalanceCard(balance = walletBalance)
 
-            AnimatedVisibility(visible = revealStep >= 1) {
-                AppSurfaceCard(
-                    modifier = Modifier.animateContentSize(),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(0).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(1).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(2).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            // 2. Days Together Section
+            DaysTogetherModernCard(daysTogether = daysTogether)
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            AppMetricChip(
-                                value = daysTogether.toString(),
-                                label = stringResource(R.string.home_days_together_label),
-                                modifier = Modifier.weight(1f),
-                            )
-                            AppMetricChip(
-                                value = pairStatus,
-                                label = stringResource(R.string.home_pair_title),
-                                modifier = Modifier.weight(1f),
-                            )
-                            AppMetricChip(
-                                value = codeValue,
-                                label = "Pair code",
-                                modifier = Modifier.weight(1f),
-                            )
+            // 3. Mini Cards (Savings & Memories)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                MiniMetricCard(
+                    title = "SAVINGS",
+                    value = formatSimpleAmount(actualWalletBalance), // "tiền tiết kiệm (total balanced ở phía ví)"
+                    icon = Icons.Default.TrendingUp,
+                    modifier = Modifier.weight(1f)
+                )
+                MiniMetricCard(
+                    title = "MEMORIES",
+                    value = "12 New",
+                    icon = Icons.Default.MenuBook,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // 4. Goals Section
+            if (goals.isNotEmpty()) {
+                val sortedGoals = goals.sortedWith(
+                    compareBy<SavingGoal> { 
+                        when(it.status) {
+                            GoalStatus.IN_PROGRESS -> 0
+                            GoalStatus.FAILED -> 1
+                            GoalStatus.ACHIEVED -> 2
                         }
-                    }
-                }
-            }
+                    }.thenBy { it.deadline ?: "9999-12-31" }
+                )
 
-            AnimatedVisibility(visible = revealStep >= 2) {
-                AppSurfaceCard(
-                    modifier = Modifier.animateContentSize(),
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
-                        PairSection(
-                            state = state,
-                            accessToken = accessToken,
-                            onPairNow = onPairNow,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                    Text(
+                        text = "Saving Goals",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF4A3434)
+                    )
+                    TextButton(onClick = onSeeAllGoals) {
+                        Text(text = "See All", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold)
                     }
+                }
+                
+                sortedGoals.take(2).forEach { goal ->
+                    GoalCard(goal = goal)
                 }
             }
 
-            if (state.paired) {
-                AnimatedVisibility(visible = revealStep >= 3) {
-                    DaysTogetherCard(
-                        daysTogether = daysTogether,
-                        showAnniversaryHint = state.anniversaryTomorrow == true,
-                    )
+            // 5. Pair Section
+            if (!state.paired) {
+                AppSurfaceCard {
+                    PairSection(state = state, accessToken = accessToken, onPairNow = onPairNow)
                 }
+            }
 
-                AnimatedVisibility(visible = revealStep >= 4) {
-                    AppSurfaceCard(
-                        modifier = Modifier.animateContentSize(),
+            // 6. Map Section
+            if (state.paired) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Where is your partner?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF4A3434),
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        shape = RoundedCornerShape(32.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            AppSectionHeader(
-                                title = stringResource(R.string.map_share_title),
-                                subtitle = stringResource(R.string.home_pair_connected_note),
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(240.dp)
-                                    .clip(RoundedCornerShape(18.dp)),
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            if (mapView != null) {
+                                AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+                            } else {
+                                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5)), contentAlignment = Alignment.Center) {
+                                    Text("Locating...", color = Color.Gray)
+                                }
+                            }
+                            
+                            SmallFloatingActionButton(
+                                onClick = onCenterMe,
+                                containerColor = Color.White,
+                                contentColor = Color(0xFFFF8A80),
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                                shape = CircleShape
                             ) {
-                                val activeMapView = mapView
-                                if (activeMapView != null) {
-                                    AndroidView(
-                                        factory = { activeMapView },
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(colorResource(R.color.md3_surface_variant)),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.home_pair_loading_button),
-                                            color = colorResource(R.color.md3_on_surface_variant),
-                                        )
-                                    }
-                                }
-
-                                Column(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    SmallFloatingActionButton(
-                                        onClick = onCenterPartner,
-                                        containerColor = colorResource(R.color.md3_surface),
-                                        contentColor = colorResource(R.color.md3_primary),
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_avatar_24),
-                                            contentDescription = stringResource(R.string.map_share_partner_marker),
-                                        )
-                                    }
-
-                                    SmallFloatingActionButton(
-                                        onClick = onCenterMe,
-                                        containerColor = colorResource(R.color.md3_surface),
-                                        contentColor = colorResource(R.color.md3_primary),
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_location_24),
-                                            contentDescription = stringResource(R.string.map_share_me_marker),
-                                        )
-                                    }
-                                }
+                                Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
                             }
                         }
                     }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun PairSection(
-    state: CoupleUiState,
-    accessToken: String,
-    onPairNow: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val noSession = accessToken.isBlank()
-
-    val titleText: String
-    val subtitleText: String
-    val showConnectedCard: Boolean
-    val showPairButton: Boolean
-    val pairButtonEnabled: Boolean
-    val pairButtonText: String
-
-    if (noSession) {
-        titleText = stringResource(R.string.home_pair_title)
-        subtitleText = stringResource(R.string.home_pair_subtitle)
-        showConnectedCard = false
-        showPairButton = true
-        pairButtonEnabled = false
-        pairButtonText = stringResource(R.string.home_pair_button)
-    } else if (state.paired) {
-        titleText = stringResource(R.string.home_pair_connected_title)
-        subtitleText = stringResource(R.string.home_pair_connected_subtitle)
-        showConnectedCard = true
-        showPairButton = false
-        pairButtonEnabled = false
-        pairButtonText = stringResource(R.string.home_pair_button)
-    } else {
-        titleText = stringResource(R.string.home_pair_title)
-        subtitleText = stringResource(R.string.home_pair_subtitle)
-        showConnectedCard = false
-        showPairButton = true
-        pairButtonEnabled = !state.isLoading
-        pairButtonText = if (state.isLoading) {
-            stringResource(R.string.home_pair_loading_button)
-        } else {
-            stringResource(R.string.home_pair_button)
-        }
-    }
-
-    Column(modifier = modifier) {
-        Text(
-            text = titleText,
-            color = colorResource(R.color.md3_primary),
-            fontWeight = FontWeight.Bold,
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = subtitleText,
-            color = colorResource(R.color.md3_on_surface_variant),
-        )
-
-        if (!noSession && !state.paired) {
-            val myCode = state.myCoupleCode
-            if (!myCode.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.home_pair_my_code, myCode),
-                    color = colorResource(R.color.md3_primary),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
-
-        if (showConnectedCard) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
-                shape = RoundedCornerShape(14.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = stringResource(R.string.home_pair_connected_badge),
-                        color = colorResource(R.color.md3_on_primary_container),
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val partnerDisplayName = state.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
-                    Text(
-                        text = stringResource(R.string.home_pair_partner_name, partnerDisplayName),
-                        color = colorResource(R.color.md3_on_primary_container),
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.home_pair_connected_note),
-                        color = colorResource(R.color.md3_on_surface_variant),
-                    )
-                }
-            }
-        }
-
-        val hintText = when {
-            noSession -> stringResource(R.string.home_pair_session_expired)
-            !state.errorMessage.isNullOrBlank() -> state.errorMessage
-            state.outgoingStatus.equals("PENDING", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_pending)
-            state.outgoingStatus.equals("REJECTED", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_rejected)
-            !state.myCoupleCodeExpiresAt.isNullOrBlank() -> stringResource(
-                R.string.home_pair_code_expiry,
-                state.myCoupleCodeExpiresAt ?: "",
-            )
-            else -> null
-        }
-
-        if (!hintText.isNullOrBlank() && !state.paired) {
-            Spacer(modifier = Modifier.height(10.dp))
-            val hintColor = if (
-                noSession ||
-                !state.errorMessage.isNullOrBlank() ||
-                state.outgoingStatus.equals("REJECTED", ignoreCase = true)
-            ) {
-                colorResource(R.color.auth_pink)
-            } else {
-                colorResource(R.color.md3_on_surface_variant)
-            }
-
-            Text(
-                text = hintText,
-                color = hintColor,
-            )
-        }
-
-        if (showPairButton) {
-            Spacer(modifier = Modifier.height(12.dp))
-            AppPrimaryButton(
-                text = pairButtonText,
-                onClick = onPairNow,
-                enabled = pairButtonEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DaysTogetherCard(
-    daysTogether: Long,
-    showAnniversaryHint: Boolean,
-) {
+fun SharedBalanceCard(balance: Long) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(35.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFF8A80)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 28.dp, horizontal = 24.dp)
+        ) {
+            Text(
+                text = "SHARED BALANCE", 
+                style = MaterialTheme.typography.labelMedium, 
+                color = Color.White.copy(alpha = 0.9f),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = formatSimpleAmount(balance),
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun DaysTogetherModernCard(daysTogether: Long) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(40.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = daysTogether.toString(),
-                style = MaterialTheme.typography.displayMedium,
-                color = colorResource(R.color.md3_primary),
-                fontWeight = FontWeight.Bold,
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = Color(0xFFFF8A80),
+                modifier = Modifier.size(72.dp)
             )
-
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(R.string.home_days_together_label),
-                color = colorResource(R.color.md3_on_surface_variant),
-                fontWeight = FontWeight.Bold,
+                text = "$daysTogether Days Together",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF4A3434),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
-                Spacer(modifier = Modifier.width(12.dp))
-                AvatarChip(
-                    containerColor = colorResource(R.color.md3_surface_variant),
-                    iconRes = R.drawable.ic_favorite_24,
-                    iconTint = colorResource(R.color.md3_primary),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                AvatarChip(containerColor = colorResource(R.color.md3_primary_container))
-            }
-
-            if (showAnniversaryHint) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary_container)),
-                    shape = RoundedCornerShape(999.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_days_anniversary_tomorrow),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        color = colorResource(R.color.md3_on_primary_container),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+            Text(
+                text = "Our shared journey continues",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
 @Composable
-private fun AvatarChip(
-    containerColor: Color,
-    iconRes: Int = R.drawable.ic_avatar_24,
-    iconTint: Color = colorResource(R.color.md3_on_primary_container),
-) {
+fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = CircleShape,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier.size(44.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E1).copy(alpha = 0.7f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = stringResource(R.string.cd_avatar),
-                tint = iconTint,
-                modifier = Modifier.size(24.dp),
-            )
+        Column(modifier = Modifier.padding(20.dp)) {
+            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFFF8A80), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = title, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
         }
+    }
+}
+
+@Composable
+private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
+    Column(modifier = Modifier.padding(20.dp)) {
+        Text(text = "Connect with your partner", fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onPairNow,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("Pair Now", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun AppSurfaceCard(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        content()
     }
 }
 
 private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
     val datePart = startAt?.takeIf { it.length >= 10 }?.substring(0, 10) ?: return null
     val parts = datePart.split("-")
-    if (parts.size != 3) {
-        return null
-    }
-
+    if (parts.size != 3) return null
     val year = parts[0].toIntOrNull() ?: return null
     val month = parts[1].toIntOrNull() ?: return null
     val day = parts[2].toIntOrNull() ?: return null
-
     val utc = TimeZone.getTimeZone("UTC")
-
     val startCal = GregorianCalendar(utc).apply {
-        set(Calendar.YEAR, year)
-        set(Calendar.MONTH, month - 1)
-        set(Calendar.DAY_OF_MONTH, day)
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
+        set(Calendar.YEAR, year); set(Calendar.MONTH, month - 1); set(Calendar.DAY_OF_MONTH, day)
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }
-
     val todayCal = GregorianCalendar(utc).apply {
         timeInMillis = System.currentTimeMillis()
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }
-
     val diffMillis = todayCal.timeInMillis - startCal.timeInMillis
-    val days = TimeUnit.MILLISECONDS.toDays(diffMillis) + 1
-    return days.coerceAtLeast(1)
+    return (TimeUnit.MILLISECONDS.toDays(diffMillis) + 1).coerceAtLeast(1)
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,12 +21,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.component.wallet.BalanceSection
 import com.example.mobileproject.presentation.ui.component.wallet.MonthlySpendingCard
 import com.example.mobileproject.presentation.ui.component.wallet.RecentActivitySection
+import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
+import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import java.text.DateFormatSymbols
 
@@ -35,24 +37,26 @@ fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToTopUp: () -> Unit,
     onSeeAllTransactions: () -> Unit,
-    viewModel: WalletViewModel = hiltViewModel()
+    viewModel: WalletViewModel = hiltViewModel(),
+    savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val savingGoalState by savingGoalViewModel.uiState.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
     
     var isMonthPickerVisible by remember { mutableStateOf(false) }
     var isFabExpanded by remember { mutableStateOf(false) }
+    var isContributeSheetVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
+        savingGoalViewModel.loadGoals()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Color(0xFFFFF0F0),
-            floatingActionButton = {
-                // FAB overlay logic
-            }
+            floatingActionButton = { }
         ) { paddingValues ->
             if (uiState.isLoading && uiState.wallet == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -90,7 +94,6 @@ fun WalletScreen(
             }
         }
 
-        // --- OVERLAY MỜ KHI CHỌN THÁNG ---
         if (isMonthPickerVisible) {
             Box(
                 modifier = Modifier
@@ -134,7 +137,6 @@ fun WalletScreen(
             }
         }
 
-        // --- OVERLAY MỜ VÀ MENU FAB ---
         if (isFabExpanded) {
             Box(
                 modifier = Modifier
@@ -150,7 +152,37 @@ fun WalletScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Add Expense
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        modifier = Modifier.clickable { 
+                            isFabExpanded = false
+                            isContributeSheetVisible = true 
+                        }
+                    ) {
+                        Text(
+                            text = "Contribute to Goal",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FloatingActionButton(
+                        onClick = { 
+                            isFabExpanded = false
+                            isContributeSheetVisible = true 
+                        },
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFFF8A80),
+                        shape = CircleShape,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Savings, contentDescription = null)
+                    }
+                }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -182,7 +214,6 @@ fun WalletScreen(
                     }
                 }
 
-                // Top Up
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -216,7 +247,6 @@ fun WalletScreen(
             }
         }
 
-        // Nút FAB chính
         val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f)
         FloatingActionButton(
             onClick = { isFabExpanded = !isFabExpanded },
@@ -234,6 +264,23 @@ fun WalletScreen(
                 modifier = Modifier
                     .size(32.dp)
                     .rotate(rotation)
+            )
+        }
+
+        if (isContributeSheetVisible) {
+            ContributeGoalBottomSheet(
+                selectedGoal = null,
+                availableGoals = savingGoalState.goals,
+                onDismiss = { isContributeSheetVisible = false },
+                onConfirm = { goalId, amount, note, isDirect ->
+                    savingGoalViewModel.contribute(
+                        goalId = goalId,
+                        amount = amount,
+                        note = note,
+                        contributorId = if (isDirect) "me" else null
+                    )
+                    isContributeSheetVisible = false
+                }
             )
         }
     }

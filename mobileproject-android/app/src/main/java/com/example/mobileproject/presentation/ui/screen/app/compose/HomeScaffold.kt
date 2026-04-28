@@ -70,6 +70,7 @@ import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 
@@ -84,6 +85,7 @@ object HomeRoutes {
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
+    const val SAVING_GOALS: String = "saving_goals"
 }
 
 private data class HomeBottomItem(
@@ -125,6 +127,7 @@ fun HomeScaffold(
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
     val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
+    val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     
     val snackbarHostState = remember { SnackbarHostState() }
     val colorScheme = MaterialTheme.colorScheme
@@ -174,7 +177,7 @@ fun HomeScaffold(
     val activity = context as? Activity
 
     BackHandler {
-        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE || currentRoute == HomeRoutes.TOP_UP || currentRoute == HomeRoutes.RECENT_TRANSACTIONS) {
+        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE || currentRoute == HomeRoutes.TOP_UP || currentRoute == HomeRoutes.RECENT_TRANSACTIONS || currentRoute == HomeRoutes.SAVING_GOALS) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
@@ -194,7 +197,7 @@ fun HomeScaffold(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            if (!isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
+            if (!isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
                 TopAppBar(
                     title = {
                         if (isChatRoute) {
@@ -269,7 +272,7 @@ fun HomeScaffold(
             }
         },
         bottomBar = {
-            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
+            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
                 Card(
                     modifier = Modifier
                         .padding(start = 14.dp, end = 14.dp, bottom = 14.dp, top = 6.dp)
@@ -375,6 +378,9 @@ fun HomeScaffold(
                         HomeScreen(
                             accessToken = accessToken,
                             apiService = apiService,
+                            onSeeAllGoals = {
+                                navController.navigate(HomeRoutes.SAVING_GOALS)
+                            }
                         )
                     }
                     composable(HomeRoutes.WALLET) {
@@ -402,6 +408,11 @@ fun HomeScaffold(
                     }
                     composable(HomeRoutes.RECENT_TRANSACTIONS) {
                         RecentTransactionsScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.SAVING_GOALS) {
+                        SavingGoalsScreen(
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
@@ -439,7 +450,7 @@ fun HomeScaffold(
                     }
                 }
 
-                if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute) {
+                if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
                     DraggableChatButton(
                         onClick = {
                             navController.navigate(HomeRoutes.CHAT) {

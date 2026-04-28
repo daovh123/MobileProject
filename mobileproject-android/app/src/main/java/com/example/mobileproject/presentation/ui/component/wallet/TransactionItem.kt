@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.domain.entity.Transaction
 import com.example.mobileproject.domain.entity.TransactionType
 import com.example.mobileproject.domain.model.ExpenseCategory
@@ -26,13 +27,25 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun TransactionItem(transaction: Transaction) {
+fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyList()) {
     var showDetail by remember { mutableStateOf(false) }
     val isExpense = transaction.type == TransactionType.EXPENSE
     
-    // Ánh xạ icon từ Category ID
-    val categoryInfo = remember(transaction.category) {
-        ExpenseCategory.getAll().find { it.id == transaction.category } ?: ExpenseCategory.Others
+    // Tìm goal liên quan dựa trên Note (thường backend trả về note có chứa goal name hoặc goalId)
+    // Hoặc so khớp category nếu note có từ khóa đặc biệt
+    val relatedGoal = remember(transaction, goals) {
+        goals.find { 
+            transaction.note.contains(it.name, ignoreCase = true) || 
+            transaction.note.contains(it.id, ignoreCase = true)
+        }
+    }
+
+    val displayTitle = relatedGoal?.name ?: transaction.category.replace("_", " ").uppercase()
+    
+    // Ánh xạ icon từ Category ID (nếu là goal thì lấy category của goal đó)
+    val categoryId = relatedGoal?.category ?: transaction.category
+    val categoryInfo = remember(categoryId) {
+        ExpenseCategory.getAll().find { it.id == categoryId } ?: ExpenseCategory.Others
     }
 
     val dateDisplay = remember(transaction.createdAt) {
@@ -81,7 +94,7 @@ fun TransactionItem(transaction: Transaction) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = transaction.category.uppercase(),
+                        text = displayTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2D2D2D),
@@ -110,6 +123,7 @@ fun TransactionItem(transaction: Transaction) {
     if (showDetail) {
         TransactionDetailDialog(
             transaction = transaction,
+            displayTitle = displayTitle,
             formattedDate = dateDisplay,
             categoryInfo = categoryInfo,
             onDismiss = { showDetail = false }
@@ -120,6 +134,7 @@ fun TransactionItem(transaction: Transaction) {
 @Composable
 fun TransactionDetailDialog(
     transaction: Transaction,
+    displayTitle: String,
     formattedDate: String,
     categoryInfo: ExpenseCategory,
     onDismiss: () -> Unit
@@ -184,7 +199,7 @@ fun TransactionDetailDialog(
                 HorizontalDivider(color = Color(0xFFFFF0F0))
                 Spacer(modifier = Modifier.height(24.dp))
 
-                DetailRow("Category", transaction.category.uppercase())
+                DetailRow("Activity", displayTitle)
                 DetailRow("Note", transaction.note.ifBlank { "No content" })
                 DetailRow("Date", formattedDate)
                 DetailRow("Full Time", timeDisplay)

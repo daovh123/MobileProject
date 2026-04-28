@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.data.datasource.remote.ApiService
+import com.example.mobileproject.data.datasource.remote.GoalApiService
 import com.example.mobileproject.data.datasource.remote.PlaceApiService
 import com.example.mobileproject.utils.ApiBaseUrlResolver
 import com.google.gson.Gson
@@ -88,5 +89,11 @@ object NetworkModule {
     @Singleton
     fun providePlaceApiService(retrofit: Retrofit): PlaceApiService {
         return retrofit.create(PlaceApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGoalApiService(retrofit: Retrofit): GoalApiService {
+        return retrofit.create(GoalApiService::class.java)
     }
 }

@@ -9,9 +9,10 @@ import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
-import com.example.mobileproject.data.model.goal.ContributeRequestDto
-import com.example.mobileproject.data.model.goal.ContributeResponseDto
-import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
+import com.example.mobileproject.data.model.goal.ContributeDirectRequest
+import com.example.mobileproject.data.model.goal.ContributeFromWalletRequest
+import com.example.mobileproject.data.model.goal.ContributionResponseDto
+import com.example.mobileproject.data.model.goal.CreateGoalRequest
 import com.example.mobileproject.data.model.goal.GoalResponseDto
 import com.example.mobileproject.data.model.goal.SavingGoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
@@ -151,7 +152,7 @@ interface ApiService {
     @POST("api/v1/goals")
     suspend fun createGoal(
         @Header("Authorization") authorization: String,
-        @Body request: CreateGoalRequestDto,
+        @Body request: CreateGoalRequest,
     ): Response<GoalResponseDto>
 
     @GET("api/v1/goals/couple/{coupleId}")
@@ -164,17 +165,17 @@ interface ApiService {
     suspend fun contributeFromWallet(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeRequestDto,
-    ): Response<ContributeResponseDto>
+        @Body request: ContributeFromWalletRequest,
+    ): Response<ContributionResponseDto>
 
     @POST("api/v1/goals/{goalId}/contribute")
     suspend fun contributeToGoal(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeRequestDto,
-    ): Response<ContributeResponseDto>
+        @Body request: ContributeDirectRequest,
+    ): Response<ContributionResponseDto>
 
-    // Analytics APIs - CẬP NHẬT ĐỂ KHỚP VỚI BACKEND
+    // Analytics APIs
     @GET("api/v1/analytics/expense-by-category")
     suspend fun getCategoryBreakdown(
         @Header("Authorization") authorization: String,

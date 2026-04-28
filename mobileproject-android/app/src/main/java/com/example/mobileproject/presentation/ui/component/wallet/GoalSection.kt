@@ -9,20 +9,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
-import com.example.mobileproject.domain.entity.Transaction
+import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 
 @Composable
-fun RecentActivitySection(
-    transactions: List<Transaction>,
-    goals: List<SavingGoal> = emptyList(),
+fun GoalSection(
+    goals: List<SavingGoal>,
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val sortedGoals = goals.sortedWith(
+        compareBy<SavingGoal> { it.status == GoalStatus.ACHIEVED } // Achieved at bottom
+            .thenBy { it.deadline ?: "9999-99-99" } // Near deadline first
+    )
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .padding(horizontal = 24.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -30,7 +35,7 @@ fun RecentActivitySection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Activity",
+                text = "Saving Goals",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2D2D2D)
@@ -40,20 +45,20 @@ fun RecentActivitySection(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        if (transactions.isEmpty()) {
+        if (sortedGoals.isEmpty()) {
             Text(
-                text = "No recent activities",
+                text = "No saving goals yet",
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
                 color = Color.Gray
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Chỉ hiển thị 5 giao dịch gần nhất ở màn hình chính
-                transactions.take(5).forEach { transaction ->
-                    TransactionItem(transaction = transaction, goals = goals)
+                // Hiển thị tối đa 2 mục như yêu cầu
+                sortedGoals.take(2).forEach { goal ->
+                    GoalCard(goal = goal)
                 }
             }
         }
