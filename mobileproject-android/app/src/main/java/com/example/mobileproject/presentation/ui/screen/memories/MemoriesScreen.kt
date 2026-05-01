@@ -14,20 +14,33 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -42,7 +55,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import android.util.Base64
+import android.widget.Toast
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.ByteArrayOutputStream
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import com.example.mobileproject.data.model.moment.MomentDto
+import com.example.mobileproject.presentation.viewmodel.MemoriesViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
@@ -52,6 +77,7 @@ import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
 import com.example.mobileproject.presentation.ui.components.calendar.VietnamCalendarNotes
 import kotlinx.coroutines.delay
 import java.text.DateFormatSymbols
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.Locale
@@ -61,6 +87,18 @@ fun MemoriesScreen(
     accessToken: String,
     onNavigateToExplore: () -> Unit,
 ) {
+    val viewModel: MemoriesViewModel = hiltViewModel()
+    val momentsList by viewModel.moments.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(error) {
+        error?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+    }
+
+    LaunchedEffect(accessToken) {
+        viewModel.loadMoments(accessToken)
+    }
     val now = remember { Calendar.getInstance() }
     val currentYear = now.get(Calendar.YEAR)
     val currentMonth = now.get(Calendar.MONTH) + 1
@@ -71,6 +109,22 @@ fun MemoriesScreen(
     val monthTitle = remember(currentYear, currentMonth) {
         buildMonthTitle(year = currentYear, month = currentMonth)
     }
+
+    var showUpcomingDialog by rememberSaveable { mutableStateOf(false) }
+    val upcomingEvents = remember { getUpcomingEvents() }
+    val upcomingEvent = upcomingEvents.firstOrNull()
+    val eventTitle = upcomingEvent?.title ?: SeedDataProvider.memoryEventTitle
+    val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val eventSubtitle = upcomingEvent?.let {
+        val daysText = if (it.daysLeft == 0) "Hôm nay" else "Còn ${it.daysLeft} ngày"
+        val dateText = sdf.format(it.date.time)
+        "$daysText - $dateText"
+    } ?: SeedDataProvider.memoryEventSubtitle
+
+    var showCreateMomentDialog by rememberSaveable { mutableStateOf(false) }
+    var showAllMomentsDialog by rememberSaveable { mutableStateOf(false) }
+    val todayEventTitle = upcomingEvents.firstOrNull { it.daysLeft == 0 }?.title
+
     var revealIndex by rememberSaveable { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -107,6 +161,9 @@ fun MemoriesScreen(
                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                             RecentMomentsCard(
                                 mainLabel = SeedDataProvider.memoryMoments.getOrNull(0).orEmpty(),
+                                momentsList = momentsList,
+                                onCreateMoment = { showCreateMomentDialog = true },
+                                onViewAll = { showAllMomentsDialog = true },
                             )
                         }
                     }
@@ -123,8 +180,9 @@ fun MemoriesScreen(
                                 month = currentMonth,
                                 selectedDay = today,
                                 notesByDay = calendarNotes,
-                                eventTitle = SeedDataProvider.memoryEventTitle,
-                                eventSubtitle = SeedDataProvider.memoryEventSubtitle,
+                                eventTitle = eventTitle,
+                                eventSubtitle = eventSubtitle,
+                                onUpcomingClick = { showUpcomingDialog = true },
                             )
                         }
                     }
@@ -147,7 +205,7 @@ fun MemoriesScreen(
             }
 
             item {
-                AnimatedVisibility(visible = revealIndex >= 4) {
+                AnimatedVisibility(visible = revealIndex >= 5) {
                     AppPrimaryButton(
                         text = stringResource(R.string.page_explore),
                         modifier = Modifier.fillMaxWidth(),
@@ -156,6 +214,31 @@ fun MemoriesScreen(
                 }
             }
         }
+    }
+
+    if (showCreateMomentDialog) {
+        CreateMomentDialog(
+            defaultTitle = todayEventTitle.orEmpty(),
+            onDismiss = { showCreateMomentDialog = false },
+            onSave = { uri, title, base64 ->
+                viewModel.saveMoment(accessToken, title, base64)
+                showCreateMomentDialog = false
+            }
+        )
+    }
+
+    if (showAllMomentsDialog) {
+        AllMomentsBottomSheet(
+            moments = momentsList,
+            onDismiss = { showAllMomentsDialog = false }
+        )
+    }
+
+    if (showUpcomingDialog) {
+        UpcomingEventsBottomSheet(
+            events = upcomingEvents,
+            onDismiss = { showUpcomingDialog = false }
+        )
     }
 }
 
@@ -194,6 +277,9 @@ private fun MemoriesHeader(
 @Composable
 private fun RecentMomentsCard(
     mainLabel: String,
+    momentsList: List<MomentDto>,
+    onCreateMoment: () -> Unit,
+    onViewAll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mainPhotoC1 = colorResource(R.color.md3_tertiary_container)
@@ -259,10 +345,19 @@ private fun RecentMomentsCard(
                         .clip(RoundedCornerShape(28.dp))
                         .background(mainPhotoBrush),
                 ) {
-                    val label = mainLabel.ifBlank { stringResource(R.string.memories_recent_moments) }
+                    val firstMoment = momentsList.firstOrNull()
+                    if (firstMoment != null) {
+                        AsyncImage(
+                            model = firstMoment.imageUrl,
+                            contentDescription = firstMoment.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    val label = firstMoment?.title ?: mainLabel.ifBlank { stringResource(R.string.memories_recent_moments) }
                     Surface(
                         shape = RoundedCornerShape(999.dp),
-                        color = colorResource(R.color.md3_primary_container),
+                        color = colorResource(R.color.md3_primary_container).copy(alpha = 0.85f),
                         border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -289,10 +384,20 @@ private fun RecentMomentsCard(
                             .fillMaxWidth()
                             .height(82.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(secondaryPhotoBrush),
-                    )
+                            .background(secondaryPhotoBrush)
+                            .clickable(onClick = onCreateMoment),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_memories_24), // Placeholder for camera icon
+                            contentDescription = "Create Moment",
+                            tint = colorResource(R.color.md3_on_surface),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
 
                     Surface(
+                        onClick = onViewAll,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(82.dp),
@@ -302,7 +407,7 @@ private fun RecentMomentsCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = stringResource(R.string.memories_more_count),
+                                text = "+${momentsList.size}",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = colorResource(R.color.md3_primary),
@@ -313,6 +418,115 @@ private fun RecentMomentsCard(
             }
         }
     }
+}
+
+private data class UpcomingEvent(
+    val title: String,
+    val date: Calendar,
+    val daysLeft: Int,
+    val iconRes: Int
+)
+
+private fun getUpcomingEvents(): List<UpcomingEvent> {
+    val now = Calendar.getInstance()
+    now.set(Calendar.HOUR_OF_DAY, 0)
+    now.set(Calendar.MINUTE, 0)
+    now.set(Calendar.SECOND, 0)
+    now.set(Calendar.MILLISECOND, 0)
+
+    val events = mutableListOf<UpcomingEvent>()
+
+    // 1. Hardcoded special days
+    val holidays = listOf(
+        "Valentine" to Pair(Calendar.FEBRUARY, 14),
+        "Quốc tế Phụ nữ" to Pair(Calendar.MARCH, 8),
+        "Phụ nữ Việt Nam" to Pair(Calendar.OCTOBER, 20),
+        "Quốc tế Đàn ông" to Pair(Calendar.NOVEMBER, 19),
+        "Giáng sinh" to Pair(Calendar.DECEMBER, 25)
+    )
+
+    holidays.forEach { (name, datePair) ->
+        val (month, day) = datePair
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.MONTH, month)
+        cal.set(Calendar.DAY_OF_MONTH, day)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+
+        if (cal.before(now)) {
+            cal.add(Calendar.YEAR, 1)
+        }
+        val daysLeft = ((cal.timeInMillis - now.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+        events.add(UpcomingEvent(name, cal, daysLeft, R.drawable.ic_heart_filled))
+    }
+
+    // 2. Partner Birthday
+    try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dob = sdf.parse(SeedDataProvider.partnerBirthDate)
+        if (dob != null) {
+            val dobCal = Calendar.getInstance().apply { time = dob }
+            val nextBirthday = Calendar.getInstance()
+            nextBirthday.set(Calendar.MONTH, dobCal.get(Calendar.MONTH))
+            nextBirthday.set(Calendar.DAY_OF_MONTH, dobCal.get(Calendar.DAY_OF_MONTH))
+            nextBirthday.set(Calendar.HOUR_OF_DAY, 0)
+            nextBirthday.set(Calendar.MINUTE, 0)
+            nextBirthday.set(Calendar.SECOND, 0)
+            nextBirthday.set(Calendar.MILLISECOND, 0)
+
+            if (nextBirthday.before(now)) {
+                nextBirthday.add(Calendar.YEAR, 1)
+            }
+            val daysLeft = ((nextBirthday.timeInMillis - now.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+            events.add(UpcomingEvent("Sinh nhật ${SeedDataProvider.partnerName}", nextBirthday, daysLeft, R.drawable.ic_avatar_24))
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+
+    // 3. Milestones
+    try {
+        val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+        val startDate = sdf.parse(SeedDataProvider.relationshipStartedDate)
+        if (startDate != null) {
+            val startCal = Calendar.getInstance().apply { 
+                time = startDate 
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val milestoneDays = listOf(100, 200, 500, 1000, 1500, 2000)
+            for (days in milestoneDays) {
+                val cal = startCal.clone() as Calendar
+                cal.add(Calendar.DAY_OF_YEAR, days)
+                if (!cal.before(now)) {
+                    val daysLeft = ((cal.timeInMillis - now.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+                    events.add(UpcomingEvent("Kỷ niệm $days ngày", cal, daysLeft, R.drawable.ic_memories_24))
+                }
+            }
+
+            var years = 1
+            while (true) {
+                val cal = startCal.clone() as Calendar
+                cal.add(Calendar.YEAR, years)
+                if (!cal.before(now)) {
+                    val daysLeft = ((cal.timeInMillis - now.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+                    events.add(UpcomingEvent("Kỷ niệm $years năm", cal, daysLeft, R.drawable.ic_memories_24))
+                    break
+                }
+                years++
+                if (years > 100) break 
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+
+    return events.filter { it.daysLeft <= 365 }.sortedBy { it.daysLeft }
 }
 
 private data class DayCell(
@@ -330,6 +544,7 @@ private fun MemoriesCalendarCard(
     notesByDay: Map<Int, List<String>>,
     eventTitle: String,
     eventSubtitle: String,
+    onUpcomingClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val weekdayLabels = remember {
@@ -434,6 +649,7 @@ private fun MemoriesCalendarCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Surface(
+                onClick = onUpcomingClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 color = colorResource(R.color.md3_surface_variant),
@@ -723,4 +939,283 @@ private fun buildMonthGrid(
     }
 
     return cells
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun UpcomingEventsBottomSheet(
+    events: List<UpcomingEvent>,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = colorResource(R.color.md3_surface),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Sự kiện sắp tới (1 năm)",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = colorResource(R.color.md3_on_surface),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(events) { event ->
+                    UpcomingEventItem(event)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingEventItem(event: UpcomingEvent, modifier: Modifier = Modifier) {
+    val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val dateStr = remember(event.date) { sdf.format(event.date.time) }
+    
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = colorResource(R.color.md3_surface_variant),
+        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape,
+                color = colorResource(R.color.md3_primary_container),
+                border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(event.iconRes),
+                        contentDescription = null,
+                        tint = colorResource(R.color.md3_primary),
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.md3_on_surface),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorResource(R.color.md3_on_surface_variant),
+                )
+            }
+            
+            Column(horizontalAlignment = Alignment.End) {
+                val daysText = if (event.daysLeft == 0) "Hôm nay" else "Còn ${event.daysLeft} ngày"
+                Text(
+                    text = daysText,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.md3_primary),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateMomentDialog(
+    defaultTitle: String,
+    onDismiss: () -> Unit,
+    onSave: (Uri, String, String) -> Unit,
+) {
+    var title by rememberSaveable { mutableStateOf(defaultTitle) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    val context = LocalContext.current
+    
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri -> selectedUri = uri }
+    )
+    
+    LaunchedEffect(Unit) {
+        if (selectedUri == null) {
+            imagePicker.launch("image/*")
+        }
+    }
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = colorResource(R.color.md3_surface),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Tạo khoảnh khắc",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = colorResource(R.color.md3_on_surface),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(colorResource(R.color.md3_surface_variant))
+                    .clickable { imagePicker.launch("image/*") },
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedUri != null) {
+                    AsyncImage(
+                        model = selectedUri,
+                        contentDescription = "Selected Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = "Nhấn để chọn ảnh",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colorResource(R.color.md3_on_surface_variant)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Thêm tiêu đề...") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorResource(R.color.md3_primary),
+                    unfocusedBorderColor = colorResource(R.color.md3_outline),
+                ),
+                shape = RoundedCornerShape(16.dp),
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(
+                onClick = {
+                    selectedUri?.let { uri ->
+                        val inputStream = context.contentResolver.openInputStream(uri)
+                        val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                        if (originalBitmap != null) {
+                            val scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, 800, (800.0 / originalBitmap.width * originalBitmap.height).toInt(), true)
+                            val outputStream = ByteArrayOutputStream()
+                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                            val bytes = outputStream.toByteArray()
+                            val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                            val mimeType = "image/jpeg"
+                            val payload = "data:$mimeType;base64,$base64"
+                            onSave(uri, title, payload)
+                        }
+                    }
+                },
+                enabled = selectedUri != null && title.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+            ) {
+                Text(text = "Lưu khoảnh khắc")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AllMomentsBottomSheet(
+    moments: List<MomentDto>,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = colorResource(R.color.md3_surface),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Tất cả khoảnh khắc",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = colorResource(R.color.md3_on_surface),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            if (moments.isEmpty()) {
+                Text(
+                    text = "Chưa có khoảnh khắc nào.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colorResource(R.color.md3_on_surface_variant),
+                    modifier = Modifier.padding(top = 20.dp)
+                )
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(moments) { moment ->
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface_variant)),
+                        ) {
+                            Column {
+                                AsyncImage(
+                                    model = moment.imageUrl,
+                                    contentDescription = moment.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                                )
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = moment.title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = moment.createdAt ?: "",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colorResource(R.color.md3_on_surface_variant)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

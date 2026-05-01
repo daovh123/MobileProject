@@ -82,4 +82,34 @@ public class FirebaseStorageService {
             default -> "jpg";
         };
     }
+
+    public String uploadMomentImage(String coupleId, byte[] imageBytes, String contentType) {
+        if (bucketName.isBlank() || FirebaseApp.getApps().isEmpty()) {
+            LOGGER.warn("Firebase not configured — returning placeholder url for moment in couple={}", coupleId);
+            return "https://placehold.co/600x800/png?text=Moment+" + System.currentTimeMillis();
+        }
+
+        String extension = extensionForContentType(contentType);
+        String objectPath = "moments/" + coupleId + "/moment_" + System.currentTimeMillis() + "." + extension;
+
+        try {
+            Storage storage = StorageClient.getInstance().bucket(bucketName).getStorage();
+            BlobId blobId = BlobId.of(bucketName, objectPath);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(contentType)
+                    .build();
+
+            storage.create(blobInfo, imageBytes);
+
+            String encodedPath = URLEncoder.encode(objectPath, StandardCharsets.UTF_8);
+            String downloadUrl = "https://firebasestorage.googleapis.com/v0/b/"
+                    + bucketName + "/o/" + encodedPath + "?alt=media";
+
+            LOGGER.info("Moment image uploaded for couple={} path={}", coupleId, objectPath);
+            return downloadUrl;
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to upload moment image for couple={}: {}", coupleId, ex.getMessage(), ex);
+            return "https://placehold.co/600x800/png?text=Moment+Upload+Failed";
+        }
+    }
 }

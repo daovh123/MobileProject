@@ -26,6 +26,9 @@ import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequ
 import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
+import com.example.mobileproject.data.model.moment.MomentDto
+import com.example.mobileproject.data.model.moment.MomentRequestDto
+import com.example.mobileproject.data.model.moment.MomentResponseDto
 import com.example.mobileproject.data.model.ProductDto
 import okhttp3.MultipartBody
 import com.example.mobileproject.data.model.remote.WalletResponse
@@ -213,4 +216,16 @@ interface ApiService {
         @Query("coupleId") coupleId: String,
         @Query("year") year: Int
     ): Response<List<SpendingTrendDto>>
+
+    @GET("api/v1/moments")
+    suspend fun getMoments(
+        @Query("coupleId") coupleId: String,
+        @Header("Authorization") authorization: String,
+    ): Response<List<MomentDto>>
+
+    @POST("api/v1/moments")
+    suspend fun createMoment(
+        @Body request: MomentRequestDto,
+        @Header("Authorization") authorization: String,
+    ): Response<MomentResponseDto>
 }
