@@ -20,6 +20,7 @@ class AuthSessionStore @Inject constructor(
             .putString(KEY_EMAIL, session.email)
             .putBoolean(KEY_PROFILE_COMPLETED, session.profileCompleted)
             .putBoolean(KEY_COUPLE_CONNECTED, session.coupleConnected)
+            .putString(KEY_COUPLE_ID, session.coupleId)
             .apply()
     }
 
@@ -35,6 +36,7 @@ class AuthSessionStore @Inject constructor(
             email = preferences.getString(KEY_EMAIL, "").orEmpty(),
             profileCompleted = preferences.getBoolean(KEY_PROFILE_COMPLETED, false),
             coupleConnected = preferences.getBoolean(KEY_COUPLE_CONNECTED, false),
+            coupleId = preferences.getString(KEY_COUPLE_ID, null)
         )
     }
 
@@ -42,12 +44,13 @@ class AuthSessionStore @Inject constructor(
         preferences.edit().clear().apply()
     }
 
-    fun updateProfileState(profileCompleted: Boolean, coupleConnected: Boolean) {
+    fun updateProfileState(profileCompleted: Boolean, coupleConnected: Boolean, coupleId: String? = null) {
         val existing = load() ?: return
         save(
             existing.copy(
                 profileCompleted = profileCompleted,
                 coupleConnected = coupleConnected,
+                coupleId = coupleId ?: existing.coupleId
             )
         )
     }
@@ -60,5 +63,6 @@ class AuthSessionStore @Inject constructor(
         private const val KEY_EMAIL = "email"
         private const val KEY_PROFILE_COMPLETED = "profile_completed"
         private const val KEY_COUPLE_CONNECTED = "couple_connected"
+        private const val KEY_COUPLE_ID = "couple_id"
     }
 }

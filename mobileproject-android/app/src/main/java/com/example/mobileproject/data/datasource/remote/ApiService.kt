@@ -9,9 +9,10 @@ import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
-import com.example.mobileproject.data.model.goal.ContributeRequestDto
-import com.example.mobileproject.data.model.goal.ContributeResponseDto
-import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
+import com.example.mobileproject.data.model.goal.ContributeDirectRequest
+import com.example.mobileproject.data.model.goal.ContributeFromWalletRequest
+import com.example.mobileproject.data.model.goal.ContributionResponseDto
+import com.example.mobileproject.data.model.goal.CreateGoalRequest
 import com.example.mobileproject.data.model.goal.GoalResponseDto
 import com.example.mobileproject.data.model.goal.SavingGoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
@@ -27,6 +28,7 @@ import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.ProductDto
 import okhttp3.MultipartBody
+import com.example.mobileproject.data.model.remote.WalletResponse
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
@@ -124,10 +126,17 @@ interface ApiService {
         @Body request: FcmTokenRequestDto,
     ): Response<Unit>
 
+    // Wallet APIs
+    @GET("api/v1/wallet/{coupleId}")
+    suspend fun getWallet(
+        @Header("Authorization") authorization: String,
+        @Path("coupleId", encoded = true) coupleId: String
+    ): Response<WalletResponse>
+
     // Transaction APIs
     @POST("api/v1/transactions")
     suspend fun createTransaction(
-        @Header("Authorization") authorization: String, // Thêm Header nếu cần xác thực
+        @Header("Authorization") authorization: String,
         @Body request: TransactionRequestDto,
     ): Response<TransactionResponseDto>
 
@@ -147,7 +156,7 @@ interface ApiService {
     @POST("api/v1/goals")
     suspend fun createGoal(
         @Header("Authorization") authorization: String,
-        @Body request: CreateGoalRequestDto,
+        @Body request: CreateGoalRequest,
     ): Response<GoalResponseDto>
 
     @GET("api/v1/goals/couple/{coupleId}")
@@ -160,15 +169,15 @@ interface ApiService {
     suspend fun contributeFromWallet(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeRequestDto,
-    ): Response<ContributeResponseDto>
+        @Body request: ContributeFromWalletRequest,
+    ): Response<ContributionResponseDto>
 
     @POST("api/v1/goals/{goalId}/contribute")
     suspend fun contributeToGoal(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeRequestDto,
-    ): Response<ContributeResponseDto>
+        @Body request: ContributeDirectRequest,
+    ): Response<ContributionResponseDto>
 
     // Avatar APIs
     @Multipart
@@ -190,19 +199,18 @@ interface ApiService {
     ): Response<ProfileResponseDto>
 
     // Analytics APIs
-    @GET("api/v1/analytics/category-breakdown")
+    @GET("api/v1/analytics/expense-by-category")
     suspend fun getCategoryBreakdown(
         @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
-        @Query("startDate") startDate: String,
-        @Query("endDate") endDate: String,
+        @Query("month") month: Int,
+        @Query("year") year: Int,
     ): Response<List<CategoryBreakdownDto>>
 
-    @GET("api/v1/analytics/spending-trend")
-    suspend fun getSpendingTrend(
+    @GET("api/v1/analytics/monthly-trend")
+    suspend fun getMonthlyTrend(
         @Header("Authorization") authorization: String,
         @Query("coupleId") coupleId: String,
-        @Query("year") year: Int,
-        @Query("month") month: Int,
+        @Query("year") year: Int
     ): Response<List<SpendingTrendDto>>
 }

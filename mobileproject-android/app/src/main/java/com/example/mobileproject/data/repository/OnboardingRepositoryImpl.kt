@@ -1,14 +1,12 @@
 package com.example.mobileproject.data.repository
 
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
 import com.example.mobileproject.data.model.onboarding.AvatarFrameRequestDto
 import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
-import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
-import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
-import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
@@ -24,8 +22,11 @@ import javax.inject.Inject
 
 class OnboardingRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
+    private val authSessionStore: AuthSessionStore,
     private val gson: Gson,
 ) : OnboardingRepository {
+
+    private fun authorizationHeader(token: String): String = "Bearer ${token.trim()}"
 
     override suspend fun saveProfile(
         token: String,
@@ -33,7 +34,7 @@ class OnboardingRepositoryImpl @Inject constructor(
         nickName: String?,
         birthDate: String,
         gender: String,
-        email: String?,
+        email: String? = null,
     ): ProfileResult {
         val response = apiService.upsertProfile(
             authorizationHeader(token),
@@ -46,56 +47,64 @@ class OnboardingRepositoryImpl @Inject constructor(
             )
         )
         val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Luu ho so that bai")
-
+        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected)
         return body.toProfileResult()
     }
 
     override suspend fun getProfile(token: String): ProfileResult {
         val response = apiService.getProfile(authorizationHeader(token))
         val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Khong the lay ho so")
-
+        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected)
         return body.toProfileResult()
     }
 
     override suspend fun getCoupleStatus(token: String): CoupleStatus {
         val response = apiService.getCoupleStatus(authorizationHeader(token))
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Khong the lay trang thai ghep doi")
-
-        return CoupleStatus(
-            profileCompleted = body.profileCompleted,
-            paired = body.paired,
-            partnerUsername = body.partnerUsername,
-            myCoupleCode = body.myCoupleCode,
-            myCoupleCodeExpiresAt = body.myCoupleCodeExpiresAt,
-            incomingRequestId = body.incomingRequestId,
-            incomingRequesterUsername = body.incomingRequesterUsername,
-            incomingRequesterDisplayName = body.incomingRequesterDisplayName,
-            incomingCreatedAt = body.incomingCreatedAt,
-            outgoingRequestId = body.outgoingRequestId,
-            outgoingRecipientUsername = body.outgoingRecipientUsername,
-            outgoingStatus = body.outgoingStatus,
-            outgoingUpdatedAt = body.outgoingUpdatedAt,
-            coupleId = body.coupleId,
-            startAt = body.startAt,
-            daysTogether = body.daysTogether,
-            anniversaryTomorrow = body.anniversaryTomorrow,
-        )
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            authSessionStore.updateProfileState(
+                profileCompleted = body.profileCompleted,
+                coupleConnected = body.paired,
+                coupleId = body.coupleId
+            )
+            return CoupleStatus(
+                profileCompleted = body.profileCompleted,
+                paired = body.paired,
+                partnerUsername = body.partnerUsername,
+                myCoupleCode = body.myCoupleCode,
+                myCoupleCodeExpiresAt = body.myCoupleCodeExpiresAt,
+                incomingRequestId = body.incomingRequestId,
+                incomingRequesterUsername = body.incomingRequesterUsername,
+                incomingRequesterDisplayName = body.incomingRequesterDisplayName,
+                incomingCreatedAt = body.incomingCreatedAt,
+                outgoingRequestId = body.outgoingRequestId,
+                outgoingRecipientUsername = body.outgoingRecipientUsername,
+                outgoingStatus = body.outgoingStatus,
+                outgoingUpdatedAt = body.outgoingUpdatedAt,
+                coupleId = body.coupleId,
+                startAt = body.startAt,
+                daysTogether = body.daysTogether ?: 0,
+                anniversaryTomorrow = body.anniversaryTomorrow ?: false
+            )
+        } else {
+            throw Exception(response.message())
+        }
     }
 
     override suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction {
-        val response = apiService.sendCoupleRequest(
-            authorizationHeader(token),
-            CoupleRequestCreateRequestDto(partnerCode = partnerCode),
-        )
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Gui loi moi ghep doi that bai")
-
-        return CoupleRequestAction(
-            requestId = body.requestId,
-            status = body.status,
-            message = body.message,
-            requesterUsername = body.requesterUsername,
-            recipientUsername = body.recipientUsername,
-        )
+        val response = apiService.sendCoupleRequest(authorizationHeader(token), CoupleRequestCreateRequestDto(partnerCode))
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            return CoupleRequestAction(
+                requestId = body.requestId,
+                status = body.status,
+                message = body.message,
+                requesterUsername = body.requesterUsername,
+                recipientUsername = body.recipientUsername
+            )
+        } else {
+            throw Exception(response.message())
+        }
     }
 
     override suspend fun decideCoupleRequest(token: String, requestId: String, accept: Boolean): CoupleRequestAction {
@@ -137,8 +146,6 @@ class OnboardingRepositoryImpl @Inject constructor(
         val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Dat khung anh that bai")
         return body.toProfileResult()
     }
-
-    private fun authorizationHeader(token: String): String = "Bearer ${token.trim()}"
 }
 
 private fun ProfileResponseDto.toProfileResult() = ProfileResult(
@@ -240,14 +247,12 @@ private fun Response<List<AvatarFrameDto>>.requireFramesBody(
     return body()!!
 }
 
+class ErrorMessageDto(val message: String)
+
 private fun Response<*>.parseErrorMessage(gson: Gson): String? {
     return runCatching {
         errorBody()?.charStream()?.use { reader ->
             gson.fromJson(reader, ErrorMessageDto::class.java).message
         }
-    }.getOrNull()?.takeIf { !it.isNullOrBlank() }
+    }.getOrNull()
 }
-
-private data class ErrorMessageDto(
-    val message: String? = null,
-)

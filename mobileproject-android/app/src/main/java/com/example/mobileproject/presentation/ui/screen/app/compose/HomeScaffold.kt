@@ -63,6 +63,7 @@ import com.example.mobileproject.presentation.notification.ChatInAppNotification
 import com.example.mobileproject.presentation.notification.ChatNotificationGate
 import com.example.mobileproject.presentation.ui.navigation.AppNavigationBar
 import com.example.mobileproject.presentation.ui.navigation.NavigationConfig
+import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
@@ -70,6 +71,9 @@ import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 
 object HomeRoutes {
@@ -80,6 +84,10 @@ object HomeRoutes {
     const val SETTINGS: String = "settings"
     const val PROFILE: String = "profile"
     const val CHAT: String = "chat"
+    const val ADD_EXPENSE: String = "add_expense"
+    const val TOP_UP: String = "top_up"
+    const val RECENT_TRANSACTIONS: String = "recent_transactions"
+    const val SAVING_GOALS: String = "saving_goals"
 }
 
 @Composable
@@ -103,6 +111,11 @@ fun HomeScaffold(
     val isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES
     val isProfileRoute = currentRoute == HomeRoutes.PROFILE
     val isChatRoute = currentRoute == HomeRoutes.CHAT
+    val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
+    val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
+    val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
+    val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
+    
     val snackbarHostState = remember { SnackbarHostState() }
     val colorScheme = MaterialTheme.colorScheme
     val scaffoldBackgroundBrush = remember(colorScheme) {
@@ -151,7 +164,7 @@ fun HomeScaffold(
     val activity = context as? Activity
 
     BackHandler {
-        if (currentRoute == HomeRoutes.CHAT) {
+        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE || currentRoute == HomeRoutes.TOP_UP || currentRoute == HomeRoutes.RECENT_TRANSACTIONS || currentRoute == HomeRoutes.SAVING_GOALS) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
@@ -171,71 +184,73 @@ fun HomeScaffold(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = when {
-                            isChatRoute -> stringResource(R.string.chat_title)
-                            isProfileRoute -> stringResource(R.string.profile_title)
-                            isMemoriesRoute -> stringResource(R.string.memories_title)
-                            else -> ""
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        color = colorScheme.onSurface,
-                    )
-                },
-                navigationIcon = {
-                    if (isChatRoute) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = LucideClose,
-                                contentDescription = stringResource(R.string.cd_close),
-                                tint = colorScheme.primary,
-                            )
-                        }
-                    } else {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(HomeRoutes.PROFILE) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+            if (!isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            text = when {
+                                isChatRoute -> stringResource(R.string.chat_title)
+                                isProfileRoute -> stringResource(R.string.profile_title)
+                                isMemoriesRoute -> stringResource(R.string.memories_title)
+                                else -> stringResource(currentItem.titleRes)
                             },
-                        ) {
-                            Icon(
-                                imageVector = LucideUser,
-                                contentDescription = stringResource(R.string.cd_open_profile),
-                                tint = colorScheme.primary,
-                            )
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colorScheme.onSurface,
+                        )
+                    },
+                    navigationIcon = {
+                        if (isChatRoute) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = LucideClose,
+                                    contentDescription = stringResource(R.string.cd_close),
+                                    tint = colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    navController.navigate(HomeRoutes.PROFILE) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = LucideUser,
+                                    contentDescription = stringResource(R.string.cd_open_profile),
+                                    tint = colorScheme.primary,
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    if (!isChatRoute) {
-                        IconButton(onClick = { /* TODO: notifications */ }) {
-                            Icon(
-                                imageVector = LucideBell,
-                                contentDescription = stringResource(R.string.action_notifications),
-                                tint = colorScheme.primary,
-                            )
+                    },
+                    actions = {
+                        if (!isChatRoute) {
+                            IconButton(onClick = { /* TODO: notifications */ }) {
+                                Icon(
+                                    imageVector = LucideBell,
+                                    contentDescription = stringResource(R.string.action_notifications),
+                                    tint = colorScheme.primary,
+                                )
+                            }
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.surface.copy(alpha = 0.98f),
-                    scrolledContainerColor = colorScheme.surfaceColorAtElevation(3.dp),
-                    titleContentColor = colorScheme.onSurface,
-                    navigationIconContentColor = colorScheme.primary,
-                    actionIconContentColor = colorScheme.primary,
-                ),
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = colorScheme.surface.copy(alpha = 0.98f),
+                        scrolledContainerColor = colorScheme.surfaceColorAtElevation(3.dp),
+                        titleContentColor = colorScheme.onSurface,
+                        navigationIconContentColor = colorScheme.primary,
+                        actionIconContentColor = colorScheme.primary,
+                    ),
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+            }
         },
         bottomBar = {
-            if (!isChatRoute && !isProfileRoute) {
+            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
                 AppNavigationBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
@@ -246,7 +261,7 @@ fun HomeScaffold(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    },
+                    }
                 )
             }
         },
@@ -308,10 +323,43 @@ fun HomeScaffold(
                         HomeScreen(
                             accessToken = accessToken,
                             apiService = apiService,
+                            onSeeAllGoals = {
+                                navController.navigate(HomeRoutes.SAVING_GOALS)
+                            }
                         )
                     }
                     composable(HomeRoutes.WALLET) {
-                        WalletScreen()
+                        WalletScreen(
+                            onNavigateToAddExpense = {
+                                navController.navigate(HomeRoutes.ADD_EXPENSE)
+                            },
+                            onNavigateToTopUp = {
+                                navController.navigate(HomeRoutes.TOP_UP)
+                            },
+                            onSeeAllTransactions = {
+                                navController.navigate(HomeRoutes.RECENT_TRANSACTIONS)
+                            }
+                        )
+                    }
+                    composable(HomeRoutes.ADD_EXPENSE) {
+                        AddExpenseScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.TOP_UP) {
+                        TopUpScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.RECENT_TRANSACTIONS) {
+                        RecentTransactionsScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(HomeRoutes.SAVING_GOALS) {
+                        SavingGoalsScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
                     }
                     composable(HomeRoutes.EXPLORE) {
                         ExploreRoute(accessToken = accessToken)
@@ -347,7 +395,7 @@ fun HomeScaffold(
                     }
                 }
 
-                if (!isChatRoute) {
+                if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
                     DraggableChatButton(
                         onClick = {
                             navController.navigate(HomeRoutes.CHAT) {

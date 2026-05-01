@@ -6,4 +6,5 @@ data class AuthSession(
     val email: String,
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
+    val coupleId: String? = null
 )

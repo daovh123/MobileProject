@@ -8,6 +8,7 @@ data class CategoryBreakdownDto(
 )
 
 data class SpendingTrendDto(
-    @SerializedName("date") val date: Int,
-    @SerializedName("totalAmount") val totalAmount: Long
+    @SerializedName("month") val month: Int,
+    @SerializedName("totalIncome") val totalIncome: Long,
+    @SerializedName("totalExpense") val totalExpense: Long
 )

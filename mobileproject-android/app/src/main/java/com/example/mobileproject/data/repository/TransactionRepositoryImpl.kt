@@ -51,7 +51,8 @@ class TransactionRepositoryImpl @Inject constructor(
                         type = body.type,
                         category = body.category,
                         note = body.note,
-                        totalBalance = body.totalBalance,
+                        // ÁNH XẠ currentBalance TỪ BACKEND VÀO totalBalance CỦA DOMAIN
+                        totalBalance = body.currentBalance,
                         createdAt = body.createdAt
                     )
                 )
@@ -92,7 +93,8 @@ class TransactionRepositoryImpl @Inject constructor(
                         type = body.type,
                         category = body.category,
                         note = body.note,
-                        totalBalance = body.totalBalance,
+                        // ÁNH XẠ currentBalance TỪ BACKEND VÀO totalBalance CỦA DOMAIN
+                        totalBalance = body.currentBalance,
                         createdAt = body.createdAt
                     )
                 )

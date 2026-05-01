@@ -1,31 +1,31 @@
 package com.example.mobileproject.domain.repository
 
 import com.example.mobileproject.core.result.Resource
-import com.example.mobileproject.domain.entity.ContributeResponse
-import com.example.mobileproject.domain.entity.GoalResponse
+import com.example.mobileproject.domain.entity.GoalContributionResult
 import com.example.mobileproject.domain.entity.SavingGoal
+import kotlinx.coroutines.flow.Flow
 
 interface GoalRepository {
-    suspend fun createGoal(
+    fun getGoals(coupleId: String): Flow<Resource<List<SavingGoal>>>
+    
+    fun createGoal(
         coupleId: String,
         name: String,
+        category: String,
         targetAmount: Long,
         deadline: String?
-    ): Resource<GoalResponse>
+    ): Flow<Resource<SavingGoal>>
 
-    suspend fun getGoalsByCouple(coupleId: String): Resource<List<SavingGoal>>
+    fun contributeFromWallet(
+        goalId: String,
+        amount: Long,
+        note: String?
+    ): Flow<Resource<GoalContributionResult>>
 
-    suspend fun contributeFromWallet(
+    fun contributeDirect(
         goalId: String,
         amount: Long,
         contributorId: String,
         note: String?
-    ): Resource<ContributeResponse>
-
-    suspend fun contributeToGoal(
-        goalId: String,
-        amount: Long,
-        contributorId: String,
-        note: String?
-    ): Resource<ContributeResponse>
+    ): Flow<Resource<GoalContributionResult>>
 }

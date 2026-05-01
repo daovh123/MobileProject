@@ -63,6 +63,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     implementation(libs.appcompat)

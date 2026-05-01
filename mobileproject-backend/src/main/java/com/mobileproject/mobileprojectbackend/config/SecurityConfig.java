@@ -26,21 +26,22 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // 2. Cấu hình phân quyền
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                // Danh sách các API cho phép truy cập tự do (tổng hợp từ cả 2 nhánh)
-                                "/api/auth/**",
-                                "/api/places/**",
-                                "/api/favorites/**",
-                                "/api/history/**",
-                                "/api/notifications/**",
-                                "/api/v1/transactions/**",
-                                "/api/v1/goals/**",
-                                "/api/v1/analytics/**",
-                                "/ws/**",
-                                "/actuator/**",
-                                "/error"
-                        ).permitAll()
+                 .authorizeHttpRequests(auth -> auth
+                         .requestMatchers(
+                                 // Danh sách các API cho phép truy cập tự do (tổng hợp từ cả 2 nhánh)
+                                 "/api/auth/**",
+                                 "/api/places/**",
+                                 "/api/favorites/**",
+                                 "/api/history/**",
+                                 "/api/notifications/**",
+                                 "/api/v1/transactions/**",
+                                 "/api/v1/goals/**",
+                                 "/api/v1/analytics/**",
+                                 "/api/v1/wallet/**",
+                                 "/ws/**",
+                                 "/actuator/**",
+                                 "/error"
+                         ).permitAll()
                         .anyRequest().authenticated())
 
                 // 3. Xử lý ngoại lệ (Trả về 401/403 thay vì redirect trang login)
