@@ -99,10 +99,7 @@ fun HomeScaffold(
 ) {
     val navController = rememberNavController()
 
-    DisposableEffect(navController) {
-        onNavControllerReady(navController)
-        onDispose { }
-    }
+
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
@@ -192,7 +189,7 @@ fun HomeScaffold(
                                 isChatRoute -> stringResource(R.string.chat_title)
                                 isProfileRoute -> stringResource(R.string.profile_title)
                                 isMemoriesRoute -> stringResource(R.string.memories_title)
-                                else -> stringResource(currentItem.titleRes)
+                                else -> stringResource(currentItem.labelRes)
                             },
                             style = MaterialTheme.typography.titleLarge,
                             color = colorScheme.onSurface,
@@ -393,6 +390,11 @@ fun HomeScaffold(
                     composable(HomeRoutes.CHAT) {
                         ChatScreen(accessToken = accessToken)
                     }
+                }
+
+                DisposableEffect(navController) {
+                    onNavControllerReady(navController)
+                    onDispose { }
                 }
 
                 if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {

@@ -301,50 +301,22 @@ private fun HomeContent(
                                     Text("Locating...", color = Color.Gray)
                                 }
                             }
-                            
-                            SmallFloatingActionButton(
-                                onClick = onCenterMe,
-                                containerColor = Color.White,
-                                contentColor = Color(0xFFFF8A80),
-                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
-                                shape = CircleShape
-                            ) {
-                                val activeMapView = mapView
-                                if (activeMapView != null) {
-                                    AndroidView(
-                                        factory = { activeMapView },
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(colorScheme.surfaceVariant),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.home_pair_loading_button),
-                                            color = colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
 
-                                Column(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                SmallFloatingActionButton(
+                                    onClick = onCenterMe,
+                                    containerColor = colorScheme.surface,
+                                    contentColor = colorScheme.primary,
                                 ) {
-                                    SmallFloatingActionButton(
-                                        onClick = onCenterMe,
-                                        containerColor = colorScheme.surface,
-                                        contentColor = colorScheme.primary,
-                                    ) {
-                                        Icon(
-                                            imageVector = LucideMapPin,
-                                            contentDescription = stringResource(R.string.map_share_me_marker),
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = LucideMapPin,
+                                        contentDescription = stringResource(R.string.map_share_me_marker),
+                                    )
                                 }
                             }
                         }
@@ -357,7 +329,6 @@ private fun HomeContent(
     }
 }
 
-@Composable
 @Composable
 private fun PairSection(
     state: CoupleUiState,

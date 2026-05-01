@@ -8,6 +8,9 @@ import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
+import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
+import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
+import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
@@ -34,7 +37,7 @@ class OnboardingRepositoryImpl @Inject constructor(
         nickName: String?,
         birthDate: String,
         gender: String,
-        email: String? = null,
+        email: String?,
     ): ProfileResult {
         val response = apiService.upsertProfile(
             authorizationHeader(token),
