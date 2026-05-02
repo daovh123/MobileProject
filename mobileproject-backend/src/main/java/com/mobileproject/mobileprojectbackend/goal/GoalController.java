@@ -1,5 +1,6 @@
 package com.mobileproject.mobileprojectbackend.goal;
 
+import com.mobileproject.mobileprojectbackend.goal.dto.ContributeFromWalletRequest;
 import com.mobileproject.mobileprojectbackend.goal.dto.ContributeRequest;
 import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
 import com.mobileproject.mobileprojectbackend.goal.dto.CreateGoalRequest;
@@ -24,6 +25,7 @@ public class GoalController {
         GoalResponse response = goalService.createGoal(
                 request.coupleId(),
                 request.name(),
+                request.category(),
                 request.targetAmount(),
                 request.deadline()
         );
@@ -36,11 +38,10 @@ public class GoalController {
     @PostMapping("/{goalId}/contribute-from-wallet")
     public ResponseEntity<ContributeResponse> contributeFromWallet(
             @PathVariable String goalId,
-            @RequestBody ContributeRequest request) {
+            @RequestBody ContributeFromWalletRequest request) {
         ContributeResponse response = goalService.contributeFromWallet(
                 goalId,
                 request.amount(),
-                request.contributorId(),
                 request.note()
         );
         if (response.success()) {
