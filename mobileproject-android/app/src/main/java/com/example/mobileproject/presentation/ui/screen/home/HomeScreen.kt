@@ -56,6 +56,11 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
+import com.example.mobileproject.presentation.service.MapShareForegroundService
+import com.example.mobileproject.presentation.ui.components.core.AppMetricChip
+import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
+import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
+import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.AddGoalBottomSheet
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard

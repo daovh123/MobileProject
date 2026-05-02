@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,8 @@ import com.example.mobileproject.presentation.ui.components.auth.AuthBrandMark
 import com.example.mobileproject.presentation.ui.components.auth.AuthFormSurface
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -53,7 +56,11 @@ class PersonalInfoActivity : ComponentActivity() {
         val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         enableImmersiveMode()
         setContent {
-            MobileProjectTheme {
+            val themeViewModel: ThemeModeViewModel = hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+
+            MobileProjectTheme(darkTheme = darkTheme) {
                 val profileViewModel: ProfileViewModel = hiltViewModel()
                 PersonalInfoScreen(
                     accessToken = accessToken,

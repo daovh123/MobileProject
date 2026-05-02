@@ -35,7 +35,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 
@@ -43,15 +42,18 @@ class CoupleConnectedActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
+        const val EXTRA_RELATIONSHIP_START_DATE: String = "extra_relationship_start_date"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
+        val relationshipStartDate = intent.getStringExtra(EXTRA_RELATIONSHIP_START_DATE).orEmpty()
         enableImmersiveMode()
         setContent {
             MobileProjectTheme {
                 CoupleConnectedScreen(
+                    relationshipStartDate = relationshipStartDate,
                     onGoHome = {
                         startActivity(
                             Intent(this, HomeActivity::class.java)
@@ -74,7 +76,10 @@ class CoupleConnectedActivity : ComponentActivity() {
 }
 
 @Composable
-private fun CoupleConnectedScreen(onGoHome: () -> Unit) {
+private fun CoupleConnectedScreen(
+    relationshipStartDate: String,
+    onGoHome: () -> Unit,
+) {
     val colorScheme = MaterialTheme.colorScheme
     val primaryText = colorScheme.onSurface
     val accent = colorScheme.primary
@@ -128,15 +133,17 @@ private fun CoupleConnectedScreen(onGoHome: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Surface(color = colorScheme.surfaceVariant, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = SeedDataProvider.relationshipStartedDate,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryText
-                )
+            if (relationshipStartDate.isNotBlank()) {
+                Surface(color = colorScheme.surfaceVariant, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = relationshipStartDate,
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryText
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(22.dp))
             Button(

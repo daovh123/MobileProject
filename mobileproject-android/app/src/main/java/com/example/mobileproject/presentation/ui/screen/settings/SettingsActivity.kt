@@ -1,12 +1,11 @@
 package com.example.mobileproject.presentation.ui.screen.settings
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
-import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,12 +17,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import dagger.hilt.android.AndroidEntryPoint
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -47,7 +50,11 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         setContent {
-            MobileProjectTheme {
+            val themeViewModel: ThemeModeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+
+            MobileProjectTheme(darkTheme = darkTheme) {
                 SettingsActivityScreen(
                     accessToken = accessToken,
                     onClose = { finish() },
@@ -69,7 +76,7 @@ private fun SettingsActivityScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.settings_title),
-                        color = colorResource(R.color.md3_primary),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 navigationIcon = {
@@ -77,16 +84,16 @@ private fun SettingsActivityScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_close_24),
                             contentDescription = null,
-                            tint = colorResource(R.color.md3_primary),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(R.color.md3_surface),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
         },
-        containerColor = colorResource(R.color.md3_surface_variant),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ) { innerPadding ->
         Box(
             modifier = Modifier
