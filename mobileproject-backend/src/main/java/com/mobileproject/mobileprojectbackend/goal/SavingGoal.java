@@ -7,37 +7,40 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
-@Document(collection = "saving_goals")
-public class SavingGoal {
+    @Document(collection = "saving_goals")
+    public class SavingGoal {
 
-    @Id
-    private String id;
+        @Id
+        private String id;
 
-    @Indexed
-    @Field("id_couple")
-    private String coupleId;
+        @Indexed
+        @Field("id_couple")
+        private String coupleId;
 
-    private String name;
+        private String name;
 
-    @Field("target_amount")
-    private Long targetAmount;
+        private String category;
 
-    @Field("current_amount")
-    private Long currentAmount;
+        @Field("target_amount")
+        private Long targetAmount;
 
-    private Instant deadline;
+        @Field("current_amount")
+        private Long currentAmount;
 
-    private GoalStatus status;
+        private Instant deadline;
 
-    @Field("created_at")
-    private Instant createdAt;
+        private GoalStatus status;
+
+        @Field("created_at")
+        private Instant createdAt;
 
     public SavingGoal() {
     }
 
-    public SavingGoal(String coupleId, String name, Long targetAmount, Instant deadline) {
+    public SavingGoal(String coupleId, String name, String category, Long targetAmount, Instant deadline) {
         this.coupleId = coupleId;
         this.name = name;
+        this.category = category;
         this.targetAmount = targetAmount;
         this.currentAmount = 0L;
         this.deadline = deadline;
@@ -83,6 +86,14 @@ public class SavingGoal {
 
     public void setCurrentAmount(Long currentAmount) {
         this.currentAmount = currentAmount;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Instant getDeadline() {

@@ -1,16 +1,17 @@
 package com.mobileproject.mobileprojectbackend.goal;
 
-import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
-import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
-import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
-import com.mobileproject.mobileprojectbackend.goal.dto.GoalResponse;
+import java.util.List;
+
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
+import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
+import com.mobileproject.mobileprojectbackend.goal.dto.GoalResponse;
 
 @Service
 public class GoalService {
@@ -30,7 +31,7 @@ public class GoalService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public GoalResponse createGoal(String coupleId, String name, Long targetAmount, java.time.Instant deadline) {
+    public GoalResponse createGoal(String coupleId, String name, String category, Long targetAmount, java.time.Instant deadline) {
         if (coupleId == null || coupleId.isBlank()) {
             return GoalResponse.failure("Couple ID is required");
         }
@@ -46,12 +47,13 @@ public class GoalService {
             return GoalResponse.failure("Couple not found");
         }
 
-        SavingGoal goal = new SavingGoal(coupleId, name, targetAmount, deadline);
+        SavingGoal goal = new SavingGoal(coupleId, name, category, targetAmount, deadline);
         SavingGoal savedGoal = savingGoalRepository.save(goal);
 
         return GoalResponse.success(
                 savedGoal.getId(),
                 savedGoal.getName(),
+                savedGoal.getCategory(),
                 savedGoal.getTargetAmount(),
                 savedGoal.getCurrentAmount(),
                 savedGoal.getStatus(),
@@ -60,7 +62,7 @@ public class GoalService {
         );
     }
 
-    public ContributeResponse contributeFromWallet(String goalId, Long amount, String contributorId, String note) {
+    public ContributeResponse contributeFromWallet(String goalId, Long amount, String note) {
         if (goalId == null || goalId.isBlank()) {
             return ContributeResponse.failure("Goal ID is required");
         }
@@ -103,7 +105,8 @@ public class GoalService {
             updatedGoal.setStatus(GoalStatus.ACHIEVED);
         }
 
-        GoalContribution contribution = new GoalContribution(goalId, amount, contributorId, note);
+        // For wallet contribution, we don't have a specific contributor, so we can set contributorId as null or a default like "WALLET"
+        GoalContribution contribution = new GoalContribution(goalId, amount, null, note);
         GoalContribution savedContribution = goalContributionRepository.save(contribution);
 
         CoupleInfo updatedCouple = coupleInfoRepository.findById(goal.getCoupleId()).orElse(coupleInfo);
