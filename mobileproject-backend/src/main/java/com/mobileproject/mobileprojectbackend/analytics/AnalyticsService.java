@@ -14,8 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.aggregation.DateOperators;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import com.mobileproject.mobileprojectbackend.analytics.dto.CategoryBreakdownItem;
@@ -235,7 +235,7 @@ public class AnalyticsService {
             Map<String, Object> m = (Map<String, Object>) rawResult;
             Integer monthObj = (Integer) m.get("month");
             String type = (String) m.get("type");
-            Long total = ((Number) m.get("total")).longValue();
+            Long total = (m.get("total") instanceof Number n) ? n.longValue() : 0L;
             if (monthObj == null || type == null) continue;
             monthlyData.computeIfAbsent(monthObj, k -> new HashMap<>()).put(type, total);
         }
