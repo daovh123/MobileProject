@@ -50,12 +50,11 @@ public class AnalyticsService {
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
-                Aggregation.project("type", "amount")
-                        .and(DateOperators.Month.monthOf("created_at")).as("month"), 
-                Aggregation.group("month", "type")
-                        .sum("amount").as("total"),
-                Aggregation.project("month", "type", "total"),
-                Aggregation.sort(Sort.by(Sort.Direction.ASC, "month"))
+                Aggregation.group("category")
+                        .sum("amount").as("totalAmount"),
+                Aggregation.project()
+                        .and("_id").as("category")
+                        .and("totalAmount").as("totalAmount")
         );
 
         AggregationResults<CategoryBreakdownItem> results = mongoTemplate.aggregate(
@@ -213,7 +212,7 @@ public class AnalyticsService {
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
                 Aggregation.project()
-                        .and(DateOperators.Month.monthOf("created_at").withTimezone(DateOperators.Timezone.valueOf(zoneId.getId()))).as("month")
+                        .and(DateOperators.Month.monthOf("created_at")).as("month")
                         .and("type").as("type")
                         .and("amount").as("amount"),
                 Aggregation.group("month", "type")
@@ -234,7 +233,7 @@ public class AnalyticsService {
         System.out.println("Raw results count: " + (rawResults.getMappedResults() == null ? 0 : rawResults.getMappedResults().size()));
 
         Map<Integer, Map<String, Long>> monthlyData = new HashMap<>();
-        for (Map m : rawResults.getMappedResults()) {
+        for (Map<String, Object> m : rawResults.getMappedResults()) {
             Integer monthObj = (Integer) m.get("month");
             String type = (String) m.get("type");
             Long total = ((Number) m.get("total")).longValue();
