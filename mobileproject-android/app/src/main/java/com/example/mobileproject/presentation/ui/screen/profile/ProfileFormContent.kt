@@ -1,18 +1,23 @@
 package com.example.mobileproject.presentation.ui.screen.profile
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -22,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.mobileproject.R
@@ -46,6 +53,17 @@ fun ProfileFormContent(
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
+    val colorScheme = MaterialTheme.colorScheme
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.90f),
+        unfocusedContainerColor = colorScheme.surface.copy(alpha = 0.95f),
+        focusedBorderColor = colorScheme.primary,
+        unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.28f),
+        focusedLabelColor = colorScheme.primary,
+        unfocusedLabelColor = colorScheme.onSurfaceVariant,
+        cursorColor = colorScheme.primary,
+    )
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -56,6 +74,8 @@ fun ProfileFormContent(
             label = { Text(text = stringResource(R.string.profile_fullname)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+            shape = MaterialTheme.shapes.large,
         )
 
         OutlinedTextField(
@@ -64,6 +84,8 @@ fun ProfileFormContent(
             label = { Text(text = stringResource(R.string.profile_nickname)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+            shape = MaterialTheme.shapes.large,
         )
 
         OutlinedTextField(
@@ -75,12 +97,22 @@ fun ProfileFormContent(
             placeholder = { Text(text = stringResource(R.string.profile_select_date)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { showDatePicker = true },
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(pass = PointerEventPass.Initial)
+                        if (waitForUpOrCancellation(pass = PointerEventPass.Initial) != null) {
+                            showDatePicker = true
+                        }
+                    }
+                },
+            colors = fieldColors,
+            shape = MaterialTheme.shapes.large,
         )
 
         Text(
             text = stringResource(R.string.profile_gender),
             style = MaterialTheme.typography.titleSmall,
+            color = colorScheme.onSurfaceVariant,
         )
 
         Row(
@@ -92,18 +124,21 @@ fun ProfileFormContent(
                 onClick = { onGenderChange("MALE") },
                 label = { Text(text = stringResource(R.string.profile_gender_male)) },
                 modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.small,
             )
             FilterChip(
                 selected = gender == "FEMALE",
                 onClick = { onGenderChange("FEMALE") },
                 label = { Text(text = stringResource(R.string.profile_gender_female)) },
                 modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.small,
             )
             FilterChip(
                 selected = gender == "OTHER",
                 onClick = { onGenderChange("OTHER") },
                 label = { Text(text = stringResource(R.string.profile_gender_other)) },
                 modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.small,
             )
         }
 
@@ -113,15 +148,25 @@ fun ProfileFormContent(
                 enabled = saveEnabled && !isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
+                    .padding(top = 4.dp)
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary,
+                ),
+                shape = MaterialTheme.shapes.large,
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
                         strokeWidth = 2.dp,
                         modifier = Modifier.padding(4.dp),
+                        color = colorScheme.onPrimary,
                     )
                 } else {
-                    Text(text = stringResource(R.string.profile_save))
+                    Text(
+                        text = stringResource(R.string.profile_save),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                 }
             }
         }

@@ -11,20 +11,45 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.mobileproject.presentation.ui.icons.LucideHeart
+import com.example.mobileproject.presentation.ui.icons.LucideMapPin
+import com.example.mobileproject.presentation.ui.icons.LucideUser
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
@@ -61,7 +86,7 @@ fun HomeScreen(
 
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
-    
+    val colorScheme = MaterialTheme.colorScheme
     val walletViewModel: WalletViewModel = hiltViewModel()
     val walletState by walletViewModel.uiState.collectAsState()
 
@@ -276,15 +301,23 @@ private fun HomeContent(
                                     Text("Locating...", color = Color.Gray)
                                 }
                             }
-                            
-                            SmallFloatingActionButton(
-                                onClick = onCenterMe,
-                                containerColor = Color.White,
-                                contentColor = Color(0xFFFF8A80),
-                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
-                                shape = CircleShape
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
+                                SmallFloatingActionButton(
+                                    onClick = onCenterMe,
+                                    containerColor = colorScheme.surface,
+                                    contentColor = colorScheme.primary,
+                                ) {
+                                    Icon(
+                                        imageVector = LucideMapPin,
+                                        contentDescription = stringResource(R.string.map_share_me_marker),
+                                    )
+                                }
                             }
                         }
                     }
@@ -292,6 +325,151 @@ private fun HomeContent(
             }
             
             Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun PairSection(
+    state: CoupleUiState,
+    accessToken: String,
+    onPairNow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val noSession = accessToken.isBlank()
+
+    val titleText: String
+    val subtitleText: String
+    val showConnectedCard: Boolean
+    val showPairButton: Boolean
+    val pairButtonEnabled: Boolean
+    val pairButtonText: String
+
+    if (noSession) {
+        titleText = stringResource(R.string.home_pair_title)
+        subtitleText = stringResource(R.string.home_pair_subtitle)
+        showConnectedCard = false
+        showPairButton = true
+        pairButtonEnabled = false
+        pairButtonText = stringResource(R.string.home_pair_button)
+    } else if (state.paired) {
+        titleText = stringResource(R.string.home_pair_connected_title)
+        subtitleText = stringResource(R.string.home_pair_connected_subtitle)
+        showConnectedCard = true
+        showPairButton = false
+        pairButtonEnabled = false
+        pairButtonText = stringResource(R.string.home_pair_button)
+    } else {
+        titleText = stringResource(R.string.home_pair_title)
+        subtitleText = stringResource(R.string.home_pair_subtitle)
+        showConnectedCard = false
+        showPairButton = true
+        pairButtonEnabled = !state.isLoading
+        pairButtonText = if (state.isLoading) {
+            stringResource(R.string.home_pair_loading_button)
+        } else {
+            stringResource(R.string.home_pair_button)
+        }
+    }
+
+    Column(modifier = modifier.padding(20.dp)) {
+        Text(
+            text = titleText,
+            color = colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = subtitleText,
+            color = colorScheme.onSurfaceVariant,
+        )
+
+        if (!noSession && !state.paired) {
+            val myCode = state.myCoupleCode
+            if (!myCode.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.home_pair_my_code, myCode),
+                    color = colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        if (showConnectedCard) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
+                shape = RoundedCornerShape(14.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = stringResource(R.string.home_pair_connected_badge),
+                        color = colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val partnerDisplayName = state.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
+                    Text(
+                        text = stringResource(R.string.home_pair_partner_name, partnerDisplayName),
+                        color = colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.home_pair_connected_note),
+                        color = colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        val hintText = when {
+            noSession -> stringResource(R.string.home_pair_session_expired)
+            !state.errorMessage.isNullOrBlank() -> state.errorMessage
+            state.outgoingStatus.equals("PENDING", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_pending)
+            state.outgoingStatus.equals("REJECTED", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_rejected)
+            !state.myCoupleCodeExpiresAt.isNullOrBlank() -> stringResource(
+                R.string.home_pair_code_expiry,
+                state.myCoupleCodeExpiresAt ?: "",
+            )
+            else -> null
+        }
+
+        if (!hintText.isNullOrBlank() && !state.paired) {
+            Spacer(modifier = Modifier.height(10.dp))
+            val hintColor = if (
+                noSession ||
+                !state.errorMessage.isNullOrBlank() ||
+                state.outgoingStatus.equals("REJECTED", ignoreCase = true)
+            ) {
+                colorScheme.primary
+            } else {
+                colorScheme.onSurfaceVariant
+            }
+
+            Text(
+                text = hintText,
+                color = hintColor,
+            )
+        }
+
+        if (showPairButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onPairNow,
+                enabled = pairButtonEnabled,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(pairButtonText, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -327,6 +505,7 @@ fun SharedBalanceCard(balance: Long) {
 
 @Composable
 fun DaysTogetherModernCard(daysTogether: Long) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(40.dp),
@@ -340,27 +519,56 @@ fun DaysTogetherModernCard(daysTogether: Long) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = null,
-                tint = Color(0xFFFF8A80),
-                modifier = Modifier.size(72.dp)
+            Text(
+                text = daysTogether.toString(),
+                style = MaterialTheme.typography.displayMedium,
+                color = colorScheme.primary,
+                fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "$daysTogether Days Together",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF4A3434),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                text = stringResource(R.string.home_days_together_label),
+                color = colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = "Our shared journey continues",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AvatarChip(containerColor = colorScheme.primaryContainer)
+                Spacer(modifier = Modifier.width(12.dp))
+                AvatarChip(
+                    containerColor = colorScheme.surfaceVariant,
+                    icon = LucideHeart,
+                    iconTint = colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                AvatarChip(containerColor = colorScheme.primaryContainer)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AvatarChip(
+    containerColor: Color,
+    icon: ImageVector = LucideUser,
+    iconTint: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+) {
+    Card(
+        modifier = Modifier,
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(12.dp)) {
+            Icon(
+                imageVector = icon,
+                contentDescription = stringResource(R.string.cd_avatar),
+                tint = iconTint,
+                modifier = Modifier.size(24.dp),
             )
         }
     }
@@ -379,22 +587,6 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
             Spacer(modifier = Modifier.height(12.dp))
             Text(text = title, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
             Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
-        }
-    }
-}
-
-@Composable
-private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
-    Column(modifier = Modifier.padding(20.dp)) {
-        Text(text = "Connect with your partner", fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = onPairNow,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("Pair Now", fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.mobileproject.presentation.viewmodel
 
+import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.ProfileResult
@@ -151,6 +152,69 @@ class ProfileViewModelTest {
         assertNull(viewModel.uiState.value.coupleError)
     }
 
+    @Test
+    fun `uploadAvatar success updates avatar url`() = runTest {
+        val expectedDataUrl = "data:image/png;base64,AA=="
+        val repository = FakeOnboardingRepository().apply {
+            uploadAvatarResult = Result.success(expectedDataUrl)
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.uploadAvatar(
+            token = "token-1",
+            imageBytes = byteArrayOf(1, 2, 3),
+            contentType = "image/png",
+        )
+        advanceUntilIdle()
+
+        for (index in 0 until 50) {
+            if (!viewModel.uiState.value.isUploadingAvatar) {
+                break
+            }
+            Thread.sleep(10)
+        }
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isUploadingAvatar)
+        assertNull(state.avatarUploadError)
+        assertEquals(expectedDataUrl, state.avatarUrl)
+    }
+
+    @Test
+    fun `selectFrame success updates frame and closes selector`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            setAvatarFrameResult = Result.success(defaultProfile.copy(avatarFrameId = "frame_rose"))
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.showFrameSelector()
+        viewModel.selectFrame("token-1", "frame_rose")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("frame_rose", state.avatarFrameId)
+        assertFalse(state.showFrameSelector)
+        assertNull(state.avatarUploadError)
+    }
+
+    @Test
+    fun `loadAvatarFrames success updates available frames`() = runTest {
+        val repository = FakeOnboardingRepository().apply {
+            getAvatarFramesResult = Result.success(
+                listOf(AvatarFrame(id = "frame_gold", name = "Gold", resourceKey = "gold", color = "#FFC107")),
+            )
+        }
+        val viewModel = ProfileViewModel(repository)
+
+        viewModel.loadAvatarFrames("token-1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoadingFrames)
+        assertEquals(1, state.availableFrames.size)
+        assertEquals("frame_gold", state.availableFrames.first().id)
+    }
+
     private class FakeOnboardingRepository : OnboardingRepository {
 
         val defaultProfile = ProfileResult(
@@ -186,6 +250,9 @@ class ProfileViewModelTest {
         var getProfileResult: Result<ProfileResult> = Result.success(defaultProfile)
         var getCoupleStatusResult: Result<CoupleStatus> = Result.success(defaultCoupleStatus)
         var saveProfileResult: Result<ProfileResult> = Result.success(defaultProfile)
+        var uploadAvatarResult: Result<String> = Result.success("data:image/png;base64,")
+        var getAvatarFramesResult: Result<List<AvatarFrame>> = Result.success(emptyList())
+        var setAvatarFrameResult: Result<ProfileResult> = Result.success(defaultProfile)
 
         override suspend fun saveProfile(
             token: String,
@@ -193,6 +260,7 @@ class ProfileViewModelTest {
             nickName: String?,
             birthDate: String,
             gender: String,
+            email: String?,
         ): ProfileResult {
             return saveProfileResult.getOrThrow()
         }
@@ -211,6 +279,18 @@ class ProfileViewModelTest {
 
         override suspend fun decideCoupleRequest(token: String, requestId: String, accept: Boolean): CoupleRequestAction {
             return CoupleRequestAction(null, null, "unused", null, null)
+        }
+
+        override suspend fun uploadAvatar(token: String, imageBytes: ByteArray, contentType: String): String {
+            return uploadAvatarResult.getOrThrow()
+        }
+
+        override suspend fun getAvatarFrames(token: String): List<AvatarFrame> {
+            return getAvatarFramesResult.getOrThrow()
+        }
+
+        override suspend fun setAvatarFrame(token: String, frameId: String?): ProfileResult {
+            return setAvatarFrameResult.getOrThrow()
         }
     }
 }

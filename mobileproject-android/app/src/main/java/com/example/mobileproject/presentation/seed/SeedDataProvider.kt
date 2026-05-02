@@ -33,5 +33,6 @@ object SeedDataProvider {
     const val memoryEventTitle: String = "Maya's Birthday"
     const val memoryEventSubtitle: String = "In 2 days - Joint Gift Goal: $200"
     const val partnerName: String = "Maya Chen"
+    const val partnerBirthDate: String = "1998-10-15"
     const val partnerMeta: String = "Connected since 2021"
 }

@@ -1,5 +1,6 @@
 package com.example.mobileproject.presentation.viewmodel
 
+import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.ProfileResult
@@ -140,6 +141,7 @@ class CoupleViewModelTest {
             nickName: String?,
             birthDate: String,
             gender: String,
+            email: String?,
         ): ProfileResult {
             return ProfileResult(null, null, null, null, null, false, false)
         }
@@ -166,6 +168,18 @@ class CoupleViewModelTest {
 
         override suspend fun decideCoupleRequest(token: String, requestId: String, accept: Boolean): CoupleRequestAction {
             return decideResult.getOrThrow()
+        }
+
+        override suspend fun uploadAvatar(token: String, imageBytes: ByteArray, contentType: String): String {
+            return "data:image/png;base64,"
+        }
+
+        override suspend fun getAvatarFrames(token: String): List<AvatarFrame> {
+            return emptyList()
+        }
+
+        override suspend fun setAvatarFrame(token: String, frameId: String?): ProfileResult {
+            return getProfile(token).copy(avatarFrameId = frameId)
         }
     }
 }

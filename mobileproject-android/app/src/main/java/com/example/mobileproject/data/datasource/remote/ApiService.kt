@@ -17,13 +17,20 @@ import com.example.mobileproject.data.model.goal.GoalResponseDto
 import com.example.mobileproject.data.model.goal.SavingGoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
 import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
+import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
+import com.example.mobileproject.data.model.onboarding.AvatarFrameRequestDto
+import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
+import com.example.mobileproject.data.model.moment.MomentDto
+import com.example.mobileproject.data.model.moment.MomentRequestDto
+import com.example.mobileproject.data.model.moment.MomentResponseDto
 import com.example.mobileproject.data.model.ProductDto
+import okhttp3.MultipartBody
 import com.example.mobileproject.data.model.remote.WalletResponse
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
@@ -175,6 +182,25 @@ interface ApiService {
         @Body request: ContributeDirectRequest,
     ): Response<ContributionResponseDto>
 
+    // Avatar APIs
+    @Multipart
+    @POST("api/auth/profile/avatar")
+    suspend fun uploadAvatar(
+        @Header("Authorization") authorization: String,
+        @Part file: MultipartBody.Part,
+    ): Response<AvatarUploadResponseDto>
+
+    @GET("api/auth/profile/frames")
+    suspend fun getAvatarFrames(
+        @Header("Authorization") authorization: String,
+    ): Response<List<AvatarFrameDto>>
+
+    @PUT("api/auth/profile/frame")
+    suspend fun setAvatarFrame(
+        @Header("Authorization") authorization: String,
+        @Body request: AvatarFrameRequestDto,
+    ): Response<ProfileResponseDto>
+
     // Analytics APIs
     @GET("api/v1/analytics/expense-by-category")
     suspend fun getCategoryBreakdown(
@@ -190,4 +216,16 @@ interface ApiService {
         @Query("coupleId") coupleId: String,
         @Query("year") year: Int
     ): Response<List<SpendingTrendDto>>
+
+    @GET("api/v1/moments")
+    suspend fun getMoments(
+        @Query("coupleId") coupleId: String,
+        @Header("Authorization") authorization: String,
+    ): Response<List<MomentDto>>
+
+    @POST("api/v1/moments")
+    suspend fun createMoment(
+        @Body request: MomentRequestDto,
+        @Header("Authorization") authorization: String,
+    ): Response<MomentResponseDto>
 }

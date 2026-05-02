@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -57,6 +59,10 @@ import com.example.mobileproject.domain.entity.resolvePostLoginDestination
 import com.example.mobileproject.presentation.ui.components.auth.AuthBackdrop
 import com.example.mobileproject.presentation.ui.components.auth.AuthBrandMark
 import com.example.mobileproject.presentation.ui.components.auth.AuthFormSurface
+import com.example.mobileproject.presentation.ui.icons.LucideEye
+import com.example.mobileproject.presentation.ui.icons.LucideEyeOff
+import com.example.mobileproject.presentation.ui.icons.LucideLock
+import com.example.mobileproject.presentation.ui.icons.LucideMail
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
@@ -159,10 +165,10 @@ private fun LoginScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        unfocusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.25f),
+        focusedContainerColor = colorScheme.surfaceContainer.copy(alpha = 0.92f),
+        unfocusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.92f),
         focusedBorderColor = colorScheme.primary,
-        unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.45f),
+        unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.28f),
         focusedLabelColor = colorScheme.primary,
         unfocusedLabelColor = colorScheme.onSurfaceVariant,
         cursorColor = colorScheme.primary,
@@ -237,12 +243,19 @@ private fun LoginScreen(
                     label = { Text(stringResource(R.string.login_email_label)) },
                     placeholder = { Text(stringResource(R.string.login_email_hint)) },
                     singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = LucideMail,
+                            contentDescription = null,
+                            tint = colorScheme.onSurfaceVariant,
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next,
                     ),
                     colors = fieldColors,
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -256,6 +269,13 @@ private fun LoginScreen(
                     label = { Text(stringResource(R.string.login_password_label)) },
                     placeholder = { Text(stringResource(R.string.login_password_hint)) },
                     singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = LucideLock,
+                            contentDescription = null,
+                            tint = colorScheme.onSurfaceVariant,
+                        )
+                    },
                     visualTransformation = if (passwordVisible) {
                         VisualTransformation.None
                     } else {
@@ -272,22 +292,34 @@ private fun LoginScreen(
                         },
                     ),
                     trailingIcon = {
-                        TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Text(if (passwordVisible) "Ẩn" else "Hiện")
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) LucideEyeOff else LucideEye,
+                                contentDescription = if (passwordVisible) {
+                                    stringResource(R.string.login_password_label)
+                                } else {
+                                    stringResource(R.string.login_password_label)
+                                },
+                                tint = colorScheme.primary,
+                            )
                         }
                     },
                     colors = fieldColors,
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = {}) {
+                    TextButton(
+                        onClick = {},
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = colorScheme.primary,
+                        ),
+                    ) {
                         Text(
                             text = stringResource(R.string.login_forgot_password),
-                            color = colorScheme.primary,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -300,14 +332,14 @@ private fun LoginScreen(
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary,
                     ),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
+                        .height(56.dp),
                 ) {
                     Text(
                         text = if (uiState.isLoading) "Đang đăng nhập..." else stringResource(R.string.login_button),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 }
 

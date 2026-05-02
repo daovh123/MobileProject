@@ -68,8 +68,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
                     userId,
                     payload.latitude,
                     payload.longitude,
-                    payload.updatedAt
-            );
+                    payload.updatedAt);
         } catch (Exception exception) {
             LOGGER.debug("Failed to store location update for coupleId={} userId={}", coupleId, userId, exception);
             return;
@@ -229,7 +228,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
         if (value == null || value.isNull()) {
             return null;
         }
-        String text = value.asText(null);
+        String text = value.asString(null);
         if (text == null || text.isBlank()) {
             return null;
         }
@@ -248,7 +247,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
             return value.doubleValue();
         }
         try {
-            return Double.parseDouble(value.asText());
+            return Double.parseDouble(value.asString());
         } catch (Exception ignored) {
             return null;
         }

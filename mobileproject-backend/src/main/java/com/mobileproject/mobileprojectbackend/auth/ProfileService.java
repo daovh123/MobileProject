@@ -10,6 +10,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 public class ProfileService {
@@ -21,12 +24,21 @@ public class ProfileService {
             DateTimeFormatter.ofPattern("d-M-uuuu"),
             DateTimeFormatter.ofPattern("dd-MM-uuuu"));
 
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+
     private final AuthIdentityService authIdentityService;
     private final AuthUserCacheService authUserCacheService;
+    private final AuthUserRepository authUserRepository;
+    private final AvatarFrameCatalog avatarFrameCatalog;
 
-    public ProfileService(AuthIdentityService authIdentityService, AuthUserCacheService authUserCacheService) {
+    public ProfileService(AuthIdentityService authIdentityService,
+                          AuthUserCacheService authUserCacheService,
+                          AuthUserRepository authUserRepository,
+                          AvatarFrameCatalog avatarFrameCatalog) {
         this.authIdentityService = authIdentityService;
         this.authUserCacheService = authUserCacheService;
+        this.authUserRepository = authUserRepository;
+        this.avatarFrameCatalog = avatarFrameCatalog;
     }
 
     public ProfileResponse upsertProfile(String authorizationHeader, ProfileUpsertRequest request) {
@@ -45,6 +57,7 @@ public class ProfileService {
         user.setNickName(nickName);
         user.setBirthDate(birthDate);
         user.setGender(gender);
+        applyEmailUpdate(user, request.email());
         user.setProfileCompleted(true);
         AuthUser savedUser = authUserCacheService.save(user);
 
@@ -56,6 +69,32 @@ public class ProfileService {
         return toProfileResponse(user, "Profile fetched successfully");
     }
 
+    public ProfileResponse updateAvatarUrl(String authorizationHeader, String avatarUrl) {
+        AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
+        user.setAvatarUrl(avatarUrl);
+        AuthUser saved = authUserCacheService.save(user);
+        return toProfileResponse(saved, "Avatar updated successfully");
+    }
+
+    public ProfileResponse updateAvatarFrame(String authorizationHeader, String frameId) {
+        AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
+
+        if (frameId != null && !frameId.isBlank()) {
+            boolean valid = avatarFrameCatalog.findById(frameId).isPresent();
+            if (!valid) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Unknown frame id: " + frameId);
+            }
+            user.setAvatarFrameId(frameId);
+        } else {
+            user.setAvatarFrameId(null);
+        }
+
+        AuthUser saved = authUserCacheService.save(user);
+        return toProfileResponse(saved, "Avatar frame updated successfully");
+    }
+
     private ProfileResponse toProfileResponse(AuthUser user, String message) {
         return ProfileResponse.success(
                 message,
@@ -64,8 +103,34 @@ public class ProfileService {
                 user.getNickName(),
                 user.getBirthDate(),
                 user.getGender(),
+                user.getEmail(),
                 user.isProfileCompleted(),
-                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank());
+                user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank(),
+                user.getAvatarUrl(),
+                user.getAvatarFrameId());
+    }
+
+    private void applyEmailUpdate(AuthUser user, String rawEmail) {
+        if (rawEmail == null) {
+            return;
+        }
+        String trimmed = rawEmail.trim();
+        if (trimmed.isBlank()) {
+            return;
+        }
+        String normalized = trimmed.toLowerCase();
+        if (!EMAIL_PATTERN.matcher(normalized).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email format");
+        }
+        String currentEmail = user.getEmail();
+        if (currentEmail != null && currentEmail.equalsIgnoreCase(normalized)) {
+            return;
+        }
+        Optional<AuthUser> existing = authUserRepository.findByEmail(normalized);
+        if (existing.isPresent() && !Objects.equals(existing.get().getId(), user.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        }
+        user.setEmail(normalized);
     }
 
     private String trimToNull(String value) {

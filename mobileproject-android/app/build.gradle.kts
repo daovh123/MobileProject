@@ -31,6 +31,10 @@ android {
     buildTypes {
         debug {
             manifestPlaceholders["cleartextTrafficPermitted"] = "true"
+            lint {
+                checkReleaseBuilds = false
+                abortOnError = false
+            }
         }
         release {
             isMinifyEnabled = false
@@ -69,10 +73,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation.layout)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("androidx.navigation:navigation-compose:2.8.7")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")

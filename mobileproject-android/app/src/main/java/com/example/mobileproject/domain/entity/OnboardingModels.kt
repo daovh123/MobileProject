@@ -8,6 +8,16 @@ data class ProfileResult(
     val gender: String?,
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
+    val email: String? = null,
+    val avatarUrl: String? = null,
+    val avatarFrameId: String? = null,
+)
+
+data class AvatarFrame(
+    val id: String,
+    val name: String,
+    val resourceKey: String,
+    val color: String,
 )
 
 data class CoupleRequestAction(

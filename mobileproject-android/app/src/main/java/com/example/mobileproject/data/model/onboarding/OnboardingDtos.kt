@@ -5,6 +5,7 @@ data class ProfileUpsertRequestDto(
     val nickName: String?,
     val birthDate: String,
     val gender: String,
+    val email: String? = null,
 )
 
 data class ProfileResponseDto(
@@ -17,6 +18,26 @@ data class ProfileResponseDto(
     val gender: String?,
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
+    val email: String? = null,
+    val avatarUrl: String? = null,
+    val avatarFrameId: String? = null,
+)
+
+data class AvatarUploadResponseDto(
+    val success: Boolean,
+    val message: String,
+    val avatarUrl: String?,
+)
+
+data class AvatarFrameDto(
+    val id: String,
+    val name: String,
+    val resourceKey: String,
+    val color: String,
+)
+
+data class AvatarFrameRequestDto(
+    val frameId: String?,
 )
 
 data class CoupleCodeResponseDto(

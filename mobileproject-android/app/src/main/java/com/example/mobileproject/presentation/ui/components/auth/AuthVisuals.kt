@@ -34,8 +34,8 @@ fun AuthBackdrop(
         Brush.linearGradient(
             colors = listOf(
                 colorScheme.surface,
-                colorScheme.secondaryContainer.copy(alpha = 0.46f),
-                colorScheme.tertiaryContainer.copy(alpha = 0.55f),
+                colorScheme.surfaceContainerLow.copy(alpha = 0.92f),
+                colorScheme.surfaceVariant.copy(alpha = 0.92f),
             ),
         )
     }
@@ -48,12 +48,12 @@ fun AuthBackdrop(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = 84.dp, y = (-92).dp)
-                .size(292.dp)
+                .offset(x = 80.dp, y = (-96).dp)
+                .size(260.dp)
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.primary.copy(alpha = 0.23f),
+                            colorScheme.primary.copy(alpha = 0.22f),
                             Color.Transparent,
                         ),
                     ),
@@ -64,12 +64,28 @@ fun AuthBackdrop(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = (-96).dp, y = 116.dp)
-                .size(316.dp)
+                .offset(x = (-96).dp, y = 132.dp)
+                .size(300.dp)
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.tertiary.copy(alpha = 0.18f),
+                            colorScheme.secondary.copy(alpha = 0.18f),
+                            Color.Transparent,
+                        ),
+                    ),
+                    shape = CircleShape,
+                ),
+        )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .offset(x = (-24).dp, y = 72.dp)
+                .size(180.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
                             Color.Transparent,
                         ),
                     ),
@@ -86,12 +102,12 @@ fun AuthBrandMark(modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
 
     Surface(
-        modifier = modifier.size(102.dp),
+        modifier = modifier.size(104.dp),
         shape = CircleShape,
-        color = colorScheme.primaryContainer.copy(alpha = 0.95f),
+        color = colorScheme.primaryContainer.copy(alpha = 0.92f),
         border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
-        shadowElevation = 14.dp,
-        tonalElevation = 8.dp,
+        shadowElevation = 16.dp,
+        tonalElevation = 10.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
@@ -114,13 +130,13 @@ fun AuthFormSurface(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = colorScheme.surface.copy(alpha = 0.95f),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.2f)),
-        shadowElevation = 10.dp,
-        tonalElevation = 4.dp,
+        color = colorScheme.surface.copy(alpha = 0.94f),
+        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.18f)),
+        shadowElevation = 12.dp,
+        tonalElevation = 6.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
             content = content,
         )
     }

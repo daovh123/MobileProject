@@ -8,8 +8,11 @@ public record ProfileResponse(
         String nickName,
         String birthDate,
         String gender,
+        String email,
         boolean profileCompleted,
-        boolean coupleConnected
+        boolean coupleConnected,
+        String avatarUrl,
+        String avatarFrameId
 ) {
     public static ProfileResponse success(String message,
                                           String username,
@@ -17,8 +20,12 @@ public record ProfileResponse(
                                           String nickName,
                                           String birthDate,
                                           String gender,
+                                          String email,
                                           boolean profileCompleted,
-                                          boolean coupleConnected) {
-        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, profileCompleted, coupleConnected);
+                                          boolean coupleConnected,
+                                          String avatarUrl,
+                                          String avatarFrameId) {
+        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, email,
+                profileCompleted, coupleConnected, avatarUrl, avatarFrameId);
     }
 }

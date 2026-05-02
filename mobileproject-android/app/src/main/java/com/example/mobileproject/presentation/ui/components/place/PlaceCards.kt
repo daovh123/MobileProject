@@ -23,6 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +42,23 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
+
+private val placeImageFallbackPool: List<String> = listOf(
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Little_Vietnam_Restaurant.jpg/1280px-Little_Vietnam_Restaurant.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Nice_vietnamese_restaurant_3630.JPG/1280px-Nice_vietnamese_restaurant_3630.JPG",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_coffee.JPG/1280px-A_small_cup_of_coffee.JPG",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Roasted_coffee_beans.jpg/1280px-Roasted_coffee_beans.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/M%C3%B3n_%C4%83n_%C4%90%C3%B4ng_H%C3%A0%2C_T%E1%BA%BFt_2022_%28ph%E1%BB%9F_L%C3%BD_Qu%E1%BB%91c_s%C6%B0_%E1%BB%9F_c%C3%B4ng_vi%C3%AAn_C%E1%BB%8D_D%E1%BA%A7u%29_%282%29.jpg/960px-M%C3%B3n_%C4%83n_%C4%90%C3%B4ng_H%C3%A0%2C_T%E1%BA%BFt_2022_%28ph%E1%BB%9F_L%C3%BD_Qu%E1%BB%91c_s%C6%B0_%E1%BB%9F_c%C3%B4ng_vi%C3%AAn_C%E1%BB%8D_D%E1%BA%A7u%29_%282%29.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Nam_pho_bowl.jpg/960px-Nam_pho_bowl.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Pho_in_Russia.jpg/960px-Pho_in_Russia.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Ca_Phe_Sua_Da.jpg/960px-Ca_Phe_Sua_Da.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/13-08-31-Kochtreffen-Wien-RalfR-N3S_7849-024.jpg/960px-13-08-31-Kochtreffen-Wien-RalfR-N3S_7849-024.jpg",
+)
+
+private fun fallbackImageFor(placeId: String): String {
+    val index = (placeId.hashCode() and Int.MAX_VALUE) % placeImageFallbackPool.size
+    return placeImageFallbackPool[index]
+}
 
 @Composable
 fun PlaceCard(
@@ -55,6 +76,11 @@ fun PlaceCard(
     } else {
         stringResource(R.string.explore_rating_unknown)
     }
+    val fallbackImageUrl = remember(place.id) { fallbackImageFor(place.id) }
+    val primaryImageUrl = place.imageUrl?.takeIf { it.isNotBlank() }
+    var imageModel by remember(place.id, primaryImageUrl) {
+        mutableStateOf(primaryImageUrl ?: fallbackImageUrl)
+    }
 
     Card(
         modifier = modifier
@@ -70,10 +96,15 @@ fun PlaceCard(
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
             AsyncImage(
-                model = place.imageUrl?.takeIf { it.isNotBlank() },
+                model = imageModel,
                 contentDescription = place.name ?: fallback,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+                onError = {
+                    if (imageModel != fallbackImageUrl) {
+                        imageModel = fallbackImageUrl
+                    }
+                },
             )
 
             Box(
@@ -194,6 +225,11 @@ fun TrendingPlaceCard(
     } else {
         stringResource(R.string.explore_rating_unknown)
     }
+    val fallbackImageUrl = remember(place.id) { fallbackImageFor(place.id) }
+    val primaryImageUrl = place.imageUrl?.takeIf { it.isNotBlank() }
+    var imageModel by remember(place.id, primaryImageUrl) {
+        mutableStateOf(primaryImageUrl ?: fallbackImageUrl)
+    }
 
     Card(
         modifier = modifier
@@ -209,10 +245,15 @@ fun TrendingPlaceCard(
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
             AsyncImage(
-                model = place.imageUrl?.takeIf { it.isNotBlank() },
+                model = imageModel,
                 contentDescription = place.name ?: fallback,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+                onError = {
+                    if (imageModel != fallbackImageUrl) {
+                        imageModel = fallbackImageUrl
+                    }
+                },
             )
 
             Box(

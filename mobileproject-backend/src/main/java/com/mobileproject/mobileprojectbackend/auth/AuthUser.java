@@ -22,6 +22,8 @@ public class AuthUser {
     private String gender;
     private boolean profileCompleted;
     private String partnerUserId;
+    private String avatarUrl;
+    private String avatarFrameId;
 
     public AuthUser() {
     }
