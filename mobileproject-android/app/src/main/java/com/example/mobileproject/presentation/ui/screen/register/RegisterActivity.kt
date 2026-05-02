@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,7 +62,9 @@ import com.example.mobileproject.presentation.ui.icons.LucideMail
 import com.example.mobileproject.presentation.ui.icons.LucideShield
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -71,7 +74,11 @@ class RegisterActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableImmersiveMode()
         setContent {
-            MobileProjectTheme(dynamicColor = false) {
+            val themeViewModel: ThemeModeViewModel = hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+
+            MobileProjectTheme(darkTheme = darkTheme, dynamicColor = false) {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 RegisterScreen(
                     onBackToLogin = { finish() },

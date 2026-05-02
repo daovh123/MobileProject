@@ -169,6 +169,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Map<String, Object> envelope = new HashMap<>();
         envelope.put("type", "chat_history");
         envelope.put("partnerUsername", partnerUsernameOf(session));
+        envelope.put("partnerAvatarUrl", partnerAvatarUrlOf(session));
         envelope.put("messages", payload);
 
         String json = writeJson(envelope);
@@ -262,20 +263,29 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String myUserId = userIdOf(session);
         String myUsername = usernameOf(session);
         String partnerUsername = partnerUsernameOf(session);
+        String myAvatarUrl = avatarUrlOf(session);
+        String partnerAvatarUrl = partnerAvatarUrlOf(session);
 
         boolean isAi = AI_SENDER_USER_ID.equals(message.getSenderUserId());
         boolean mine = !isAi && myUserId != null && myUserId.equals(message.getSenderUserId());
         String senderUsername;
+        String senderAvatarUrl;
         if (isAi) {
             senderUsername = AI_USERNAME;
+            senderAvatarUrl = null;
+        } else if (mine) {
+            senderUsername = myUsername;
+            senderAvatarUrl = myAvatarUrl;
         } else {
-            senderUsername = mine ? myUsername : partnerUsername;
+            senderUsername = partnerUsername;
+            senderAvatarUrl = partnerAvatarUrl;
         }
 
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", message.getId());
         dto.put("text", message.getText());
         dto.put("senderUsername", senderUsername);
+        dto.put("senderAvatarUrl", senderAvatarUrl);
         dto.put("mine", mine);
         dto.put("createdAt",
                 message.getCreatedAt() != null ? message.getCreatedAt().toString() : Instant.now().toString());
@@ -325,6 +335,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private String partnerUsernameOf(WebSocketSession session) {
         return session == null ? null : (String) session.getAttributes().get("partnerUsername");
+    }
+
+    private String avatarUrlOf(WebSocketSession session) {
+        return session == null ? null : (String) session.getAttributes().get("avatarUrl");
+    }
+
+    private String partnerAvatarUrlOf(WebSocketSession session) {
+        return session == null ? null : (String) session.getAttributes().get("partnerAvatarUrl");
     }
 
     private boolean containsAiMention(String text) {

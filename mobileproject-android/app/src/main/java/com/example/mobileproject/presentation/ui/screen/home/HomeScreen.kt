@@ -69,7 +69,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
-import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.ui.components.core.AppMetricChip
 import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
@@ -545,20 +544,6 @@ private fun HomeContent(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(0).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(1).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = SeedDataProvider.homeHighlights.getOrNull(2).orEmpty(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),

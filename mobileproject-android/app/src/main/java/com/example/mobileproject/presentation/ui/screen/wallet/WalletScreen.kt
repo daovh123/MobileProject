@@ -45,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -97,16 +96,16 @@ fun WalletScreen(
                         1 -> showAddGoalSheet = true
                     }
                 },
-                containerColor = colorResource(R.color.md3_primary)
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Text("+", color = colorResource(R.color.md3_on_primary), style = MaterialTheme.typography.titleLarge)
+                Text("+", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleLarge)
             }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorResource(R.color.md3_surface_variant))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(paddingValues)
         ) {
             TabRow(selectedTabIndex = selectedTab) {
@@ -201,7 +200,7 @@ private fun WalletTab(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_primary)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = MaterialTheme.shapes.large
         ) {
             Column(
@@ -211,17 +210,17 @@ private fun WalletTab(
                 Text(
                     text = "Số dư ví",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.md3_on_primary).copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 if (isLoading) {
-                    CircularProgressIndicator(color = colorResource(R.color.md3_on_primary))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text(
                         text = formatCurrency(totalBalance),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.md3_on_primary)
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -241,7 +240,7 @@ private fun WalletTab(
             Text(
                 text = "Chưa có giao dịch nào",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             LazyColumn(
@@ -261,7 +260,7 @@ private fun TransactionItem(transaction: Transaction) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -278,15 +277,15 @@ private fun TransactionItem(transaction: Transaction) {
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            if (isExpense) colorResource(R.color.md3_error).copy(alpha = 0.1f)
-                            else colorResource(R.color.md3_primary).copy(alpha = 0.1f),
+                            if (isExpense) MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (isExpense) "↓" else "↑",
-                        color = if (isExpense) colorResource(R.color.md3_error) else colorResource(R.color.md3_primary),
+                        color = if (isExpense) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
@@ -300,7 +299,7 @@ private fun TransactionItem(transaction: Transaction) {
                     Text(
                         text = transaction.note.ifBlank { if (isExpense) "Chi tiêu" else "Thu nhập" },
                         style = MaterialTheme.typography.bodySmall,
-                        color = colorResource(R.color.md3_on_surface_variant)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -308,7 +307,7 @@ private fun TransactionItem(transaction: Transaction) {
                 text = "${if (isExpense) "-" else "+"}${formatCurrency(transaction.amount)}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isExpense) colorResource(R.color.md3_error) else colorResource(R.color.md3_primary)
+                color = if (isExpense) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -337,7 +336,7 @@ private fun GoalsTab(
                 Text(
                     text = "Chưa có mục tiêu tiết kiệm nào.\nTạo mục tiêu để bắt đầu!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.md3_on_surface_variant)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -363,7 +362,7 @@ private fun GoalCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -388,7 +387,7 @@ private fun GoalCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(MaterialTheme.shapes.small),
-                color = if (goal.status == GoalStatus.ACHIEVED) colorResource(R.color.md3_primary) else colorResource(R.color.md3_secondary),
+                color = if (goal.status == GoalStatus.ACHIEVED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -400,13 +399,13 @@ private fun GoalCard(
                 Text(
                     text = "${formatCurrency(goal.currentAmount)} / ${formatCurrency(goal.targetAmount)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.md3_on_surface_variant)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = "${(progress * 100).toInt()}%",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
-                    color = colorResource(R.color.md3_primary)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -436,9 +435,9 @@ private fun GoalCard(
 @Composable
 private fun StatusChip(status: GoalStatus) {
     val (text, color) = when (status) {
-        GoalStatus.IN_PROGRESS -> "Đang tiết kiệm" to colorResource(R.color.md3_secondary)
-        GoalStatus.ACHIEVED -> "Đã đạt" to colorResource(R.color.md3_primary)
-        GoalStatus.FAILED -> "Thất bại" to colorResource(R.color.md3_error)
+        GoalStatus.IN_PROGRESS -> "Đang tiết kiệm" to MaterialTheme.colorScheme.secondary
+        GoalStatus.ACHIEVED -> "Đã đạt" to MaterialTheme.colorScheme.primary
+        GoalStatus.FAILED -> "Thất bại" to MaterialTheme.colorScheme.error
     }
 
     Box(
@@ -491,7 +490,7 @@ private fun AnalyticsTab(
             Text(
                 text = "Chưa có dữ liệu thống kê",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             Text(
@@ -514,7 +513,7 @@ private fun AnalyticsTab(
 private fun CategoryBreakdownItem(category: String, amount: Long) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -531,7 +530,7 @@ private fun CategoryBreakdownItem(category: String, amount: Long) {
                 text = formatCurrency(amount),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = colorResource(R.color.md3_primary)
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

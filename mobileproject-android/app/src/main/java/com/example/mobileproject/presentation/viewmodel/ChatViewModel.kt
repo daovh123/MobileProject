@@ -21,14 +21,28 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 import javax.inject.Inject
+
+enum class SendStatus { SENDING, FAILED }
+
+data class PendingMessage(
+    val localId: String,
+    val text: String,
+    val status: SendStatus,
+)
 
 data class ChatUiState(
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
     val isConnected: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
+    val pendingMessages: List<PendingMessage> = emptyList(),
     val errorMessage: String? = null,
+    val isPartnerTyping: Boolean = false,
+    val replyingToMessage: ChatMessage? = null,
+    val partnerName: String? = null,
+    val partnerAvatarUrl: String? = null,
 )
 
 @HiltViewModel
@@ -45,6 +59,9 @@ class ChatViewModel @Inject constructor(
     private var activeToken: String? = null
 
     private var isStarted: Boolean = false
+
+    private val pendingTimeoutJobs = mutableMapOf<String, Job>()
+    private var typingStopJob: Job? = null
 
     fun start(token: String) {
         if (isStarted) {
@@ -68,38 +85,114 @@ class ChatViewModel @Inject constructor(
         connectWebSocket(token)
     }
 
-    fun send(token: String, text: String) {
+    fun setReplyTo(message: ChatMessage?) {
+        _uiState.update { it.copy(replyingToMessage = message) }
+    }
+
+    fun send(token: String, text: String, replyToId: String? = null) {
         val trimmed = text.trim()
         if (token.isBlank() || trimmed.isBlank()) {
             return
         }
 
+        val localId = UUID.randomUUID().toString()
+        val pending = PendingMessage(localId = localId, text = trimmed, status = SendStatus.SENDING)
+        _uiState.update { it.copy(pendingMessages = it.pendingMessages + pending, errorMessage = null, replyingToMessage = null) }
+
         val socket = webSocket
         if (socket == null) {
-            _uiState.update { it.copy(errorMessage = "Chưa kết nối tới chat. Vui lòng thử lại.") }
+            markPendingFailed(localId)
             activeToken?.let { connectWebSocket(it) }
             return
         }
 
-        _uiState.update { it.copy(isSending = true, errorMessage = null) }
-
         val payload = JSONObject()
             .put("type", "chat_message")
             .put("text", trimmed)
+            .apply { if (replyToId != null) put("replyToId", replyToId) }
             .toString()
 
         val sent = runCatching { socket.send(payload) }.getOrDefault(false)
         if (!sent) {
-            _uiState.update {
-                it.copy(
-                    isSending = false,
-                    errorMessage = "Không thể gửi tin nhắn. Vui lòng thử lại.",
-                )
-            }
+            markPendingFailed(localId)
             return
         }
 
-        _uiState.update { it.copy(isSending = false) }
+        scheduleSendTimeout(localId)
+    }
+
+    fun retry(localId: String) {
+        val pending = _uiState.value.pendingMessages.find { it.localId == localId } ?: return
+        _uiState.update {
+            it.copy(
+                pendingMessages = it.pendingMessages.map { p ->
+                    if (p.localId == localId) p.copy(status = SendStatus.SENDING) else p
+                },
+            )
+        }
+
+        val socket = webSocket
+        if (socket == null) {
+            markPendingFailed(localId)
+            activeToken?.let { connectWebSocket(it) }
+            return
+        }
+
+        val payload = JSONObject()
+            .put("type", "chat_message")
+            .put("text", pending.text)
+            .toString()
+
+        val sent = runCatching { socket.send(payload) }.getOrDefault(false)
+        if (!sent) {
+            markPendingFailed(localId)
+            return
+        }
+
+        scheduleSendTimeout(localId)
+    }
+
+    private fun scheduleSendTimeout(localId: String) {
+        pendingTimeoutJobs[localId]?.cancel()
+        pendingTimeoutJobs[localId] = viewModelScope.launch {
+            delay(SEND_TIMEOUT_MS)
+            markPendingFailed(localId)
+        }
+    }
+
+    private fun markPendingFailed(localId: String) {
+        pendingTimeoutJobs.remove(localId)?.cancel()
+        _uiState.update {
+            it.copy(
+                pendingMessages = it.pendingMessages.map { p ->
+                    if (p.localId == localId) p.copy(status = SendStatus.FAILED) else p
+                },
+            )
+        }
+    }
+
+    private fun confirmPendingSent(text: String) {
+        val match = _uiState.value.pendingMessages
+            .firstOrNull { it.status == SendStatus.SENDING && it.text == text }
+            ?: return
+        pendingTimeoutJobs.remove(match.localId)?.cancel()
+        _uiState.update {
+            it.copy(pendingMessages = it.pendingMessages.filter { p -> p.localId != match.localId })
+        }
+    }
+
+    fun sendTypingEvent(token: String) {
+        val socket = webSocket ?: return
+        runCatching {
+            socket.send(JSONObject().put("type", "typing").put("typing", true).toString())
+        }
+        typingStopJob?.cancel()
+        typingStopJob = viewModelScope.launch {
+            delay(TYPING_DEBOUNCE_MS)
+            runCatching {
+                socket.send(JSONObject().put("type", "typing").put("typing", false).toString())
+            }
+        }
     }
 
     fun clearError() {
@@ -198,6 +291,12 @@ class ChatViewModel @Inject constructor(
         when (obj.optString("type")) {
             "chat_history" -> {
                 val messages = parseMessages(obj.optJSONArray("messages"))
+                val partnerName = obj.optString("partnerName").takeIf { it.isNotBlank() }
+                    ?: obj.optString("partnerUsername").takeIf { it.isNotBlank() }
+                val partnerAvatarUrl = obj.optString("partnerAvatarUrl").takeIf { it.isNotBlank() }
+                if (partnerName != null || partnerAvatarUrl != null) {
+                    _uiState.update { it.copy(partnerName = partnerName, partnerAvatarUrl = partnerAvatarUrl) }
+                }
                 if (messages.isNotEmpty()) {
                     mergeMessages(messages)
                 }
@@ -206,6 +305,7 @@ class ChatViewModel @Inject constructor(
             "chat_message" -> {
                 val message = parseMessage(obj)
                 if (message != null) {
+                    if (message.mine) confirmPendingSent(message.text)
                     mergeMessages(listOf(message))
                 }
             }
@@ -215,6 +315,11 @@ class ChatViewModel @Inject constructor(
                 if (message.isNotBlank()) {
                     _uiState.update { it.copy(errorMessage = message) }
                 }
+            }
+
+            "typing" -> {
+                val isTyping = obj.optBoolean("isTyping", false)
+                _uiState.update { it.copy(isPartnerTyping = isTyping) }
             }
         }
     }
@@ -244,6 +349,8 @@ class ChatViewModel @Inject constructor(
             senderUsername = obj.optString("senderUsername").takeIf { it.isNotBlank() },
             mine = obj.optBoolean("mine", false),
             createdAt = obj.optString("createdAt").takeIf { it.isNotBlank() },
+            senderAvatarUrl = obj.optString("senderAvatarUrl").takeIf { it.isNotBlank() },
+            replyToId = obj.optString("replyToId").takeIf { it.isNotBlank() },
         )
     }
 
@@ -273,6 +380,8 @@ class ChatViewModel @Inject constructor(
 
     companion object {
         private const val RECONNECT_DELAY_MS = 3000L
+        const val SEND_TIMEOUT_MS = 5000L
+        private const val TYPING_DEBOUNCE_MS = 1000L
     }
 }
 

@@ -1,19 +1,13 @@
 package com.example.mobileproject.presentation.ui.navigation
 
 /**
- * Quick reference for using the new Navigation system
- * 
- * STRUCTURE BEFORE:
- * ❌ Navigation bar hardcoded in HomeScaffold.kt (200+ lines)
- * ❌ Items defined inline with Surface + Row manually built
- * ❌ No reusability - had to copy code to other screens
- * ❌ Difficult to maintain consistency
+ * Quick reference for the Navigation system
  *
- * STRUCTURE AFTER:
- * ✅ AppNavigationBar.kt - Reusable component
- * ✅ NavigationConfig.kt - Centralized configuration
- * ✅ HomeScaffold.kt - Clean, simplified code
- * ✅ Easy to sync across entire app
+ * CURRENT STRUCTURE:
+ * - AppNavigationBar.kt   — Reusable bottom navigation bar component
+ * - NavigationConfig.kt   — Centralized item definitions (route, icon, label, a11y)
+ * - HomeScaffold.kt       — Scaffold wrapper; hosts NavHost and calls AppNavigationBar
+ *                           Route constants live in the HomeRoutes object inside this file
  */
 
 /**

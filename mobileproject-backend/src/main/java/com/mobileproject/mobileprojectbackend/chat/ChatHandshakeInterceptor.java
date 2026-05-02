@@ -71,8 +71,10 @@ public class ChatHandshakeInterceptor implements HandshakeInterceptor {
 
         attributes.put("userId", user.getId());
         attributes.put("username", user.getUsername());
+        attributes.put("avatarUrl", user.getAvatarUrl());
         attributes.put("partnerUserId", partner.getId());
         attributes.put("partnerUsername", partner.getUsername());
+        attributes.put("partnerAvatarUrl", partner.getAvatarUrl());
         attributes.put("coupleId", coupleId);
         return true;
     }

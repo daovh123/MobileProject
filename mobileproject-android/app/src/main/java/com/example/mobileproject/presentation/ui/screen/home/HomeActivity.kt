@@ -9,6 +9,9 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
@@ -19,6 +22,8 @@ import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.ui.screen.app.compose.HomeRoutes
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +71,11 @@ class HomeActivity : ComponentActivity() {
         syncFcmToken(accessToken)
 
         setContent {
-            MobileProjectTheme {
+            val themeViewModel: ThemeModeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+
+            MobileProjectTheme(darkTheme = darkTheme) {
                 com.example.mobileproject.presentation.ui.screen.app.compose.HomeScaffold(
                     accessToken = accessToken,
                     apiService = apiService,

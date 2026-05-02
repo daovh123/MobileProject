@@ -20,12 +20,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
@@ -356,7 +356,7 @@ private fun MapShareScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.map_share_title),
-                        color = colorResource(R.color.md3_primary),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 navigationIcon = {
@@ -364,16 +364,16 @@ private fun MapShareScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_close_24),
                             contentDescription = null,
-                            tint = colorResource(R.color.md3_primary),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(R.color.md3_surface),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
         },
-        containerColor = colorResource(R.color.md3_surface_variant),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ) { innerPadding ->
         AndroidView(
             modifier = Modifier
