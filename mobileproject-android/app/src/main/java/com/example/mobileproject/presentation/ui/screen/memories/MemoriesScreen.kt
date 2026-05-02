@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.ui.res.colorResource
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -58,7 +59,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-<<<<<<< HEAD
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import android.util.Base64
@@ -70,9 +70,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import com.example.mobileproject.data.model.moment.MomentDto
 import com.example.mobileproject.presentation.viewmodel.MemoriesViewModel
-=======
-import androidx.hilt.navigation.compose.hiltViewModel
->>>>>>> feat/theme-mode-settings
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
 import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground

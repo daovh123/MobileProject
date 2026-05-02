@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mobileproject.R
@@ -122,7 +124,8 @@ fun HomeScaffold(
                 launchSingleTop = true
                 restoreState = true
             }
-            else -> (context as? Activity)?.finish()
+        } else {
+            (context as? Activity)?.finish()
         }
     }
 
@@ -256,6 +259,21 @@ fun HomeScaffold(
                             onLogout = {
                                 (context as? HomeActivity)?.logoutAndOpenLogin()
                             },
+                            onEditProfile = {
+                                navController.navigate(HomeRoutes.PROFILE_EDIT)
+                            },
+                            onOpenSettings = {
+                                navController.navigate(HomeRoutes.SETTINGS)
+                            },
+                        )
+                    }
+                    composable(HomeRoutes.PROFILE_EDIT) {
+                        com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen(
+                            accessToken = accessToken,
+                            onNavigateBack = { navController.popBackStack() },
+                            onLogout = {
+                                (context as? HomeActivity)?.logoutAndOpenLogin()
+                            }
                         )
                     }
                     composable(HomeRoutes.CHAT) {

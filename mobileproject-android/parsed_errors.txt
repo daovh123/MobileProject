@@ -1,0 +1,116 @@
+./gradlew : e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/
+    + CategoryInfo          : NotSpecified: (e: file:///E:/M...onSeeAllGoals'.:String) [], RemoteException
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:185:17 Unresolved reference 'NavHost'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:190:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:199:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:212:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:217:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:222:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:227:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:232:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:235:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:249:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:252:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+p/compose/HomeScaffold.kt:261:21 Unresolved reference 'composable'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/ap
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:414:36 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:975:26 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:987:25 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1010:17 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1011:37 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1020:25 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1021:45 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1027:32 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1040:29 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1048:29 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1058:29 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1089:26 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1102:25 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1111:33 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1126:33 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1139:42 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1140:44 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1181:26 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1193:25 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1201:29 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1212:79 Unresolved reference 'colorResource'.
+e: file:///E:/MobileProject/mobileproject-android/app/src/main/java/com/example/mobileproject/presentation/ui/screen/me
+mories/MemoriesScreen.kt:1231:49 Unresolved reference 'colorResource'.
