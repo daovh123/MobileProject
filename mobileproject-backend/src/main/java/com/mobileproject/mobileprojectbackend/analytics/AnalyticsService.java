@@ -111,26 +111,23 @@ public class AnalyticsService {
 
         Map<Integer, Long> dailySpending = new HashMap<>();
         for (Object rawResult : rawResults.getMappedResults()) {
-            if (!(rawResult instanceof Map<?, ?> result)) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = (Map<String, Object>) rawResult;
+            Object dateObj = result.get("date");
+            Number totalAmt = (Number) result.get("totalAmount");
+            if (dateObj == null || totalAmt == null) continue;
+            int day;
+            if (dateObj instanceof Number n) {
+                day = n.intValue();
+            } else if (dateObj instanceof String s) {
+                Instant instant = Instant.parse(s);
+                day = instant.atZone(ZoneId.of("UTC")).getDayOfMonth();
+            } else if (dateObj instanceof Date d) {
+                day = d.toInstant().atZone(ZoneId.of("UTC")).getDayOfMonth();
+            } else {
                 continue;
             }
-            Object dateObj = result.get("date");
-            if (dateObj instanceof Number) {
-                int day = ((Number) dateObj).intValue();
-                Number totalAmt = (Number) result.get("totalAmount");
-                dailySpending.put(day, totalAmt.longValue());
-            } else if (dateObj instanceof String) {
-                Instant instant = Instant.parse((String) dateObj);
-                ZonedDateTime zdt = instant.atZone(ZoneId.of("UTC"));
-                int day = zdt.getDayOfMonth();
-                Number totalAmt = (Number) result.get("totalAmount");
-                dailySpending.put(day, totalAmt.longValue());
-            } else if (dateObj instanceof Date) {
-                ZonedDateTime zdt = ((Date) dateObj).toInstant().atZone(ZoneId.of("UTC"));
-                int day = zdt.getDayOfMonth();
-                Number totalAmt = (Number) result.get("totalAmount");
-                dailySpending.put(day, totalAmt.longValue());
-            }
+            dailySpending.put(day, totalAmt.longValue());
         }
 
         int daysInMonth = LocalDate.of(year, month, 1).lengthOfMonth();
@@ -224,7 +221,7 @@ public class AnalyticsService {
                 Aggregation.sort(Sort.by(Sort.Direction.ASC, "month"))
         );
 
-        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
+        AggregationResults<Map<String, Object>> rawResults = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
                 Map.class
