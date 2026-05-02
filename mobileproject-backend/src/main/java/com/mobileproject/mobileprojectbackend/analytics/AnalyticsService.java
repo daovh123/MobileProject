@@ -221,7 +221,7 @@ public class AnalyticsService {
                 Aggregation.sort(Sort.by(Sort.Direction.ASC, "month"))
         );
 
-        AggregationResults<Map<String, Object>> rawResults = mongoTemplate.aggregate(
+        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
                 Map.class
@@ -230,7 +230,9 @@ public class AnalyticsService {
         System.out.println("Raw results count: " + (rawResults.getMappedResults() == null ? 0 : rawResults.getMappedResults().size()));
 
         Map<Integer, Map<String, Long>> monthlyData = new HashMap<>();
-        for (Map<String, Object> m : rawResults.getMappedResults()) {
+        for (Object rawResult : rawResults.getMappedResults()) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> m = (Map<String, Object>) rawResult;
             Integer monthObj = (Integer) m.get("month");
             String type = (String) m.get("type");
             Long total = ((Number) m.get("total")).longValue();
