@@ -20,6 +20,7 @@ fun BalanceSection(
     balance: Long,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -28,7 +29,7 @@ fun BalanceSection(
         Text(
             text = "TOTAL BALANCE",
             style = MaterialTheme.typography.labelMedium,
-            color = Color.Gray,
+            color = colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp
         )
         Text(
@@ -37,7 +38,7 @@ fun BalanceSection(
                 fontWeight = FontWeight.Black,
                 fontSize = 40.sp
             ),
-            color = Color(0xFF2D2D2D)
+            color = colorScheme.onSurface
         )
     }
 }

@@ -19,6 +19,7 @@ fun GoalSection(
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val sortedGoals = goals.sortedWith(
         compareBy<SavingGoal> { it.status == GoalStatus.ACHIEVED } // Achieved at bottom
             .thenBy { it.deadline ?: "9999-99-99" } // Near deadline first
@@ -38,10 +39,10 @@ fun GoalSection(
                 text = "Saving Goals",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF2D2D2D)
+                color = colorScheme.onSurface
             )
             TextButton(onClick = onSeeAllClick) {
-                Text(text = "See All", color = Color(0xFFFF8A80))
+                Text(text = "See All", color = colorScheme.primary)
             }
         }
 
@@ -52,7 +53,7 @@ fun GoalSection(
                 text = "No saving goals yet",
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

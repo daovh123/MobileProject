@@ -162,8 +162,8 @@ fun HomeScreen(
         // FAB to add Goal
         FloatingActionButton(
             onClick = { isAddGoalSheetVisible = true },
-            containerColor = Color(0xFFFF8A80),
-            contentColor = Color.White,
+            containerColor = colorScheme.primary,
+            contentColor = colorScheme.onPrimary,
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -198,10 +198,11 @@ private fun HomeContent(
     mapView: MapView?,
     accessToken: String
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF0F0))
+            .background(colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -257,10 +258,10 @@ private fun HomeContent(
                         text = "Saving Goals",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF4A3434)
+                        color = colorScheme.onSurface
                     )
                     TextButton(onClick = onSeeAllGoals) {
-                        Text(text = "See All", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold)
+                        Text(text = "See All", color = colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
                 }
                 
@@ -286,7 +287,7 @@ private fun HomeContent(
                         text = "Where is your partner?",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF4A3434),
+                        color = colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                     
@@ -296,14 +297,14 @@ private fun HomeContent(
                             .height(200.dp),
                         shape = RoundedCornerShape(32.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (mapView != null) {
                                 AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
                             } else {
-                                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5)), contentAlignment = Alignment.Center) {
-                                    Text("Locating...", color = Color.Gray)
+                                Box(modifier = Modifier.fillMaxSize().background(colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                                    Text("Locating...", color = colorScheme.onSurfaceVariant)
                                 }
                             }
 
@@ -481,10 +482,11 @@ private fun PairSection(
 
 @Composable
 fun SharedBalanceCard(balance: Long) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(35.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFF8A80)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.primary),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -493,7 +495,7 @@ fun SharedBalanceCard(balance: Long) {
             Text(
                 text = "SHARED BALANCE", 
                 style = MaterialTheme.typography.labelMedium, 
-                color = Color.White.copy(alpha = 0.9f),
+                color = colorScheme.onPrimary.copy(alpha = 0.9f),
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
@@ -502,7 +504,7 @@ fun SharedBalanceCard(balance: Long) {
                 text = formatSimpleAmount(balance),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Black,
-                color = Color.White
+                color = colorScheme.onPrimary
             )
         }
     }
@@ -514,7 +516,7 @@ fun DaysTogetherModernCard(daysTogether: Long) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(40.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -581,27 +583,29 @@ private fun AvatarChip(
 
 @Composable
 fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E1).copy(alpha = 0.7f)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFFF8A80), modifier = Modifier.size(24.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = title, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
+            Text(text = title, style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
         }
     }
 }
 
 @Composable
 private fun AppSurfaceCard(content: @Composable () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         content()

@@ -33,6 +33,7 @@ fun TopUpScreen(
     onNavigateBack: () -> Unit,
     viewModel: TopUpViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.isSuccess) {
@@ -42,13 +43,13 @@ fun TopUpScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFFFF0F0),
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Top Up", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80)) },
+                title = { Text("Top Up", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFFFF8A80))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -71,7 +72,7 @@ fun TopUpScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "How much to add?", color = Color.Gray)
+                Text(text = "How much to add?", color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Box(
@@ -92,7 +93,7 @@ fun TopUpScreen(
                         textStyle = TextStyle(
                             fontSize = fontSize,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF8A80).copy(alpha = 0.8f),
+                            color = colorScheme.primary.copy(alpha = 0.8f),
                             textAlign = TextAlign.Center
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -109,7 +110,7 @@ fun TopUpScreen(
                                         style = TextStyle(
                                             fontSize = fontSize,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFFF8A80).copy(alpha = 0.2f),
+                                            color = colorScheme.primary.copy(alpha = 0.2f),
                                             textAlign = TextAlign.Center
                                         )
                                     )
@@ -120,16 +121,16 @@ fun TopUpScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.width(120.dp).height(2.dp).background(Color(0xFFFFE4E1)))
+                Box(modifier = Modifier.width(120.dp).height(2.dp).background(colorScheme.surfaceVariant))
             }
 
             // Destination
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "DESTINATION", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                Text(text = "DESTINATION", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = Color(0xFFFFE4E1).copy(alpha = 0.6f),
+                    color = colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -137,27 +138,27 @@ fun TopUpScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = uiState.destination, fontWeight = FontWeight.Bold, color = Color(0xFF2D2D2D))
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color(0xFFFF8A80))
+                        Text(text = uiState.destination, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = colorScheme.primary)
                     }
                 }
             }
 
             // Note
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "GHI CHÚ (OPTIONAL)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                Text(text = "GHI CHÚ (OPTIONAL)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = uiState.note,
                     onValueChange = viewModel::onNoteChange,
-                    placeholder = { Text("What is this for?", color = Color.Gray.copy(alpha = 0.5f)) },
+                    placeholder = { Text("What is this for?", color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color(0xFFFFE4E1).copy(alpha = 0.4f),
-                        focusedContainerColor = Color(0xFFFFE4E1).copy(alpha = 0.4f),
+                        unfocusedContainerColor = colorScheme.surfaceVariant,
+                        focusedContainerColor = colorScheme.surfaceVariant,
                         unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = Color(0xFFFF8A80)
+                        focusedBorderColor = colorScheme.primary
                     )
                 )
             }
@@ -165,17 +166,17 @@ fun TopUpScreen(
             // Predicted Balance
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color(0xFFFFF5F5).copy(alpha = 0.8f),
+                color = colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier.padding(20.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "Số dư dự kiến sau khi nạp: ", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Số dư dự kiến sau khi nạp: ", color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     Text(
                         text = formatSimpleAmount(uiState.predictedBalance),
-                        color = Color(0xFFFF8A80),
+                        color = colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -190,11 +191,11 @@ fun TopUpScreen(
                     onClick = { viewModel.topUpNow() },
                     modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = RoundedCornerShape(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
                     if (uiState.isLoading) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        CircularProgressIndicator(color = colorScheme.onPrimary, modifier = Modifier.size(24.dp))
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, contentDescription = null)
@@ -204,7 +205,7 @@ fun TopUpScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = "SECURE ENCRYPTED TRANSACTION", style = MaterialTheme.typography.labelSmall, color = Color.Gray.copy(alpha = 0.6f))
+                Text(text = "SECURE ENCRYPTED TRANSACTION", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
             }
         }
     }

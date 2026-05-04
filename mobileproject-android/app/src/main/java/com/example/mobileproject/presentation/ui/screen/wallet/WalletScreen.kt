@@ -40,6 +40,7 @@ fun WalletScreen(
     viewModel: WalletViewModel = hiltViewModel(),
     savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val savingGoalState by savingGoalViewModel.uiState.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
@@ -55,12 +56,12 @@ fun WalletScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = Color(0xFFFFF0F0),
+            containerColor = colorScheme.background,
             floatingActionButton = { }
         ) { paddingValues ->
             if (uiState.isLoading && uiState.wallet == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFFF8A80))
+                    CircularProgressIndicator(color = colorScheme.primary)
                 }
             } else {
                 LazyColumn(
@@ -98,7 +99,7 @@ fun WalletScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(colorScheme.scrim.copy(alpha = 0.5f))
                     .clickable { isMonthPickerVisible = false }
             )
             Card(
@@ -108,11 +109,16 @@ fun WalletScreen(
                     .heightIn(max = 450.dp)
                     .padding(16.dp),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Select Month", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFFFF0F0))
+                    Text(
+                        text = "Select Month",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = colorScheme.surfaceVariant)
                     val months = DateFormatSymbols().months
                     LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
                         itemsIndexed(months.filter { it.isNotEmpty() }) { index, month ->
@@ -126,10 +132,17 @@ fun WalletScreen(
                                         isMonthPickerVisible = false
                                     }
                                     .padding(vertical = 12.dp, horizontal = 8.dp)
-                                    .background(if (isSelected) Color(0xFFFFF0F0) else Color.Transparent, RoundedCornerShape(8.dp)),
+                                    .background(
+                                        if (isSelected) colorScheme.surfaceVariant else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    ),
                                 contentAlignment = Alignment.CenterStart
                             ) {
-                                Text(text = month, color = if (isSelected) Color(0xFFFF8A80) else Color.DarkGray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                Text(
+                                    text = month,
+                                    color = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
                             }
                         }
                     }
@@ -141,7 +154,7 @@ fun WalletScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
+                    .background(colorScheme.scrim.copy(alpha = 0.4f))
                     .clickable { isFabExpanded = false }
             )
 
@@ -155,7 +168,7 @@ fun WalletScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
+                        color = colorScheme.surface,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             isContributeSheetVisible = true 
@@ -174,8 +187,8 @@ fun WalletScreen(
                             isFabExpanded = false
                             isContributeSheetVisible = true 
                         },
-                        containerColor = Color.White,
-                        contentColor = Color(0xFFFF8A80),
+                        containerColor = colorScheme.surface,
+                        contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -186,7 +199,7 @@ fun WalletScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
+                        color = colorScheme.surface,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             onNavigateToAddExpense() 
@@ -205,8 +218,8 @@ fun WalletScreen(
                             isFabExpanded = false
                             onNavigateToAddExpense() 
                         },
-                        containerColor = Color.White,
-                        contentColor = Color(0xFFFF8A80),
+                        containerColor = colorScheme.surface,
+                        contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -217,7 +230,7 @@ fun WalletScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
+                        color = colorScheme.surface,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             onNavigateToTopUp() 
@@ -236,8 +249,8 @@ fun WalletScreen(
                             isFabExpanded = false
                             onNavigateToTopUp() 
                         },
-                        containerColor = Color.White,
-                        contentColor = Color(0xFFFF8A80),
+                        containerColor = colorScheme.surface,
+                        contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
                     ) {
@@ -250,8 +263,8 @@ fun WalletScreen(
         val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f)
         FloatingActionButton(
             onClick = { isFabExpanded = !isFabExpanded },
-            containerColor = if (isFabExpanded) Color(0xFFFF8A80).copy(alpha = 0.8f) else Color(0xFFFF8A80),
-            contentColor = Color.White,
+            containerColor = if (isFabExpanded) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.primary,
+            contentColor = colorScheme.onPrimary,
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)

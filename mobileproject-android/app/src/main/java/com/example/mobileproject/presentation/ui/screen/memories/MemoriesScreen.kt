@@ -60,6 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import android.util.Base64
 import android.widget.Toast
@@ -365,7 +367,18 @@ private fun RecentMomentsCard(
                     val firstMoment = momentsList.firstOrNull()
                     if (firstMoment != null) {
                         AsyncImage(
-                            model = firstMoment.imageUrl,
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(firstMoment.imageUrl)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .networkCachePolicy(CachePolicy.ENABLED)
+                                .apply {
+                                    firstMoment.id?.let {
+                                        memoryCacheKey("moment_$it")
+                                        diskCacheKey("moment_$it")
+                                    }
+                                }
+                                .build(),
                             contentDescription = firstMoment.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -1210,7 +1223,18 @@ private fun AllMomentsBottomSheet(
                         ) {
                             Column {
                                 AsyncImage(
-                                    model = moment.imageUrl,
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(moment.imageUrl)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .networkCachePolicy(CachePolicy.ENABLED)
+                                        .apply {
+                                            moment.id?.let {
+                                                memoryCacheKey("moment_$it")
+                                                diskCacheKey("moment_$it")
+                                            }
+                                        }
+                                        .build(),
                                     contentDescription = moment.title,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxWidth().height(200.dp)

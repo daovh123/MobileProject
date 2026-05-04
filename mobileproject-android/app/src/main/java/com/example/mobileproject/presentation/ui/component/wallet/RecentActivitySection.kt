@@ -19,6 +19,7 @@ fun RecentActivitySection(
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -33,10 +34,10 @@ fun RecentActivitySection(
                 text = "Recent Activity",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF2D2D2D)
+                color = colorScheme.onSurface
             )
             TextButton(onClick = onSeeAllClick) {
-                Text(text = "See All", color = Color(0xFFFF8A80))
+                Text(text = "See All", color = colorScheme.primary)
             }
         }
 
@@ -47,7 +48,7 @@ fun RecentActivitySection(
                 text = "No recent activities",
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

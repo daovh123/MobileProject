@@ -29,6 +29,7 @@ fun MonthlySpendingCard(
     onMonthClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val monthName = DateFormatSymbols().months[selectedMonth - 1]
     var selectedCategoryIndex by remember { mutableStateOf(-1) }
 
@@ -37,7 +38,7 @@ fun MonthlySpendingCard(
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -50,18 +51,18 @@ fun MonthlySpendingCard(
                     text = "Monthly Spending",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2D2D2D)
+                    color = colorScheme.onSurface
                 )
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFF0F0),
+                    color = colorScheme.surfaceVariant,
                     modifier = Modifier.clickable { onMonthClick() }
                 ) {
                     Text(
                         text = monthName,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFFFF8A80),
+                        color = colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -77,7 +78,7 @@ fun MonthlySpendingCard(
                     Text(
                         text = "No transaction in this month",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             } else {
@@ -95,8 +96,12 @@ fun MonthlySpendingCard(
                             val strokeWidthSelected = 50f
                             var startAngle = -90f
                             val colors = listOf(
-                                Color(0xFFFF8A80), Color(0xFFFFAB91), Color(0xFFFFCCBC), 
-                                Color(0xFFFBE9E7), Color(0xFFE91E63), Color(0xFFF48FB1)
+                                colorScheme.primary,
+                                colorScheme.secondary,
+                                colorScheme.tertiary,
+                                colorScheme.primaryContainer,
+                                colorScheme.secondaryContainer,
+                                colorScheme.tertiaryContainer
                             )
                             
                             spendingList.forEachIndexed { index, item ->
@@ -123,16 +128,16 @@ fun MonthlySpendingCard(
                                     text = "$percentageText%",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFF8A80)
+                                    color = colorScheme.primary
                                 )
                                 Text(
                                     text = item.category.uppercase(),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.Gray,
+                                    color = colorScheme.onSurfaceVariant,
                                     maxLines = 1
                                 )
                             } else {
-                                Text(text = "TOTAL", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(text = "TOTAL", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
                                 val total = spendingList.sumOf { it.totalAmount }
                                 Text(
                                     text = formatSimpleAmount(total), 
@@ -154,8 +159,12 @@ fun MonthlySpendingCard(
                         itemsIndexed(spendingList) { index, item ->
                             val isSelected = index == selectedCategoryIndex
                             val colors = listOf(
-                                Color(0xFFFF8A80), Color(0xFFFFAB91), Color(0xFFFFCCBC), 
-                                Color(0xFFFBE9E7), Color(0xFFE91E63), Color(0xFFF48FB1)
+                                colorScheme.primary,
+                                colorScheme.secondary,
+                                colorScheme.tertiary,
+                                colorScheme.primaryContainer,
+                                colorScheme.secondaryContainer,
+                                colorScheme.tertiaryContainer
                             )
                             
                             Row(
@@ -166,7 +175,7 @@ fun MonthlySpendingCard(
                                         selectedCategoryIndex = if (isSelected) -1 else index 
                                     }
                                     .background(
-                                        if (isSelected) Color(0xFFFFF0F0) else Color.Transparent,
+                                        if (isSelected) colorScheme.surfaceVariant else Color.Transparent,
                                         RoundedCornerShape(8.dp)
                                     )
                                     .padding(4.dp)
@@ -181,7 +190,7 @@ fun MonthlySpendingCard(
                                     Text(
                                         text = item.category, 
                                         style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall, 
-                                        color = if (isSelected) Color.Black else Color.Gray,
+                                        color = if (isSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         maxLines = 1
                                     )
@@ -189,7 +198,7 @@ fun MonthlySpendingCard(
                                         Text(
                                             text = formatSimpleAmount(item.totalAmount),
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Color(0xFFFF8A80)
+                                            color = colorScheme.primary
                                         )
                                     }
                                 }

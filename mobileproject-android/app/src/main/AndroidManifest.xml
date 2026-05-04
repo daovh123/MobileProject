@@ -25,6 +25,10 @@
         android:theme="@style/Theme.MobileProject"
         android:usesCleartextTraffic="${cleartextTrafficPermitted}">
 
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.settings.SettingsActivity"
             android:exported="false" />

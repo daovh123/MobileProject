@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -52,6 +54,12 @@ import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
 
+private fun <T> SnapshotStateList<T>.replaceAll(transform: (T) -> T) {
+    for (i in indices) {
+        this[i] = transform(this[i])
+    }
+}
+
 object HomeRoutes {
     const val HOME: String = "home"
     const val WALLET: String = "wallet"
@@ -66,6 +74,14 @@ object HomeRoutes {
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
 }
+
+data class AppNotification(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val timestampLabel: String,
+    val isUnread: Boolean,
+)
 
 @Composable
 fun HomeScaffold(
@@ -88,6 +104,31 @@ fun HomeScaffold(
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     
     val snackbarHostState = remember { SnackbarHostState() }
+    val notifications = remember {
+        mutableStateListOf(
+            AppNotification(
+                id = "msg-1",
+                title = "Tin nhan moi",
+                subtitle = "Ban co 1 tin nhan moi tu doi tac.",
+                timestampLabel = "Vua xong",
+                isUnread = true,
+            ),
+            AppNotification(
+                id = "wallet-1",
+                title = "Chi tieu moi",
+                subtitle = "Vi chung vua ghi nhan mot khoan chi.",
+                timestampLabel = "5 phut truoc",
+                isUnread = true,
+            ),
+            AppNotification(
+                id = "memory-1",
+                title = "Ky niem vua luu",
+                subtitle = "Anh ky niem moi da san sang.",
+                timestampLabel = "Hom nay",
+                isUnread = false,
+            ),
+        )
+    }
     val colorScheme = MaterialTheme.colorScheme
     val bgBrush = remember(colorScheme) {
         Brush.verticalGradient(
@@ -140,6 +181,12 @@ fun HomeScaffold(
                     isProfileRoute = isProfileRoute,
                     isProfileEditRoute = isProfileEditRoute,
                     isMemoriesRoute = isMemoriesRoute,
+                    notifications = notifications,
+                    onMarkAllRead = {
+                        notifications.replaceAll { item ->
+                            if (item.isUnread) item.copy(isUnread = false) else item
+                        }
+                    },
                 )
             }
         },

@@ -1,6 +1,5 @@
 package com.mobileproject.mobileprojectbackend.moment;
 
-import com.mobileproject.mobileprojectbackend.storage.FirebaseStorageService;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -9,14 +8,16 @@ import java.util.List;
 @Service
 public class MomentService {
     private final MomentRepository momentRepository;
-    private final FirebaseStorageService firebaseStorageService;
 
-    public MomentService(MomentRepository momentRepository, FirebaseStorageService firebaseStorageService) {
+    public MomentService(MomentRepository momentRepository) {
         this.momentRepository = momentRepository;
-        this.firebaseStorageService = firebaseStorageService;
     }
 
     public Moment saveMoment(String coupleId, String title, String base64Image) {
+        if (base64Image == null || base64Image.isBlank()) {
+            throw new IllegalArgumentException("Image data is required");
+        }
+
         String cleanBase64 = base64Image;
         String contentType = "image/jpeg";
         if (base64Image.contains(",")) {
@@ -27,11 +28,10 @@ public class MomentService {
             else if (header.contains("image/webp")) contentType = "image/webp";
             else if (header.contains("image/gif")) contentType = "image/gif";
         }
-        
-        byte[] imageBytes = Base64.getDecoder().decode(cleanBase64);
-        String imageUrl = firebaseStorageService.uploadMomentImage(coupleId, imageBytes, contentType);
-        
-        Moment moment = new Moment(coupleId, title, imageUrl);
+
+        Base64.getDecoder().decode(cleanBase64);
+        String imageDataUri = "data:" + contentType + ";base64," + cleanBase64;
+        Moment moment = new Moment(coupleId, title == null ? "" : title, imageDataUri);
         return momentRepository.save(moment);
     }
     
