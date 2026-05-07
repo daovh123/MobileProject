@@ -56,6 +56,9 @@ fun HomeTopBar(
     isMemoriesRoute: Boolean,
     notifications: List<AppNotification>,
     onMarkAllRead: () -> Unit,
+    isHomeRoute: Boolean,
+    isWalletRoute: Boolean,
+    isExploreRoute: Boolean,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val unreadCount = notifications.count { it.isUnread }
@@ -85,6 +88,9 @@ fun HomeTopBar(
                     isProfileEditRoute -> stringResource(R.string.profile_edit_title)
                     isProfileRoute -> stringResource(R.string.profile_title)
                     isMemoriesRoute -> stringResource(R.string.memories_title)
+                    isHomeRoute -> stringResource(id = R.string.cd_home)
+                    isWalletRoute -> stringResource(id = R.string.cd_wallet)
+                    isExploreRoute -> stringResource(id = R.string.cd_explore)
                     else -> ""
                 },
                 style = MaterialTheme.typography.titleLarge,

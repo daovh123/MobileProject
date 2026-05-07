@@ -6,7 +6,7 @@
     <string name="login_username">Tài khoản</string>
     <string name="login_password">Mật khẩu</string>
     <string name="login_button">Đăng nhập</string>
-    <string name="login_welcome_title">Chào mừng trở lại, tình yêu</string>
+    <string name="login_welcome_title">Chào mừng trở lại</string>
     <string name="login_welcome_subtitle">Tiếp tục hành trình chung cùng You &amp; Me</string>
     <string name="login_email_label">Địa chỉ Email</string>
     <string name="login_email_hint">heart@together.com</string>

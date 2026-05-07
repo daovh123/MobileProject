@@ -53,6 +53,7 @@ import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
+import com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen
 
 private fun <T> SnapshotStateList<T>.replaceAll(transform: (T) -> T) {
     for (i in indices) {
@@ -182,11 +183,15 @@ fun HomeScaffold(
                     isProfileEditRoute = isProfileEditRoute,
                     isMemoriesRoute = isMemoriesRoute,
                     notifications = notifications,
+                    isHomeRoute = currentRoute == HomeRoutes.HOME,
+                    isWalletRoute = currentRoute == HomeRoutes.WALLET,
+                    isExploreRoute = currentRoute == HomeRoutes.EXPLORE,
                     onMarkAllRead = {
                         notifications.replaceAll { item ->
                             if (item.isUnread) item.copy(isUnread = false) else item
                         }
                     },
+
                 )
             }
         },
@@ -315,7 +320,7 @@ fun HomeScaffold(
                         )
                     }
                     composable(HomeRoutes.PROFILE_EDIT) {
-                        com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen(
+                        ProfileEditScreen(
                             accessToken = accessToken,
                             onNavigateBack = { navController.popBackStack() },
                             onLogout = {

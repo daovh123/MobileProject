@@ -277,58 +277,58 @@ private fun HomeContent(
                 }
             }
 
-            // 6. Map Section
-            if (state.paired) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Where is your partner?",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        shape = RoundedCornerShape(32.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            if (mapView != null) {
-                                AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
-                            } else {
-                                Box(modifier = Modifier.fillMaxSize().background(colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                                    Text("Locating...", color = colorScheme.onSurfaceVariant)
-                                }
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                SmallFloatingActionButton(
-                                    onClick = onCenterMe,
-                                    containerColor = colorScheme.surface,
-                                    contentColor = colorScheme.primary,
-                                ) {
-                                    Icon(
-                                        imageVector = LucideMapPin,
-                                        contentDescription = stringResource(R.string.map_share_me_marker),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+//            // 6. Map Section
+//            if (state.paired) {
+//                Column(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalArrangement = Arrangement.spacedBy(12.dp)
+//                ) {
+//                    Text(
+//                        text = "Where is your partner?",
+//                        style = MaterialTheme.typography.titleMedium,
+//                        fontWeight = FontWeight.ExtraBold,
+//                        color = colorScheme.onSurface,
+//                        modifier = Modifier.padding(horizontal = 8.dp)
+//                    )
+//
+//                    Card(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(200.dp),
+//                        shape = RoundedCornerShape(32.dp),
+//                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+//                        colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+//                    ) {
+//                        Box(modifier = Modifier.fillMaxSize()) {
+//                            if (mapView != null) {
+//                                AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+//                            } else {
+//                                Box(modifier = Modifier.fillMaxSize().background(colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+//                                    Text("Locating...", color = colorScheme.onSurfaceVariant)
+//                                }
+//                            }
+//
+//                            Column(
+//                                modifier = Modifier
+//                                    .align(Alignment.BottomEnd)
+//                                    .padding(12.dp),
+//                                verticalArrangement = Arrangement.spacedBy(10.dp),
+//                            ) {
+//                                SmallFloatingActionButton(
+//                                    onClick = onCenterMe,
+//                                    containerColor = colorScheme.surface,
+//                                    contentColor = colorScheme.primary,
+//                                ) {
+//                                    Icon(
+//                                        imageVector = LucideMapPin,
+//                                        contentDescription = stringResource(R.string.map_share_me_marker),
+//                                    )
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
             
             Spacer(modifier = Modifier.height(100.dp))
         }
