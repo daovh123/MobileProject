@@ -6,50 +6,20 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.ui.draw.clip
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
-import com.example.mobileproject.presentation.ui.icons.LucideBell
-import com.example.mobileproject.presentation.ui.icons.LucideClose
-import com.example.mobileproject.presentation.ui.icons.LucideUser
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -66,6 +36,8 @@ import com.example.mobileproject.presentation.ui.navigation.NavigationConfig
 import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
+import com.example.mobileproject.presentation.ui.screen.home.AddFutureGoalScreen
+import com.example.mobileproject.presentation.ui.screen.home.AddSavingGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
@@ -75,6 +47,9 @@ import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransaction
 import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
+import com.example.mobileproject.presentation.ui.icons.LucideBell
+import com.example.mobileproject.presentation.ui.icons.LucideClose
+import com.example.mobileproject.presentation.ui.icons.LucideUser
 
 object HomeRoutes {
     const val HOME: String = "home"
@@ -88,6 +63,8 @@ object HomeRoutes {
     const val TOP_UP: String = "top_up"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
+    const val ADD_SAVING_GOAL: String = "add_saving_goal"
+    const val ADD_FUTURE_GOAL: String = "add_future_goal"
 }
 
 @Composable
@@ -99,19 +76,22 @@ fun HomeScaffold(
 ) {
     val navController = rememberNavController()
 
-
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
     val currentItem = NavigationConfig.getItemByRoute(currentRoute)
         ?: NavigationConfig.navigationItems.first()
-    val isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES
-    val isProfileRoute = currentRoute == HomeRoutes.PROFILE
+        
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
     val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
+    val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
+    val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
+    
+    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || 
+                             isRecentTransactionsRoute || isSavingGoalsRoute || 
+                             isAddSavingGoalRoute || isAddFutureGoalRoute
     
     val snackbarHostState = remember { SnackbarHostState() }
     val colorScheme = MaterialTheme.colorScheme
@@ -161,7 +141,7 @@ fun HomeScaffold(
     val activity = context as? Activity
 
     BackHandler {
-        if (currentRoute == HomeRoutes.CHAT || currentRoute == HomeRoutes.ADD_EXPENSE || currentRoute == HomeRoutes.TOP_UP || currentRoute == HomeRoutes.RECENT_TRANSACTIONS || currentRoute == HomeRoutes.SAVING_GOALS) {
+        if (hideTopAndBottomBar) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
@@ -181,14 +161,13 @@ fun HomeScaffold(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            if (!isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
+            if (!hideTopAndBottomBar) {
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            text = when {
-                                isChatRoute -> stringResource(R.string.chat_title)
-                                isProfileRoute -> stringResource(R.string.profile_title)
-                                isMemoriesRoute -> stringResource(R.string.memories_title)
+                            text = when (currentRoute) {
+                                HomeRoutes.PROFILE -> stringResource(R.string.profile_title)
+                                HomeRoutes.MEMORIES -> stringResource(R.string.memories_title)
                                 else -> stringResource(currentItem.labelRes)
                             },
                             style = MaterialTheme.typography.titleLarge,
@@ -196,43 +175,31 @@ fun HomeScaffold(
                         )
                     },
                     navigationIcon = {
-                        if (isChatRoute) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    imageVector = LucideClose,
-                                    contentDescription = stringResource(R.string.cd_close),
-                                    tint = colorScheme.primary,
-                                )
-                            }
-                        } else {
-                            IconButton(
-                                onClick = {
-                                    navController.navigate(HomeRoutes.PROFILE) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
+                        IconButton(
+                            onClick = {
+                                navController.navigate(HomeRoutes.PROFILE) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
                                     }
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = LucideUser,
-                                    contentDescription = stringResource(R.string.cd_open_profile),
-                                    tint = colorScheme.primary,
-                                )
-                            }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = LucideUser,
+                                contentDescription = stringResource(R.string.cd_open_profile),
+                                tint = colorScheme.primary,
+                            )
                         }
                     },
                     actions = {
-                        if (!isChatRoute) {
-                            IconButton(onClick = { /* TODO: notifications */ }) {
-                                Icon(
-                                    imageVector = LucideBell,
-                                    contentDescription = stringResource(R.string.action_notifications),
-                                    tint = colorScheme.primary,
-                                )
-                            }
+                        IconButton(onClick = { /* TODO: notifications */ }) {
+                            Icon(
+                                imageVector = LucideBell,
+                                contentDescription = stringResource(R.string.action_notifications),
+                                tint = colorScheme.primary,
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -247,7 +214,7 @@ fun HomeScaffold(
             }
         },
         bottomBar = {
-            if (!isChatRoute && !isProfileRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
+            if (!hideTopAndBottomBar) {
                 AppNavigationBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
@@ -266,7 +233,8 @@ fun HomeScaffold(
     ) { innerPadding ->
         Box(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .padding(innerPadding),
         ) {
             Box(
                 modifier = Modifier
@@ -306,107 +274,91 @@ fun HomeScaffold(
                     ),
             )
 
-            Box(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
+            NavHost(
+                navController = navController,
+                startDestination = HomeRoutes.HOME,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                NavHost(
-                    navController = navController,
-                    startDestination = HomeRoutes.HOME,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    composable(HomeRoutes.HOME) {
-                        HomeScreen(
-                            accessToken = accessToken,
-                            apiService = apiService,
-                            onSeeAllGoals = {
-                                navController.navigate(HomeRoutes.SAVING_GOALS)
-                            }
-                        )
-                    }
-                    composable(HomeRoutes.WALLET) {
-                        WalletScreen(
-                            onNavigateToAddExpense = {
-                                navController.navigate(HomeRoutes.ADD_EXPENSE)
-                            },
-                            onNavigateToTopUp = {
-                                navController.navigate(HomeRoutes.TOP_UP)
-                            },
-                            onSeeAllTransactions = {
-                                navController.navigate(HomeRoutes.RECENT_TRANSACTIONS)
-                            }
-                        )
-                    }
-                    composable(HomeRoutes.ADD_EXPENSE) {
-                        AddExpenseScreen(
-                            onNavigateBack = { navController.popBackStack() }
-                        )
-                    }
-                    composable(HomeRoutes.TOP_UP) {
-                        TopUpScreen(
-                            onNavigateBack = { navController.popBackStack() }
-                        )
-                    }
-                    composable(HomeRoutes.RECENT_TRANSACTIONS) {
-                        RecentTransactionsScreen(
-                            onNavigateBack = { navController.popBackStack() }
-                        )
-                    }
-                    composable(HomeRoutes.SAVING_GOALS) {
-                        SavingGoalsScreen(
-                            onNavigateBack = { navController.popBackStack() }
-                        )
-                    }
-                    composable(HomeRoutes.EXPLORE) {
-                        ExploreRoute(accessToken = accessToken)
-                    }
-                    composable(HomeRoutes.MEMORIES) {
-                        MemoriesScreen(
-                            accessToken = accessToken,
-                            onNavigateToExplore = {
-                                navController.navigate(HomeRoutes.EXPLORE) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                        )
-                    }
-                    composable(HomeRoutes.SETTINGS) {
-                        SettingsScreen(accessToken = accessToken)
-                    }
-                    composable(HomeRoutes.PROFILE) {
-                        ProfileScreen(
-                            accessToken = accessToken,
-                            onNavigateBack = { navController.popBackStack() },
-                            onLogout = {
-                                (context as? HomeActivity)?.logoutAndOpenLogin()
-                            },
-                        )
-                    }
-                    composable(HomeRoutes.CHAT) {
-                        ChatScreen(accessToken = accessToken)
-                    }
-                }
-
-                DisposableEffect(navController) {
-                    onNavControllerReady(navController)
-                    onDispose { }
-                }
-
-                if (!isChatRoute && !isAddExpenseRoute && !isTopUpRoute && !isRecentTransactionsRoute && !isSavingGoalsRoute) {
-                    DraggableChatButton(
-                        onClick = {
-                            navController.navigate(HomeRoutes.CHAT) {
-                                launchSingleTop = true
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
+                composable(HomeRoutes.HOME) {
+                    HomeScreen(
+                        accessToken = accessToken,
+                        apiService = apiService,
+                        onSeeAllGoals = { navController.navigate(HomeRoutes.SAVING_GOALS) },
+                        onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
+                        onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) }
                     )
                 }
+                composable(HomeRoutes.WALLET) {
+                    WalletScreen(
+                        onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
+                        onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
+                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) }
+                    )
+                }
+                composable(HomeRoutes.ADD_EXPENSE) {
+                    AddExpenseScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.TOP_UP) {
+                    TopUpScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.RECENT_TRANSACTIONS) {
+                    RecentTransactionsScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.SAVING_GOALS) {
+                    SavingGoalsScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.ADD_SAVING_GOAL) {
+                    AddSavingGoalScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.ADD_FUTURE_GOAL) {
+                    AddFutureGoalScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.EXPLORE) {
+                    ExploreRoute(accessToken = accessToken)
+                }
+                composable(HomeRoutes.MEMORIES) {
+                    MemoriesScreen(
+                        accessToken = accessToken,
+                        onNavigateToExplore = {
+                            navController.navigate(HomeRoutes.EXPLORE) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+                composable(HomeRoutes.SETTINGS) {
+                    SettingsScreen(accessToken = accessToken)
+                }
+                composable(HomeRoutes.PROFILE) {
+                    ProfileScreen(
+                        accessToken = accessToken,
+                        onNavigateBack = { navController.popBackStack() },
+                        onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
+                    )
+                }
+                composable(HomeRoutes.CHAT) {
+                    ChatScreen(accessToken = accessToken)
+                }
+            }
+
+            DisposableEffect(navController) {
+                onNavControllerReady(navController)
+                onDispose { }
+            }
+
+            if (!hideTopAndBottomBar) {
+                DraggableChatButton(
+                    onClick = {
+                        navController.navigate(HomeRoutes.CHAT) {
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }

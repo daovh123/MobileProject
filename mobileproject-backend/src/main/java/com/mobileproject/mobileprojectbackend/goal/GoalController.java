@@ -5,6 +5,7 @@ import com.mobileproject.mobileprojectbackend.goal.dto.ContributeRequest;
 import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
 import com.mobileproject.mobileprojectbackend.goal.dto.CreateGoalRequest;
 import com.mobileproject.mobileprojectbackend.goal.dto.GoalResponse;
+import com.mobileproject.mobileprojectbackend.goal.dto.ToggleTaskResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,8 +27,10 @@ public class GoalController {
                 request.coupleId(),
                 request.name(),
                 request.category(),
+                request.type(),
                 request.targetAmount(),
-                request.deadline()
+                request.deadline(),
+                request.tasks()
         );
         if (response.success()) {
             return ResponseEntity.ok(response);
@@ -67,16 +70,28 @@ public class GoalController {
     }
 
     @GetMapping("/couple/{coupleId}")
-    public ResponseEntity<List<SavingGoal>> getGoalsByCouple(@PathVariable String coupleId) {
-        return ResponseEntity.ok(goalService.getGoalsByCouple(coupleId));
+    public ResponseEntity<List<Goal>> getGoalsByCouple(@PathVariable String coupleId) {
+        List<Goal> goals = goalService.getGoalsByCouple(coupleId);
+        return ResponseEntity.ok(goals);
     }
 
     @GetMapping("/{goalId}")
-    public ResponseEntity<SavingGoal> getGoalById(@PathVariable String goalId) {
-        SavingGoal goal = goalService.getGoalById(goalId);
+    public ResponseEntity<Goal> getGoalById(@PathVariable String goalId) {
+        Goal goal = goalService.getGoalById(goalId);
         if (goal == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(goal);
+    }
+
+    @PatchMapping("/{goalId}/tasks/{taskId}")
+    public ResponseEntity<ToggleTaskResponse> toggleTask(
+            @PathVariable String goalId,
+            @PathVariable String taskId) {
+        ToggleTaskResponse response = goalService.toggleTask(goalId, taskId);
+        if (response.success()) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.badRequest().body(response);
     }
 }

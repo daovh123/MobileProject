@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -46,7 +47,7 @@ public class TransactionControllerTest {
                 "note"
         );
         // Mock service response
-        when(transactionService.processIncome(anyString(), anyLong(), anyString(), anyString(), anyString()))
+        when(transactionService.processIncome(anyString(), anyLong(), anyString(), isNull(), anyString()))
                 .thenReturn(
                         new com.mobileproject.mobileprojectbackend.transaction.dto.TransactionResponse(
                                 true,

@@ -68,7 +68,14 @@ class SavingGoalViewModel @Inject constructor(
     fun createGoal(name: String, category: String, targetAmount: Long, deadline: String?) {
         val cid = getCoupleId() ?: return
         viewModelScope.launch {
-            createGoalUseCase(cid, name, category, targetAmount, deadline).collect { resource ->
+            createGoalUseCase(
+                coupleId = cid,
+                name = name,
+                category = category,
+                type = "SAVING",
+                targetAmount = targetAmount,
+                deadline = deadline
+            ).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> _uiState.update { it.copy(isLoading = true) }
                     is Resource.Success -> {

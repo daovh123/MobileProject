@@ -9,12 +9,11 @@ import com.example.mobileproject.data.model.auth.RegisterRequestDto
 import com.example.mobileproject.data.model.favorite.FavoriteListResponseDto
 import com.example.mobileproject.data.model.favorite.FavoriteToggleResponseDto
 import com.example.mobileproject.data.model.favorite.HistoryListResponseDto
-import com.example.mobileproject.data.model.goal.ContributeDirectRequest
-import com.example.mobileproject.data.model.goal.ContributeFromWalletRequest
+import com.example.mobileproject.data.model.goal.ContributeDirectRequestDto
+import com.example.mobileproject.data.model.goal.ContributeFromWalletRequestDto
 import com.example.mobileproject.data.model.goal.ContributionResponseDto
-import com.example.mobileproject.data.model.goal.CreateGoalRequest
-import com.example.mobileproject.data.model.goal.GoalResponseDto
-import com.example.mobileproject.data.model.goal.SavingGoalDto
+import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
+import com.example.mobileproject.data.model.goal.GoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
 import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
 import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
@@ -159,27 +158,27 @@ interface ApiService {
     @POST("api/v1/goals")
     suspend fun createGoal(
         @Header("Authorization") authorization: String,
-        @Body request: CreateGoalRequest,
-    ): Response<GoalResponseDto>
+        @Body request: CreateGoalRequestDto,
+    ): Response<GoalDto>
 
     @GET("api/v1/goals/couple/{coupleId}")
     suspend fun getGoalsByCouple(
         @Header("Authorization") authorization: String,
         @Path("coupleId") coupleId: String,
-    ): Response<List<SavingGoalDto>>
+    ): Response<List<GoalDto>>
 
     @POST("api/v1/goals/{goalId}/contribute-from-wallet")
     suspend fun contributeFromWallet(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeFromWalletRequest,
+        @Body request: ContributeFromWalletRequestDto,
     ): Response<ContributionResponseDto>
 
     @POST("api/v1/goals/{goalId}/contribute")
     suspend fun contributeToGoal(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeDirectRequest,
+        @Body request: ContributeDirectRequestDto,
     ): Response<ContributionResponseDto>
 
     // Avatar APIs

@@ -8,32 +8,39 @@ interface GoalApiService {
     @POST("api/v1/goals")
     suspend fun createGoal(
         @Header("Authorization") authorization: String,
-        @Body request: CreateGoalRequest
-    ): Response<GoalResponseDto>
+        @Body request: CreateGoalRequestDto
+    ): Response<GoalDto>
+
+    @PATCH("api/v1/goals/{goalId}/tasks/{taskId}")
+    suspend fun toggleTask(
+        @Header("Authorization") authorization: String,
+        @Path("goalId") goalId: String,
+        @Path("taskId") taskId: String
+    ): Response<ToggleTaskResponseDto>
 
     @GET("api/v1/goals/couple/{coupleId}")
     suspend fun getGoalsByCouple(
         @Header("Authorization") authorization: String,
         @Path("coupleId") coupleId: String
-    ): Response<List<SavingGoalDto>>
+    ): Response<List<GoalDto>>
+
+    @GET("api/v1/goals/{goalId}")
+    suspend fun getGoalById(
+        @Header("Authorization") authorization: String,
+        @Path("goalId") goalId: String
+    ): Response<GoalDto>
 
     @POST("api/v1/goals/{goalId}/contribute-from-wallet")
     suspend fun contributeFromWallet(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeFromWalletRequest
+        @Body request: ContributeFromWalletRequestDto
     ): Response<ContributionResponseDto>
 
     @POST("api/v1/goals/{goalId}/contribute")
     suspend fun contributeDirect(
         @Header("Authorization") authorization: String,
         @Path("goalId") goalId: String,
-        @Body request: ContributeDirectRequest
+        @Body request: ContributeDirectRequestDto
     ): Response<ContributionResponseDto>
-
-    @GET("api/v1/goals/{goalId}")
-    suspend fun getGoalById(
-        @Header("Authorization") authorization: String,
-        @Path("goalId") goalId: String
-    ): Response<GoalResponseDto>
 }

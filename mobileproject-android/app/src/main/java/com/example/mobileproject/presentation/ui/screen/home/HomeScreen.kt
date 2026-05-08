@@ -10,58 +10,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.mobileproject.presentation.ui.icons.LucideHeart
-import com.example.mobileproject.presentation.ui.icons.LucideMapPin
-import com.example.mobileproject.presentation.ui.icons.LucideUser
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
-import com.example.mobileproject.domain.entity.GoalStatus
-import com.example.mobileproject.domain.entity.SavingGoal
+import com.example.mobileproject.domain.entity.*
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
-import com.example.mobileproject.presentation.ui.screen.home.components.AddGoalBottomSheet
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
-import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
+import com.example.mobileproject.presentation.viewmodel.GoalViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import org.osmdroid.config.Configuration
@@ -80,21 +54,23 @@ private const val DEFAULT_ZOOM: Double = 17.0
 fun HomeScreen(
     accessToken: String,
     apiService: ApiService,
-    onSeeAllGoals: () -> Unit
+    onSeeAllGoals: () -> Unit,
+    onNavigateToAddSavingGoal: () -> Unit,
+    onNavigateToAddFutureGoal: () -> Unit
 ) {
     val context = LocalContext.current
 
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
-    val colorScheme = MaterialTheme.colorScheme
+    
     val walletViewModel: WalletViewModel = hiltViewModel()
     val walletState by walletViewModel.uiState.collectAsState()
 
-    val savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
-    val savingGoalState by savingGoalViewModel.uiState.collectAsState()
+    val goalViewModel: GoalViewModel = hiltViewModel()
+    val goalState by goalViewModel.uiState.collectAsState()
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
-    var isAddGoalSheetVisible by remember { mutableStateOf(false) }
+    var isFabExpanded by remember { mutableStateOf(false) }
 
     fun createMapViewIfNeeded(): MapView {
         mapView?.let { return it }
@@ -118,7 +94,7 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         walletViewModel.loadData()
-        savingGoalViewModel.loadGoals()
+        goalViewModel.loadGoals()
     }
 
     LaunchedEffect(coupleState.paired) {
@@ -129,12 +105,11 @@ fun HomeScreen(
         if (accessToken.isNotBlank()) coupleViewModel.loadStatus(accessToken)
     }
 
-    // Formula: shared balance = wallet balance + in-progress goals currentAmount - achieved goals currentAmount
-    val goals = savingGoalState.goals
+    val goals = goalState.goals
     val walletBalance = walletState.wallet?.balance ?: 0L
-    val inProgressAmount = goals.filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
-    val achievedAmount = goals.filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
-    val displaySharedBalance = walletBalance + inProgressAmount - achievedAmount
+    val inProgressSaving = goals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
+    val achievedSaving = goals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
+    val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
@@ -150,13 +125,96 @@ fun HomeScreen(
             },
             onCenterMe = { myMarker?.position?.let { centerOn(it) } },
             onSeeAllGoals = onSeeAllGoals,
+            onTaskToggle = { gid, tid -> goalViewModel.toggleTask(gid, tid) },
             mapView = mapView,
             accessToken = accessToken
         )
 
-        // FAB to add Goal
+        // FAB logic overlay
+        if (isFabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable { isFabExpanded = false }
+            )
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 100.dp, end = 24.dp),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Future Goal
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        modifier = Modifier.clickable { 
+                            isFabExpanded = false
+                            onNavigateToAddFutureGoal()
+                        }
+                    ) {
+                        Text(
+                            text = "Add Future Goal",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FloatingActionButton(
+                        onClick = { 
+                            isFabExpanded = false
+                            onNavigateToAddFutureGoal()
+                        },
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFFF8A80),
+                        shape = CircleShape,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Event, contentDescription = null)
+                    }
+                }
+
+                // Saving Goal
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        modifier = Modifier.clickable { 
+                            isFabExpanded = false
+                            onNavigateToAddSavingGoal()
+                        }
+                    ) {
+                        Text(
+                            text = "Add Saving Goal",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FloatingActionButton(
+                        onClick = { 
+                            isFabExpanded = false
+                            onNavigateToAddSavingGoal()
+                        },
+                        containerColor = Color.White,
+                        contentColor = Color(0xFFFF8A80),
+                        shape = CircleShape,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Savings, contentDescription = null)
+                    }
+                }
+            }
+        }
+
+        val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f)
         FloatingActionButton(
-            onClick = { isAddGoalSheetVisible = true },
+            onClick = { isFabExpanded = !isFabExpanded },
             containerColor = Color(0xFFFF8A80),
             contentColor = Color.White,
             shape = CircleShape,
@@ -165,17 +223,7 @@ fun HomeScreen(
                 .padding(24.dp)
                 .size(64.dp)
         ) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Goal", modifier = Modifier.size(32.dp))
-        }
-
-        if (isAddGoalSheetVisible) {
-            AddGoalBottomSheet(
-                onDismiss = { isAddGoalSheetVisible = false },
-                onConfirm = { name, target, category, deadline ->
-                    savingGoalViewModel.createGoal(name, category, target, deadline)
-                    isAddGoalSheetVisible = false
-                }
-            )
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Goal", modifier = Modifier.size(32.dp).rotate(rotation))
         }
     }
 }
@@ -186,10 +234,11 @@ private fun HomeContent(
     walletBalance: Long,
     actualWalletBalance: Long,
     daysTogether: Long,
-    goals: List<SavingGoal>,
+    goals: List<Goal>,
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
     onSeeAllGoals: () -> Unit,
+    onTaskToggle: (String, String) -> Unit,
     mapView: MapView?,
     accessToken: String
 ) {
@@ -206,72 +255,52 @@ private fun HomeContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Shared Balance Section (Calculated)
             SharedBalanceCard(balance = walletBalance)
 
-            // 2. Days Together Section
             DaysTogetherModernCard(daysTogether = daysTogether)
 
-            // 3. Mini Cards (Savings & Memories)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 MiniMetricCard(
                     title = "SAVINGS",
-                    value = formatSimpleAmount(actualWalletBalance), // "tiền tiết kiệm (total balanced ở phía ví)"
-                    icon = Icons.Default.TrendingUp,
+                    value = formatSimpleAmount(actualWalletBalance),
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     modifier = Modifier.weight(1f)
                 )
                 MiniMetricCard(
                     title = "MEMORIES",
                     value = "12 New",
-                    icon = Icons.Default.MenuBook,
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // 4. Goals Section
-            if (goals.isNotEmpty()) {
-                val sortedGoals = goals.sortedWith(
-                    compareBy<SavingGoal> { 
-                        when(it.status) {
-                            GoalStatus.IN_PROGRESS -> 0
-                            GoalStatus.FAILED -> 1
-                            GoalStatus.ACHIEVED -> 2
-                        }
-                    }.thenBy { it.deadline ?: "9999-12-31" }
-                )
+            // Future Goals
+            val futureGoals = goals.filterIsInstance<FutureGoal>()
+            GoalListSection(
+                title = "Future Goals",
+                goals = futureGoals,
+                onSeeAllClick = onSeeAllGoals,
+                onTaskToggle = onTaskToggle
+            )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Saving Goals",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF4A3434)
-                    )
-                    TextButton(onClick = onSeeAllGoals) {
-                        Text(text = "See All", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold)
-                    }
-                }
-                
-                sortedGoals.take(2).forEach { goal ->
-                    GoalCard(goal = goal)
-                }
-            }
+            // Saving Goals
+            val savingGoals = goals.filterIsInstance<SavingGoal>()
+            GoalListSection(
+                title = "Saving Goals",
+                goals = savingGoals,
+                onSeeAllClick = onSeeAllGoals,
+                onTaskToggle = onTaskToggle
+            )
 
-            // 5. Pair Section
             if (!state.paired) {
                 AppSurfaceCard {
                     PairSection(state = state, accessToken = accessToken, onPairNow = onPairNow)
                 }
             }
 
-            // 6. Map Section
             if (state.paired) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -286,9 +315,7 @@ private fun HomeContent(
                     )
                     
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
                         shape = RoundedCornerShape(32.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -296,28 +323,15 @@ private fun HomeContent(
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (mapView != null) {
                                 AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
-                            } else {
-                                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5)), contentAlignment = Alignment.Center) {
-                                    Text("Locating...", color = Color.Gray)
-                                }
                             }
-
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            SmallFloatingActionButton(
+                                onClick = onCenterMe,
+                                containerColor = Color.White,
+                                contentColor = Color(0xFFFF8A80),
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                                shape = CircleShape
                             ) {
-                                SmallFloatingActionButton(
-                                    onClick = onCenterMe,
-                                    containerColor = colorScheme.surface,
-                                    contentColor = colorScheme.primary,
-                                ) {
-                                    Icon(
-                                        imageVector = LucideMapPin,
-                                        contentDescription = stringResource(R.string.map_share_me_marker),
-                                    )
-                                }
+                                Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
                             }
                         }
                     }
@@ -330,146 +344,43 @@ private fun HomeContent(
 }
 
 @Composable
-private fun PairSection(
-    state: CoupleUiState,
-    accessToken: String,
-    onPairNow: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun GoalListSection(
+    title: String,
+    goals: List<Goal>,
+    onSeeAllClick: () -> Unit,
+    onTaskToggle: (String, String) -> Unit
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    val noSession = accessToken.isBlank()
+    if (goals.isEmpty()) return
 
-    val titleText: String
-    val subtitleText: String
-    val showConnectedCard: Boolean
-    val showPairButton: Boolean
-    val pairButtonEnabled: Boolean
-    val pairButtonText: String
-
-    if (noSession) {
-        titleText = stringResource(R.string.home_pair_title)
-        subtitleText = stringResource(R.string.home_pair_subtitle)
-        showConnectedCard = false
-        showPairButton = true
-        pairButtonEnabled = false
-        pairButtonText = stringResource(R.string.home_pair_button)
-    } else if (state.paired) {
-        titleText = stringResource(R.string.home_pair_connected_title)
-        subtitleText = stringResource(R.string.home_pair_connected_subtitle)
-        showConnectedCard = true
-        showPairButton = false
-        pairButtonEnabled = false
-        pairButtonText = stringResource(R.string.home_pair_button)
-    } else {
-        titleText = stringResource(R.string.home_pair_title)
-        subtitleText = stringResource(R.string.home_pair_subtitle)
-        showConnectedCard = false
-        showPairButton = true
-        pairButtonEnabled = !state.isLoading
-        pairButtonText = if (state.isLoading) {
-            stringResource(R.string.home_pair_loading_button)
-        } else {
-            stringResource(R.string.home_pair_button)
-        }
-    }
-
-    Column(modifier = modifier.padding(20.dp)) {
-        Text(
-            text = titleText,
-            color = colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = subtitleText,
-            color = colorScheme.onSurfaceVariant,
-        )
-
-        if (!noSession && !state.paired) {
-            val myCode = state.myCoupleCode
-            if (!myCode.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.home_pair_my_code, myCode),
-                    color = colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                )
+    val sorted = goals.sortedWith(
+        compareBy<Goal> { 
+            when(it.status) {
+                GoalStatus.IN_PROGRESS -> 0
+                GoalStatus.FAILED -> 1
+                GoalStatus.ACHIEVED -> 2
             }
-        }
+        }.thenBy { it.deadline ?: "9999-12-31" }
+    )
 
-        if (showConnectedCard) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(
-                colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
-                shape = RoundedCornerShape(14.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = stringResource(R.string.home_pair_connected_badge),
-                        color = colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val partnerDisplayName = state.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
-                    Text(
-                        text = stringResource(R.string.home_pair_partner_name, partnerDisplayName),
-                        color = colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.home_pair_connected_note),
-                        color = colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-
-        val hintText = when {
-            noSession -> stringResource(R.string.home_pair_session_expired)
-            !state.errorMessage.isNullOrBlank() -> state.errorMessage
-            state.outgoingStatus.equals("PENDING", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_pending)
-            state.outgoingStatus.equals("REJECTED", ignoreCase = true) -> stringResource(R.string.home_pair_outgoing_rejected)
-            !state.myCoupleCodeExpiresAt.isNullOrBlank() -> stringResource(
-                R.string.home_pair_code_expiry,
-                state.myCoupleCodeExpiresAt ?: "",
-            )
-            else -> null
-        }
-
-        if (!hintText.isNullOrBlank() && !state.paired) {
-            Spacer(modifier = Modifier.height(10.dp))
-            val hintColor = if (
-                noSession ||
-                !state.errorMessage.isNullOrBlank() ||
-                state.outgoingStatus.equals("REJECTED", ignoreCase = true)
-            ) {
-                colorScheme.primary
-            } else {
-                colorScheme.onSurfaceVariant
-            }
-
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = hintText,
-                color = hintColor,
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF4A3434)
             )
-        }
-
-        if (showPairButton) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onPairNow,
-                enabled = pairButtonEnabled,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(pairButtonText, fontWeight = FontWeight.Bold)
+            TextButton(onClick = onSeeAllClick) {
+                Text(text = "See All", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold)
             }
+        }
+        
+        sorted.take(2).forEach { goal ->
+            GoalCard(goal = goal, onTaskToggle = onTaskToggle)
         }
     }
 }
@@ -505,7 +416,6 @@ fun SharedBalanceCard(balance: Long) {
 
 @Composable
 fun DaysTogetherModernCard(daysTogether: Long) {
-    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(40.dp),
@@ -519,56 +429,27 @@ fun DaysTogetherModernCard(daysTogether: Long) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = daysTogether.toString(),
-                style = MaterialTheme.typography.displayMedium,
-                color = colorScheme.primary,
-                fontWeight = FontWeight.Bold,
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = Color(0xFFFF8A80),
+                modifier = Modifier.size(72.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(R.string.home_days_together_label),
-                color = colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
+                text = "$daysTogether Days Together",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF4A3434),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AvatarChip(containerColor = colorScheme.primaryContainer)
-                Spacer(modifier = Modifier.width(12.dp))
-                AvatarChip(
-                    containerColor = colorScheme.surfaceVariant,
-                    icon = LucideHeart,
-                    iconTint = colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                AvatarChip(containerColor = colorScheme.primaryContainer)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AvatarChip(
-    containerColor: Color,
-    icon: ImageVector = LucideUser,
-    iconTint: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-) {
-    Card(
-        modifier = Modifier,
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(12.dp)) {
-            Icon(
-                imageVector = icon,
-                contentDescription = stringResource(R.string.cd_avatar),
-                tint = iconTint,
-                modifier = Modifier.size(24.dp),
+            Text(
+                text = "Our shared journey continues",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -587,6 +468,22 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
             Spacer(modifier = Modifier.height(12.dp))
             Text(text = title, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
             Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
+        }
+    }
+}
+
+@Composable
+private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
+    Column(modifier = Modifier.padding(20.dp)) {
+        Text(text = "Connect with your partner", fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onPairNow,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("Pair Now", fontWeight = FontWeight.Bold)
         }
     }
 }

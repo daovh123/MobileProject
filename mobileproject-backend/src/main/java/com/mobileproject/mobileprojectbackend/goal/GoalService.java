@@ -1,45 +1,53 @@
 package com.mobileproject.mobileprojectbackend.goal;
 
-import java.util.List;
-
+import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
+import com.mobileproject.mobileprojectbackend.goal.dto.GoalResponse;
+import com.mobileproject.mobileprojectbackend.goal.dto.TaskDto;
+import com.mobileproject.mobileprojectbackend.goal.dto.ToggleTaskResponse;
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
-import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
-import com.mobileproject.mobileprojectbackend.goal.dto.ContributeResponse;
-import com.mobileproject.mobileprojectbackend.goal.dto.GoalResponse;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class GoalService {
 
     private final SavingGoalRepository savingGoalRepository;
+    private final FutureGoalRepository futureGoalRepository;
     private final GoalContributionRepository goalContributionRepository;
     private final CoupleInfoRepository coupleInfoRepository;
     private final MongoTemplate mongoTemplate;
 
     public GoalService(SavingGoalRepository savingGoalRepository,
+                       FutureGoalRepository futureGoalRepository,
                        GoalContributionRepository goalContributionRepository,
                        CoupleInfoRepository coupleInfoRepository,
                        MongoTemplate mongoTemplate) {
         this.savingGoalRepository = savingGoalRepository;
+        this.futureGoalRepository = futureGoalRepository;
         this.goalContributionRepository = goalContributionRepository;
         this.coupleInfoRepository = coupleInfoRepository;
         this.mongoTemplate = mongoTemplate;
     }
 
-    public GoalResponse createGoal(String coupleId, String name, String category, Long targetAmount, java.time.Instant deadline) {
+    public GoalResponse createGoal(String coupleId, String name, String category,
+                                    GoalType type, Long targetAmount,
+                                    Instant deadline, List<TaskDto> tasks) {
         if (coupleId == null || coupleId.isBlank()) {
             return GoalResponse.failure("Couple ID is required");
         }
         if (name == null || name.isBlank()) {
             return GoalResponse.failure("Goal name is required");
-        }
-        if (targetAmount == null || targetAmount <= 0) {
-            return GoalResponse.failure("Target amount must be positive");
         }
 
         CoupleInfo coupleInfo = coupleInfoRepository.findById(coupleId).orElse(null);
@@ -47,19 +55,57 @@ public class GoalService {
             return GoalResponse.failure("Couple not found");
         }
 
-        SavingGoal goal = new SavingGoal(coupleId, name, category, targetAmount, deadline);
-        SavingGoal savedGoal = savingGoalRepository.save(goal);
+        if (type == GoalType.SAVING) {
+            if (targetAmount == null || targetAmount <= 0) {
+                return GoalResponse.failure("Target amount must be positive for saving goals");
+            }
+            SavingGoal goal = new SavingGoal(coupleId, name, category, targetAmount, deadline);
+            SavingGoal savedGoal = savingGoalRepository.save(goal);
+            return GoalResponse.success(
+                    savedGoal.getId(),
+                    savedGoal.getName(),
+                    savedGoal.getCategory(),
+                    savedGoal.getType(),
+                    savedGoal.getStatus(),
+                    savedGoal.getDeadline(),
+                    savedGoal.getCreatedAt(),
+                    savedGoal.getTargetAmount(),
+                    savedGoal.getCurrentAmount(),
+                    null,
+                    null
+            );
+        } else if (type == GoalType.FUTURE) {
+            List<Task> taskEntities = tasks != null ? tasks.stream()
+                    .map(taskDto -> new Task(
+                            taskDto.taskId() != null ? taskDto.taskId() : UUID.randomUUID().toString(),
+                            taskDto.content(),
+                            false
+                    ))
+                    .collect(Collectors.toList()) : new ArrayList<>();
 
-        return GoalResponse.success(
-                savedGoal.getId(),
-                savedGoal.getName(),
-                savedGoal.getCategory(),
-                savedGoal.getTargetAmount(),
-                savedGoal.getCurrentAmount(),
-                savedGoal.getStatus(),
-                savedGoal.getDeadline(),
-                savedGoal.getCreatedAt()
-        );
+            FutureGoal goal = new FutureGoal(coupleId, name, category, taskEntities, deadline);
+            FutureGoal savedGoal = futureGoalRepository.save(goal);
+
+            List<TaskDto> savedTaskDtos = savedGoal.getTasks().stream()
+                    .map(task -> new TaskDto(task.getTaskId(), task.getContent(), task.isCompleted()))
+                    .collect(Collectors.toList());
+
+            return GoalResponse.success(
+                    savedGoal.getId(),
+                    savedGoal.getName(),
+                    savedGoal.getCategory(),
+                    savedGoal.getType(),
+                    savedGoal.getStatus(),
+                    savedGoal.getDeadline(),
+                    savedGoal.getCreatedAt(),
+                    null,
+                    null,
+                    savedGoal.getProgress(),
+                    savedTaskDtos
+            );
+        }
+
+        return GoalResponse.failure("Invalid goal type");
     }
 
     public ContributeResponse contributeFromWallet(String goalId, Long amount, String note) {
@@ -72,7 +118,7 @@ public class GoalService {
 
         SavingGoal goal = savingGoalRepository.findById(goalId).orElse(null);
         if (goal == null) {
-            return ContributeResponse.failure("Goal not found");
+            return ContributeResponse.failure("Goal not found or not a saving goal");
         }
 
         if (goal.getStatus() != GoalStatus.IN_PROGRESS) {
@@ -105,7 +151,6 @@ public class GoalService {
             updatedGoal.setStatus(GoalStatus.ACHIEVED);
         }
 
-        // For wallet contribution, we don't have a specific contributor, so we can set contributorId as null or a default like "WALLET"
         GoalContribution contribution = new GoalContribution(goalId, amount, null, note);
         GoalContribution savedContribution = goalContributionRepository.save(contribution);
 
@@ -130,7 +175,7 @@ public class GoalService {
 
         SavingGoal goal = savingGoalRepository.findById(goalId).orElse(null);
         if (goal == null) {
-            return ContributeResponse.failure("Goal not found");
+            return ContributeResponse.failure("Goal not found or not a saving goal");
         }
 
         if (goal.getStatus() != GoalStatus.IN_PROGRESS) {
@@ -150,10 +195,10 @@ public class GoalService {
         }
 
         GoalContribution contribution = new GoalContribution(goalId, amount, contributorId, note);
-        GoalContribution savedContribution = goalContributionRepository.save(contribution);
+        goalContributionRepository.save(contribution);
 
         return ContributeResponse.success(
-                savedContribution.getId(),
+                contribution.getId(),
                 goalId,
                 amount,
                 updatedGoal.getCurrentAmount(),
@@ -161,14 +206,54 @@ public class GoalService {
         );
     }
 
-    public List<SavingGoal> getGoalsByCouple(String coupleId) {
+    public List<Goal> getGoalsByCouple(String coupleId) {
         if (coupleId == null || coupleId.isBlank()) {
             return List.of();
         }
-        return savingGoalRepository.findByCoupleId(coupleId);
+        List<SavingGoal> savingGoals = savingGoalRepository.findByCoupleId(coupleId);
+        List<FutureGoal> futureGoals = futureGoalRepository.findByCoupleId(coupleId);
+
+        return Stream.concat(
+                savingGoals.stream().map(goal -> (Goal) goal),
+                futureGoals.stream().map(goal -> (Goal) goal)
+        ).collect(Collectors.toList());
     }
 
-    public SavingGoal getGoalById(String goalId) {
+    public Goal getGoalById(String goalId) {
+        return savingGoalRepository.findById(goalId)
+                .map(goal -> (Goal) goal)
+                .orElse(futureGoalRepository.findById(goalId).orElse(null));
+    }
+
+    public SavingGoal getSavingGoalById(String goalId) {
         return savingGoalRepository.findById(goalId).orElse(null);
+    }
+
+    public FutureGoal getFutureGoalById(String goalId) {
+        return futureGoalRepository.findById(goalId).orElse(null);
+    }
+
+    public ToggleTaskResponse toggleTask(String goalId, String taskId) {
+        if (goalId == null || goalId.isBlank()) {
+            return ToggleTaskResponse.failure("Goal ID is required");
+        }
+        if (taskId == null || taskId.isBlank()) {
+            return ToggleTaskResponse.failure("Task ID is required");
+        }
+
+        FutureGoal goal = futureGoalRepository.findById(goalId).orElse(null);
+        if (goal == null) {
+            return ToggleTaskResponse.failure("Future goal not found");
+        }
+
+        Task task = goal.findTaskById(taskId);
+        if (task == null) {
+            return ToggleTaskResponse.failure("Task not found in this goal");
+        }
+
+        goal.toggleTaskCompletion(taskId);
+        FutureGoal savedGoal = futureGoalRepository.save(goal);
+
+        return ToggleTaskResponse.success(goalId, taskId, savedGoal.getProgress());
     }
 }
