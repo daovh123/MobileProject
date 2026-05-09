@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,17 +49,17 @@ fun MonthlyCalendarCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.memories_calendar_month_title, month, year),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.md3_primary),
+                color = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -77,7 +76,7 @@ fun MonthlyCalendarCard(
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelMedium,
-                            color = colorResource(R.color.md3_on_surface_variant),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -121,9 +120,9 @@ private fun CalendarDayCell(
 ) {
     Surface(
         modifier = modifier.height(56.dp),
-        color = colorResource(R.color.md3_surface_variant),
+        color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         if (dayOfMonth == null) {
             Box(modifier = Modifier.fillMaxSize())
@@ -139,7 +138,7 @@ private fun CalendarDayCell(
                 text = dayOfMonth.toString(),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.md3_on_surface),
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             val noteText = noteLines
@@ -153,7 +152,7 @@ private fun CalendarDayCell(
                 Text(
                     text = noteText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = colorResource(R.color.md3_primary),
+                    color = MaterialTheme.colorScheme.primary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )

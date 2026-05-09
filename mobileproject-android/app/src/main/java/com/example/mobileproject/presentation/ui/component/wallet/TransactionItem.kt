@@ -29,6 +29,7 @@ import java.util.*
 @Composable
 fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyList()) {
     var showDetail by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
     val isExpense = transaction.type == TransactionType.EXPENSE
     
     // Tìm goal liên quan dựa trên Note (thường backend trả về note có chứa goal name hoặc goalId)
@@ -64,7 +65,7 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
             .fillMaxWidth()
             .clickable { showDetail = true },
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -81,13 +82,13 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color(0xFFFFF0F0), CircleShape),
+                        .background(colorScheme.surfaceVariant, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = categoryInfo.icon,
                         contentDescription = null,
-                        tint = Color(0xFFFF8A80),
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -97,21 +98,21 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
                         text = displayTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2D2D2D),
+                        color = colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = dateDisplay,
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
             
             Text(
                 text = "${if (isExpense) "-" else "+"}${formatSimpleAmount(transaction.amount)}",
-                color = if (isExpense) Color(0xFFE57373) else Color(0xFF81C784),
+                color = if (isExpense) colorScheme.error else colorScheme.tertiary,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
@@ -139,6 +140,7 @@ fun TransactionDetailDialog(
     categoryInfo: ExpenseCategory,
     onDismiss: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val isExpense = transaction.type == TransactionType.EXPENSE
     
     val timeDisplay = try {
@@ -151,7 +153,7 @@ fun TransactionDetailDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(32.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(
@@ -163,9 +165,9 @@ fun TransactionDetailDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Transaction Detail", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = "Transaction Detail", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.Default.Close, contentDescription = null, tint = colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -174,10 +176,10 @@ fun TransactionDetailDialog(
                 Box(
                     modifier = Modifier
                         .size(64.dp)
-                        .background(Color(0xFFFFF0F0), CircleShape),
+                        .background(colorScheme.surfaceVariant, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(categoryInfo.icon, contentDescription = null, tint = Color(0xFFFF8A80), modifier = Modifier.size(32.dp))
+                    Icon(categoryInfo.icon, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -186,17 +188,17 @@ fun TransactionDetailDialog(
                     text = "${if (isExpense) "-" else "+"}${formatSimpleAmount(transaction.amount)}",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Black,
-                    color = if (isExpense) Color(0xFFE57373) else Color(0xFF81C784)
+                    color = if (isExpense) colorScheme.error else colorScheme.tertiary
                 )
                 
                 Text(
                     text = transaction.type.name,
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color.Gray
+                    color = colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = Color(0xFFFFF0F0))
+                HorizontalDivider(color = colorScheme.surfaceVariant)
                 Spacer(modifier = Modifier.height(24.dp))
 
                 DetailRow("Activity", displayTitle)
@@ -210,7 +212,7 @@ fun TransactionDetailDialog(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Text("Close", fontWeight = FontWeight.Bold)
@@ -222,14 +224,15 @@ fun TransactionDetailDialog(
 
 @Composable
 private fun DetailRow(label: String, value: String) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+        Text(text = label, color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Text(
             text = value, 
-            color = Color(0xFF2D2D2D), 
+            color = colorScheme.onSurface, 
             fontWeight = FontWeight.Bold, 
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.End,

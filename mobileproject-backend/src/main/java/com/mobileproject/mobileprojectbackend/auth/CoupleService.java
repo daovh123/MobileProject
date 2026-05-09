@@ -194,7 +194,7 @@ public class CoupleService {
             CoupleInfo coupleInfo = getOrCreateCoupleInfo(user.getId(), partner.getId());
 
             if (coupleInfo != null) {
-                coupleId = coupleInfo.getIdCouple();
+                coupleId = coupleInfo.getId();
                 startAt = coupleInfo.getStartAt();
                 DaysTogetherResult daysTogetherResult = computeDaysTogether(startAt);
                 if (daysTogetherResult != null) {

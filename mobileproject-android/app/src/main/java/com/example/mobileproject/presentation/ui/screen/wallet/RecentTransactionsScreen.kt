@@ -22,6 +22,7 @@ fun RecentTransactionsScreen(
     onNavigateBack: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -29,7 +30,7 @@ fun RecentTransactionsScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFFFF0F0),
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -37,7 +38,7 @@ fun RecentTransactionsScreen(
                         text = "All Transactions",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF8A80)
+                        color = colorScheme.primary
                     )
                 },
                 navigationIcon = {
@@ -45,7 +46,7 @@ fun RecentTransactionsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFFFF8A80)
+                            tint = colorScheme.primary
                         )
                     }
                 },
@@ -57,13 +58,13 @@ fun RecentTransactionsScreen(
             if (uiState.isLoading && uiState.allTransactions.isEmpty()) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFFFF8A80)
+                    color = colorScheme.primary
                 )
             } else if (uiState.allTransactions.isEmpty()) {
                 Text(
                     text = "No transactions found",
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color.Gray
+                    color = colorScheme.onSurfaceVariant
                 )
             } else {
                 LazyColumn(

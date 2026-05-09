@@ -2,15 +2,7 @@ package com.example.mobileproject.data.repository
 
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.ApiService
-import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
-import com.example.mobileproject.data.model.onboarding.AvatarFrameRequestDto
-import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
-import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
-import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
-import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
-import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
-import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
-import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
+import com.example.mobileproject.data.model.onboarding.*
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
@@ -41,23 +33,17 @@ class OnboardingRepositoryImpl @Inject constructor(
     ): ProfileResult {
         val response = apiService.upsertProfile(
             authorizationHeader(token),
-            ProfileUpsertRequestDto(
-                fullName = fullName,
-                nickName = nickName,
-                birthDate = birthDate,
-                gender = gender,
-                email = email,
-            )
+            ProfileUpsertRequestDto(fullName, nickName, birthDate, gender, email)
         )
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Luu ho so that bai")
-        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected)
+        val body = response.requireSuccessfulBody(gson, "Luu ho so that bai")
+        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected, null)
         return body.toProfileResult()
     }
 
     override suspend fun getProfile(token: String): ProfileResult {
         val response = apiService.getProfile(authorizationHeader(token))
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Khong the lay ho so")
-        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected)
+        val body = response.requireSuccessfulBody(gson, "Khong the lay ho so")
+        authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected, null)
         return body.toProfileResult()
     }
 
@@ -65,6 +51,7 @@ class OnboardingRepositoryImpl @Inject constructor(
         val response = apiService.getCoupleStatus(authorizationHeader(token))
         val body = response.body()
         if (response.isSuccessful && body != null) {
+            // Cập nhật Store quan trọng để HomeScreen có dữ liệu coupleId
             authSessionStore.updateProfileState(
                 profileCompleted = body.profileCompleted,
                 coupleConnected = body.paired,
@@ -90,7 +77,8 @@ class OnboardingRepositoryImpl @Inject constructor(
                 anniversaryTomorrow = body.anniversaryTomorrow ?: false
             )
         } else {
-            throw Exception(response.message())
+            val errorMsg = response.parseErrorMessage(gson) ?: "Khong the tai trang thai ghep doi"
+            throw Exception(errorMsg)
         }
     }
 
@@ -106,7 +94,7 @@ class OnboardingRepositoryImpl @Inject constructor(
                 recipientUsername = body.recipientUsername
             )
         } else {
-            throw Exception(response.message())
+            throw Exception(response.parseErrorMessage(gson) ?: "Gui yeu cau that bai")
         }
     }
 
@@ -116,8 +104,7 @@ class OnboardingRepositoryImpl @Inject constructor(
             requestId,
             CoupleRequestDecisionRequestDto(accept = accept),
         )
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Xu ly yeu cau ghep doi that bai")
-
+        val body = response.requireSuccessfulBody(gson, "Xu ly yeu cau that bai")
         return CoupleRequestAction(
             requestId = body.requestId,
             status = body.status,
@@ -131,131 +118,56 @@ class OnboardingRepositoryImpl @Inject constructor(
         val requestBody = imageBytes.toRequestBody(contentType.toMediaType())
         val filePart = MultipartBody.Part.createFormData("file", "avatar", requestBody)
         val response = apiService.uploadAvatar(authorizationHeader(token), filePart)
-        val body = response.requireAvatarUploadBody(gson, defaultFailureMessage = "Tai anh that bai")
-        return body.avatarUrl ?: throw IllegalStateException("Khong nhan duoc URL anh dai dien")
+        val body = response.requireAvatarUploadBody(gson, "Tai anh that bai")
+        return body.avatarUrl ?: ""
     }
 
     override suspend fun getAvatarFrames(token: String): List<AvatarFrame> {
         val response = apiService.getAvatarFrames(authorizationHeader(token))
-        val body = response.requireFramesBody(gson, defaultFailureMessage = "Khong the lay danh sach khung anh")
-        return body.map { it.toDomain() }
+        return response.body()?.map { it.toDomain() } ?: emptyList()
     }
 
     override suspend fun setAvatarFrame(token: String, frameId: String?): ProfileResult {
-        val response = apiService.setAvatarFrame(
-            authorizationHeader(token),
-            AvatarFrameRequestDto(frameId = frameId),
-        )
-        val body = response.requireSuccessfulBody(gson, defaultFailureMessage = "Dat khung anh that bai")
+        val response = apiService.setAvatarFrame(authorizationHeader(token), AvatarFrameRequestDto(frameId))
+        val body = response.requireSuccessfulBody(gson, "Dat khung anh that bai")
         return body.toProfileResult()
     }
 }
 
 private fun ProfileResponseDto.toProfileResult() = ProfileResult(
-    username = username,
-    fullName = fullName,
-    nickName = nickName,
-    birthDate = birthDate,
-    gender = gender,
-    profileCompleted = profileCompleted,
-    coupleConnected = coupleConnected,
-    email = email,
-    avatarUrl = avatarUrl,
-    avatarFrameId = avatarFrameId,
+    username = username, fullName = fullName, nickName = nickName, birthDate = birthDate,
+    gender = gender, profileCompleted = profileCompleted, coupleConnected = coupleConnected,
+    email = email, avatarUrl = avatarUrl, avatarFrameId = avatarFrameId,
 )
 
-private fun AvatarFrameDto.toDomain() = AvatarFrame(
-    id = id,
-    name = name,
-    resourceKey = resourceKey,
-    color = color,
-)
+private fun AvatarFrameDto.toDomain() = AvatarFrame(id, name, resourceKey, color)
 
-private fun Response<ProfileResponseDto>.requireSuccessfulBody(
-    gson: Gson,
-    defaultFailureMessage: String,
-): ProfileResponseDto {
-    val bodyOrError = body()
-    val message = when {
-        bodyOrError != null -> bodyOrError.message
-        else -> parseErrorMessage(gson) ?: defaultFailureMessage
-    }.ifBlank { defaultFailureMessage }
-
-    if (!isSuccessful || bodyOrError == null || !bodyOrError.success) {
-        throw IllegalStateException(message)
-    }
-
-    return bodyOrError
+private fun Response<ProfileResponseDto>.requireSuccessfulBody(gson: Gson, defaultMsg: String): ProfileResponseDto {
+    val b = body()
+    if (!isSuccessful || b == null || !b.success) throw IllegalStateException(b?.message ?: parseErrorMessage(gson) ?: defaultMsg)
+    return b
 }
 
-private fun Response<CoupleStatusResponseDto>.requireSuccessfulBody(
-    gson: Gson,
-    defaultFailureMessage: String,
-): CoupleStatusResponseDto {
-    val bodyOrError = body()
-    val message = when {
-        bodyOrError != null -> bodyOrError.message
-        else -> parseErrorMessage(gson) ?: defaultFailureMessage
-    }.ifBlank { defaultFailureMessage }
-
-    if (!isSuccessful || bodyOrError == null || !bodyOrError.success) {
-        throw IllegalStateException(message)
-    }
-
-    return bodyOrError
+private fun Response<CoupleStatusResponseDto>.requireSuccessfulBody(gson: Gson, defaultMsg: String): CoupleStatusResponseDto {
+    val b = body()
+    if (!isSuccessful || b == null || !b.success) throw IllegalStateException(b?.message ?: parseErrorMessage(gson) ?: defaultMsg)
+    return b
 }
 
-private fun Response<CoupleRequestActionResponseDto>.requireSuccessfulBody(
-    gson: Gson,
-    defaultFailureMessage: String,
-): CoupleRequestActionResponseDto {
-    val bodyOrError = body()
-    val message = when {
-        bodyOrError != null -> bodyOrError.message
-        else -> parseErrorMessage(gson) ?: defaultFailureMessage
-    }.ifBlank { defaultFailureMessage }
-
-    if (!isSuccessful || bodyOrError == null || !bodyOrError.success) {
-        throw IllegalStateException(message)
-    }
-
-    return bodyOrError
+private fun Response<CoupleRequestActionResponseDto>.requireSuccessfulBody(gson: Gson, defaultMsg: String): CoupleRequestActionResponseDto {
+    val b = body()
+    if (!isSuccessful || b == null || !b.success) throw IllegalStateException(b?.message ?: parseErrorMessage(gson) ?: defaultMsg)
+    return b
 }
 
-private fun Response<AvatarUploadResponseDto>.requireAvatarUploadBody(
-    gson: Gson,
-    defaultFailureMessage: String,
-): AvatarUploadResponseDto {
-    val bodyOrError = body()
-    val message = when {
-        bodyOrError != null -> bodyOrError.message
-        else -> parseErrorMessage(gson) ?: defaultFailureMessage
-    }.ifBlank { defaultFailureMessage }
-
-    if (!isSuccessful || bodyOrError == null || !bodyOrError.success) {
-        throw IllegalStateException(message)
-    }
-
-    return bodyOrError
+private fun Response<AvatarUploadResponseDto>.requireAvatarUploadBody(gson: Gson, defaultMsg: String): AvatarUploadResponseDto {
+    val b = body()
+    if (!isSuccessful || b == null || !b.success) throw IllegalStateException(b?.message ?: parseErrorMessage(gson) ?: defaultMsg)
+    return b
 }
 
-private fun Response<List<AvatarFrameDto>>.requireFramesBody(
-    gson: Gson,
-    defaultFailureMessage: String,
-): List<AvatarFrameDto> {
-    if (!isSuccessful || body() == null) {
-        val errorMsg = parseErrorMessage(gson) ?: defaultFailureMessage
-        throw IllegalStateException(errorMsg)
-    }
-    return body()!!
+private fun Response<*>.parseErrorMessage(gson: Gson): String? {
+    return runCatching { errorBody()?.charStream()?.use { gson.fromJson(it, ErrorMessageDto::class.java).message } }.getOrNull()
 }
 
 class ErrorMessageDto(val message: String)
-
-private fun Response<*>.parseErrorMessage(gson: Gson): String? {
-    return runCatching {
-        errorBody()?.charStream()?.use { reader ->
-            gson.fromJson(reader, ErrorMessageDto::class.java).message
-        }
-    }.getOrNull()
-}

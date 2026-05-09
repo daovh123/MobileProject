@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.ui.res.colorResource
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -38,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -49,7 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.colorResource
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import android.util.Base64
 import android.widget.Toast
@@ -69,12 +73,12 @@ import androidx.compose.runtime.collectAsState
 import com.example.mobileproject.data.model.moment.MomentDto
 import com.example.mobileproject.presentation.viewmodel.MemoriesViewModel
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.seed.SeedDataProvider
 import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
 import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
 import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
 import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
 import com.example.mobileproject.presentation.ui.components.calendar.VietnamCalendarNotes
+import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import kotlinx.coroutines.delay
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
@@ -91,6 +95,9 @@ fun MemoriesScreen(
     val momentsList by viewModel.moments.collectAsState()
     val error by viewModel.error.collectAsState()
     val context = LocalContext.current
+
+    val coupleViewModel: CoupleViewModel = hiltViewModel()
+    val coupleState by coupleViewModel.uiState.collectAsState()
 
     LaunchedEffect(error) {
         error?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
@@ -113,19 +120,25 @@ fun MemoriesScreen(
     var showUpcomingDialog by rememberSaveable { mutableStateOf(false) }
     val upcomingEvents = remember { getUpcomingEvents() }
     val upcomingEvent = upcomingEvents.firstOrNull()
-    val eventTitle = upcomingEvent?.title ?: SeedDataProvider.memoryEventTitle
+    val eventTitle = upcomingEvent?.title ?: stringResource(R.string.memories_event_title_placeholder)
     val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     val eventSubtitle = upcomingEvent?.let {
         val daysText = if (it.daysLeft == 0) "Hôm nay" else "Còn ${it.daysLeft} ngày"
         val dateText = sdf.format(it.date.time)
         "$daysText - $dateText"
-    } ?: SeedDataProvider.memoryEventSubtitle
+    } ?: stringResource(R.string.memories_event_subtitle_placeholder)
 
     var showCreateMomentDialog by rememberSaveable { mutableStateOf(false) }
     var showAllMomentsDialog by rememberSaveable { mutableStateOf(false) }
     val todayEventTitle = upcomingEvents.firstOrNull { it.daysLeft == 0 }?.title
 
     var revealIndex by rememberSaveable { mutableStateOf(0) }
+
+    LaunchedEffect(accessToken) {
+        if (accessToken.isNotBlank()) {
+            coupleViewModel.loadStatus(accessToken)
+        }
+    }
 
     LaunchedEffect(Unit) {
         delay(70)
@@ -138,6 +151,13 @@ fun MemoriesScreen(
         revealIndex = 4
     }
 
+    val partnerName = coupleState.partnerUsername ?: stringResource(R.string.memories_partner_unknown)
+    val partnerMeta = if (coupleState.startAt != null) {
+        stringResource(R.string.memories_connected_since, coupleState.startAt.orEmpty())
+    } else {
+        stringResource(R.string.memories_partner_meta_unknown)
+    }
+
     AppScreenBackground {
         LazyColumn(
             modifier = Modifier
@@ -148,10 +168,7 @@ fun MemoriesScreen(
             item {
                 AppSectionHeader(
                     title = stringResource(R.string.memories_header_title),
-                    subtitle = stringResource(
-                        R.string.memories_greeting,
-                        SeedDataProvider.memoryGreetingName,
-                    ),
+                    subtitle = stringResource(R.string.memories_tagline),
                 )
             }
 
@@ -160,7 +177,7 @@ fun MemoriesScreen(
                     AppSurfaceCard {
                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                             RecentMomentsCard(
-                                mainLabel = SeedDataProvider.memoryMoments.getOrNull(0).orEmpty(),
+                                mainLabel = stringResource(R.string.memories_recent_moments),
                                 momentsList = momentsList,
                                 onCreateMoment = { showCreateMomentDialog = true },
                                 onViewAll = { showAllMomentsDialog = true },
@@ -189,17 +206,19 @@ fun MemoriesScreen(
                 }
             }
 
-            item {
-                AnimatedVisibility(visible = revealIndex >= 3) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        AppSectionHeader(
-                            title = stringResource(R.string.memories_partner_info),
-                            subtitle = stringResource(R.string.memories_tagline),
-                        )
-                        PartnerInfoCard(
-                            partnerName = SeedDataProvider.partnerName,
-                            partnerMeta = SeedDataProvider.partnerMeta,
-                        )
+            if (coupleState.paired) {
+                item {
+                    AnimatedVisibility(visible = revealIndex >= 3) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            AppSectionHeader(
+                                title = stringResource(R.string.memories_partner_info),
+                                subtitle = stringResource(R.string.memories_tagline),
+                            )
+                            PartnerInfoCard(
+                                partnerName = partnerName,
+                                partnerMeta = partnerMeta,
+                            )
+                        }
                     }
                 }
             }
@@ -252,7 +271,7 @@ private fun MemoriesHeader(
             text = stringResource(R.string.memories_greeting, name),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.md3_primary),
+            color = MaterialTheme.colorScheme.primary,
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -261,7 +280,7 @@ private fun MemoriesHeader(
             text = stringResource(R.string.memories_header_title),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.md3_on_surface),
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -269,7 +288,7 @@ private fun MemoriesHeader(
         Text(
             text = stringResource(R.string.memories_tagline),
             style = MaterialTheme.typography.bodyLarge,
-            color = colorResource(R.color.md3_on_surface_variant),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -282,25 +301,25 @@ private fun RecentMomentsCard(
     onViewAll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val mainPhotoC1 = colorResource(R.color.md3_tertiary_container)
-    val mainPhotoC2 = colorResource(R.color.md3_secondary_container)
-    val mainPhotoC3 = colorResource(R.color.md3_primary_container)
+    val mainPhotoC1 = MaterialTheme.colorScheme.tertiaryContainer
+    val mainPhotoC2 = MaterialTheme.colorScheme.secondaryContainer
+    val mainPhotoC3 = MaterialTheme.colorScheme.primaryContainer
     val mainPhotoBrush = remember(mainPhotoC1, mainPhotoC2, mainPhotoC3) {
         Brush.linearGradient(listOf(mainPhotoC1, mainPhotoC2, mainPhotoC3))
     }
 
-    val secondaryPhotoC1 = colorResource(R.color.md3_secondary_container)
-    val secondaryPhotoC2 = colorResource(R.color.md3_tertiary_container)
+    val secondaryPhotoC1 = MaterialTheme.colorScheme.secondaryContainer
+    val secondaryPhotoC2 = MaterialTheme.colorScheme.tertiaryContainer
     val secondaryPhotoBrush = remember(secondaryPhotoC1, secondaryPhotoC2) {
         Brush.linearGradient(listOf(secondaryPhotoC1, secondaryPhotoC2))
     }
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(28.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -311,20 +330,20 @@ private fun RecentMomentsCard(
                     text = stringResource(R.string.memories_recent_moments),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.md3_on_surface),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = colorResource(R.color.md3_primary_container),
-                    border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_memories_24),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_primary),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .padding(8.dp)
                             .size(18.dp),
@@ -348,7 +367,18 @@ private fun RecentMomentsCard(
                     val firstMoment = momentsList.firstOrNull()
                     if (firstMoment != null) {
                         AsyncImage(
-                            model = firstMoment.imageUrl,
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(firstMoment.imageUrl)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .networkCachePolicy(CachePolicy.ENABLED)
+                                .apply {
+                                    firstMoment.id?.let {
+                                        memoryCacheKey("moment_$it")
+                                        diskCacheKey("moment_$it")
+                                    }
+                                }
+                                .build(),
                             contentDescription = firstMoment.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -357,8 +387,8 @@ private fun RecentMomentsCard(
                     val label = firstMoment?.title ?: mainLabel.ifBlank { stringResource(R.string.memories_recent_moments) }
                     Surface(
                         shape = RoundedCornerShape(999.dp),
-                        color = colorResource(R.color.md3_primary_container).copy(alpha = 0.85f),
-                        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(12.dp),
@@ -368,7 +398,7 @@ private fun RecentMomentsCard(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.md3_primary),
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -402,15 +432,15 @@ private fun RecentMomentsCard(
                             .fillMaxWidth()
                             .height(82.dp),
                         shape = RoundedCornerShape(24.dp),
-                        color = colorResource(R.color.md3_primary_container),
-                        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = "+${momentsList.size}",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = colorResource(R.color.md3_primary),
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -465,7 +495,7 @@ private fun getUpcomingEvents(): List<UpcomingEvent> {
     // 2. Partner Birthday
     try {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val dob = sdf.parse(SeedDataProvider.partnerBirthDate)
+        val dob = sdf.parse("2000-01-01")
         if (dob != null) {
             val dobCal = Calendar.getInstance().apply { time = dob }
             val nextBirthday = Calendar.getInstance()
@@ -480,7 +510,7 @@ private fun getUpcomingEvents(): List<UpcomingEvent> {
                 nextBirthday.add(Calendar.YEAR, 1)
             }
             val daysLeft = ((nextBirthday.timeInMillis - now.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-            events.add(UpcomingEvent("Sinh nhật ${SeedDataProvider.partnerName}", nextBirthday, daysLeft, R.drawable.ic_avatar_24))
+            events.add(UpcomingEvent("Sinh nhật ${"Partner"}", nextBirthday, daysLeft, R.drawable.ic_avatar_24))
         }
     } catch (e: Exception) {
         e.printStackTrace()
@@ -489,7 +519,7 @@ private fun getUpcomingEvents(): List<UpcomingEvent> {
     // 3. Milestones
     try {
         val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-        val startDate = sdf.parse(SeedDataProvider.relationshipStartedDate)
+        val startDate = sdf.parse("January 01, 2024")
         if (startDate != null) {
             val startCal = Calendar.getInstance().apply { 
                 time = startDate 
@@ -562,10 +592,10 @@ private fun MemoriesCalendarCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(28.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -575,14 +605,14 @@ private fun MemoriesCalendarCard(
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(14.dp),
-                    color = colorResource(R.color.md3_primary_container),
-                    border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(R.drawable.ic_memories_24),
                             contentDescription = null,
-                            tint = colorResource(R.color.md3_primary),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -594,7 +624,7 @@ private fun MemoriesCalendarCard(
                     text = monthTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.md3_on_surface),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -602,7 +632,7 @@ private fun MemoriesCalendarCard(
                 Icon(
                     painter = painterResource(R.drawable.ic_expand_more_24),
                     contentDescription = null,
-                    tint = colorResource(R.color.md3_on_surface_variant),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(22.dp)
                         .rotate(-90f),
@@ -621,7 +651,7 @@ private fun MemoriesCalendarCard(
                             text = label,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.md3_on_surface_variant),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -652,8 +682,8 @@ private fun MemoriesCalendarCard(
                 onClick = onUpcomingClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = colorResource(R.color.md3_surface_variant),
-                border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -662,14 +692,14 @@ private fun MemoriesCalendarCard(
                     Surface(
                         modifier = Modifier.size(44.dp),
                         shape = CircleShape,
-                        color = colorResource(R.color.md3_primary_container),
-                        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_memories_24),
                                 contentDescription = null,
-                                tint = colorResource(R.color.md3_primary),
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -682,7 +712,7 @@ private fun MemoriesCalendarCard(
                             text = eventTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = colorResource(R.color.md3_on_surface),
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -690,7 +720,7 @@ private fun MemoriesCalendarCard(
                         Text(
                             text = eventSubtitle,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colorResource(R.color.md3_on_surface_variant),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -711,9 +741,9 @@ private fun MemoriesCalendarDayCell(
     val inMonth = cell.inCurrentMonth
 
     val numberColor = when {
-        isSelected -> colorResource(R.color.md3_on_primary)
-        inMonth -> colorResource(R.color.md3_on_surface)
-        else -> colorResource(R.color.md3_on_surface_variant).copy(alpha = 0.45f)
+        isSelected -> MaterialTheme.colorScheme.onPrimary
+        inMonth -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
     }
 
     val noteText = cell.note.orEmpty()
@@ -734,7 +764,7 @@ private fun MemoriesCalendarDayCell(
                     Box(
                         modifier = Modifier
                             .size(6.dp)
-                            .background(colorResource(R.color.md3_primary), CircleShape),
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
                     )
                 }
             }
@@ -743,7 +773,7 @@ private fun MemoriesCalendarDayCell(
                 Surface(
                     modifier = Modifier.size(34.dp),
                     shape = CircleShape,
-                    color = colorResource(R.color.md3_primary),
+                    color = MaterialTheme.colorScheme.primary,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -769,7 +799,7 @@ private fun MemoriesCalendarDayCell(
                 Text(
                     text = noteText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = colorResource(R.color.md3_primary),
+                    color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -788,10 +818,10 @@ private fun PartnerInfoCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(28.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -800,14 +830,14 @@ private fun PartnerInfoCard(
             Surface(
                 modifier = Modifier.size(58.dp),
                 shape = CircleShape,
-                color = colorResource(R.color.md3_surface_variant),
-                border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painter = painterResource(R.drawable.ic_avatar_24),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_primary),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp),
                     )
                 }
@@ -820,21 +850,21 @@ private fun PartnerInfoCard(
                     text = partnerName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.md3_on_surface),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(R.drawable.ic_heart_filled),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_primary),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = partnerMeta,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colorResource(R.color.md3_on_surface_variant),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -844,14 +874,14 @@ private fun PartnerInfoCard(
             Surface(
                 modifier = Modifier.size(42.dp),
                 shape = CircleShape,
-                color = colorResource(R.color.md3_surface_variant),
-                border = BorderStroke(1.dp, colorResource(R.color.md3_outline)),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 IconButton(onClick = { }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_tune_24),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_on_surface_variant),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -1193,7 +1223,18 @@ private fun AllMomentsBottomSheet(
                         ) {
                             Column {
                                 AsyncImage(
-                                    model = moment.imageUrl,
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(moment.imageUrl)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .networkCachePolicy(CachePolicy.ENABLED)
+                                        .apply {
+                                            moment.id?.let {
+                                                memoryCacheKey("moment_$it")
+                                                diskCacheKey("moment_$it")
+                                            }
+                                        }
+                                        .build(),
                                     contentDescription = moment.title,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxWidth().height(200.dp)

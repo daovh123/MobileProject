@@ -2,7 +2,6 @@ package com.example.mobileproject.presentation.ui.screen.app.compose
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -45,11 +44,14 @@ import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.FutureGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideUser
+import com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen
+import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
 
 object HomeRoutes {
     const val HOME: String = "home"
@@ -58,6 +60,7 @@ object HomeRoutes {
     const val MEMORIES: String = "memories"
     const val SETTINGS: String = "settings"
     const val PROFILE: String = "profile"
+    const val PROFILE_EDIT: String = "profile_edit"
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
@@ -65,10 +68,19 @@ object HomeRoutes {
     const val SAVING_GOALS: String = "saving_goals"
     const val ADD_SAVING_GOAL: String = "add_saving_goal"
     const val ADD_FUTURE_GOAL: String = "add_future_goal"
+    const val FUTURE_GOALS: String = "future_goals"
 }
 
-@Composable
+data class AppNotification(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val timestampLabel: String,
+    val isUnread: Boolean,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun HomeScaffold(
     accessToken: String,
     apiService: ApiService,
@@ -80,7 +92,7 @@ fun HomeScaffold(
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
     val currentItem = NavigationConfig.getItemByRoute(currentRoute)
         ?: NavigationConfig.navigationItems.first()
-        
+    val isProfileEditRoute = currentRoute == HomeRoutes.PROFILE_EDIT
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
@@ -88,78 +100,81 @@ fun HomeScaffold(
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
     val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
+    val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
     
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || 
                              isRecentTransactionsRoute || isSavingGoalsRoute || 
-                             isAddSavingGoalRoute || isAddFutureGoalRoute
+                             isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute || isProfileEditRoute
     
     val snackbarHostState = remember { SnackbarHostState() }
-    val colorScheme = MaterialTheme.colorScheme
-    val scaffoldBackgroundBrush = remember(colorScheme) {
-        Brush.verticalGradient(
-            colors = listOf(
-                colorScheme.surface,
-                colorScheme.surfaceVariant.copy(alpha = 0.95f),
-                colorScheme.background,
+    val notifications = remember {
+        mutableStateListOf(
+            AppNotification(
+                id = "msg-1",
+                title = "Tin nhan moi",
+                subtitle = "Ban co 1 tin nhan moi tu doi tac.",
+                timestampLabel = "Vua xong",
+                isUnread = true,
+            ),
+            AppNotification(
+                id = "wallet-1",
+                title = "Chi tieu moi",
+                subtitle = "Vi chung vua ghi nhan mot khoan chi.",
+                timestampLabel = "5 phut truoc",
+                isUnread = true,
+            ),
+            AppNotification(
+                id = "memory-1",
+                title = "Ky niem vua luu",
+                subtitle = "Anh ky niem moi da san sang.",
+                timestampLabel = "Hom nay",
+                isUnread = false,
             ),
         )
     }
+    val colorScheme = MaterialTheme.colorScheme
+    val bgBrush = remember(colorScheme) {
+        Brush.verticalGradient(
+            listOf(colorScheme.surface, colorScheme.surfaceVariant.copy(alpha = 0.95f), colorScheme.background),
+        )
+    }
 
-    val openChatActionLabel = stringResource(R.string.chat_in_app_open_action)
-    val inAppMessageFormat = stringResource(R.string.chat_in_app_message_format)
-
-    LaunchedEffect(navController, openChatActionLabel, inAppMessageFormat) {
+    val openLabel = stringResource(R.string.chat_in_app_open_action)
+    val msgFormat = stringResource(R.string.chat_in_app_message_format)
+    LaunchedEffect(navController, openLabel, msgFormat) {
         ChatInAppNotificationBus.events.collect { event ->
-            val preview = event.messageText.trim().replace(Regex("\\s+"), " ")
-            val message = inAppMessageFormat.format(
+            val msg = msgFormat.format(
                 event.senderUsername.ifBlank { event.conversationTitle },
-                preview,
+                event.messageText.trim().replace(Regex("\\s+"), " "),
             )
-
-            val snackbarResult = snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = openChatActionLabel,
-                withDismissAction = true,
-            )
-
-            if (snackbarResult == SnackbarResult.ActionPerformed) {
-                navController.navigate(HomeRoutes.CHAT) {
-                    launchSingleTop = true
-                }
+            if (snackbarHostState.showSnackbar(msg, openLabel, withDismissAction = true) == SnackbarResult.ActionPerformed) {
+                navController.navigate(HomeRoutes.CHAT) { launchSingleTop = true }
             }
         }
     }
 
     DisposableEffect(isChatRoute) {
         ChatNotificationGate.setChatRouteActive(isChatRoute)
-        onDispose {
-            ChatNotificationGate.setChatRouteActive(false)
-        }
+        onDispose { ChatNotificationGate.setChatRouteActive(false) }
     }
 
     val context = LocalContext.current
-    val activity = context as? Activity
-
     BackHandler {
         if (hideTopAndBottomBar) {
             navController.popBackStack()
         } else if (currentRoute != HomeRoutes.HOME) {
             navController.navigate(HomeRoutes.HOME) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
         } else {
-            activity?.finish()
+            (context as? Activity)?.finish()
         }
     }
 
     Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (!hideTopAndBottomBar) {
                 CenterAlignedTopAppBar(
@@ -239,37 +254,21 @@ fun HomeScaffold(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(scaffoldBackgroundBrush),
+                    .background(bgBrush),
             )
 
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(280.dp)
-                    .offset(x = 90.dp, y = (-110).dp)
+                modifier = Modifier.align(Alignment.TopEnd).size(280.dp).offset(x = 90.dp, y = (-110).dp)
                     .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                colorScheme.primary.copy(alpha = 0.18f),
-                                Color.Transparent,
-                            ),
-                        ),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.primary.copy(alpha = 0.18f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )
 
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .size(300.dp)
-                    .offset(x = (-110).dp, y = 130.dp)
+                modifier = Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-110).dp, y = 130.dp)
                     .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                colorScheme.tertiary.copy(alpha = 0.14f),
-                                Color.Transparent,
-                            ),
-                        ),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.14f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )
@@ -284,8 +283,19 @@ fun HomeScaffold(
                         accessToken = accessToken,
                         apiService = apiService,
                         onSeeAllGoals = { navController.navigate(HomeRoutes.SAVING_GOALS) },
+                        onSeeAllFutureGoals = { navController.navigate(HomeRoutes.FUTURE_GOALS) },
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) }
+                    )
+                }
+                
+                composable(HomeRoutes.PROFILE_EDIT) {
+                    ProfileEditScreen(
+                        accessToken = accessToken,
+                        onNavigateBack = { navController.popBackStack() },
+                        onLogout = {
+                            (context as? HomeActivity)?.logoutAndOpenLogin()
+                        }
                     )
                 }
                 composable(HomeRoutes.WALLET) {
@@ -306,6 +316,9 @@ fun HomeScaffold(
                 }
                 composable(HomeRoutes.SAVING_GOALS) {
                     SavingGoalsScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable(HomeRoutes.FUTURE_GOALS) {
+                    FutureGoalsScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.ADD_SAVING_GOAL) {
                     AddSavingGoalScreen(onNavigateBack = { navController.popBackStack() })
@@ -338,6 +351,12 @@ fun HomeScaffold(
                         accessToken = accessToken,
                         onNavigateBack = { navController.popBackStack() },
                         onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
+                        onEditProfile = {
+                            navController.navigate(HomeRoutes.PROFILE_EDIT)
+                        },
+                        onOpenSettings = {
+                            navController.navigate(HomeRoutes.SETTINGS)
+                        },
                     )
                 }
                 composable(HomeRoutes.CHAT) {
@@ -351,75 +370,13 @@ fun HomeScaffold(
             }
 
             if (!hideTopAndBottomBar) {
-                DraggableChatButton(
+                DraggableChatFab(
                     onClick = {
                         navController.navigate(HomeRoutes.CHAT) {
                             launchSingleTop = true
                         }
                     },
                     modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DraggableChatButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    BoxWithConstraints(modifier = modifier) {
-        val colorScheme = MaterialTheme.colorScheme
-        val density = LocalDensity.current
-        val buttonSize = 56.dp
-        val buttonSizePx = with(density) { buttonSize.toPx() }
-        val marginPx = with(density) { 18.dp.toPx() }
-
-        val maxWidthPx = with(density) { maxWidth.toPx() }
-        val maxHeightPx = with(density) { maxHeight.toPx() }
-        val maxX = (maxWidthPx - buttonSizePx).coerceAtLeast(0f)
-        val maxY = (maxHeightPx - buttonSizePx).coerceAtLeast(0f)
-
-        val initialX = (maxX - marginPx).coerceAtLeast(0f)
-        val initialY = (maxY - marginPx).coerceAtLeast(0f)
-
-        var offsetX by rememberSaveable { mutableStateOf(Float.NaN) }
-        var offsetY by rememberSaveable { mutableStateOf(Float.NaN) }
-
-        LaunchedEffect(maxX, maxY, initialX, initialY) {
-            if (offsetX.isNaN() || offsetY.isNaN()) {
-                offsetX = initialX
-                offsetY = initialY
-            } else {
-                offsetX = offsetX.coerceIn(0f, maxX)
-                offsetY = offsetY.coerceIn(0f, maxY)
-            }
-        }
-
-        Surface(
-            modifier = Modifier
-                .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
-                .size(buttonSize)
-                .pointerInput(maxX, maxY) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxX)
-                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxY)
-                    }
-                }
-                .clickable(onClick = onClick),
-            shape = CircleShape,
-            color = colorScheme.primaryContainer,
-            border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.3f)),
-            shadowElevation = 8.dp,
-            tonalElevation = 4.dp,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.chat_fab_label),
-                    color = colorScheme.onPrimaryContainer,
-                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

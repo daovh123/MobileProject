@@ -19,12 +19,13 @@ fun SpendingTrendCard(
     trends: List<SpendingTrend>,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -32,7 +33,7 @@ fun SpendingTrendCard(
                 text = "Income & Expense Trend",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF2D2D2D)
+                color = colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -42,7 +43,7 @@ fun SpendingTrendCard(
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "No trend data", color = Color.Gray)
+                    Text(text = "No trend data", color = colorScheme.onSurfaceVariant)
                 }
             } else {
                 Box(
@@ -61,7 +62,7 @@ fun SpendingTrendCard(
                             val y = size.height - (trend.totalIncome.toFloat() / maxVal * size.height)
                             if (i == 0) incomePath.moveTo(x, y) else incomePath.lineTo(x, y)
                         }
-                        drawPath(incomePath, color = Color(0xFF4CAF50), style = Stroke(width = 4f))
+                        drawPath(incomePath, color = colorScheme.tertiary, style = Stroke(width = 4f))
 
                         // Vẽ đường Expense (Đỏ)
                         val expensePath = Path()
@@ -70,7 +71,7 @@ fun SpendingTrendCard(
                             val y = size.height - (trend.totalExpense.toFloat() / maxVal * size.height)
                             if (i == 0) expensePath.moveTo(x, y) else expensePath.lineTo(x, y)
                         }
-                        drawPath(expensePath, color = Color(0xFFFF8A80), style = Stroke(width = 4f))
+                        drawPath(expensePath, color = colorScheme.primary, style = Stroke(width = 4f))
                     }
                 }
                 
@@ -78,8 +79,8 @@ fun SpendingTrendCard(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Jan", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text(text = "Dec", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Text(text = "Jan", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                    Text(text = "Dec", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
                 }
             }
         }

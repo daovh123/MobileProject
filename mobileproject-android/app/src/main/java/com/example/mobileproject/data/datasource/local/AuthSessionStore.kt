@@ -10,7 +10,6 @@ import javax.inject.Singleton
 class AuthSessionStore @Inject constructor(
     @ApplicationContext context: Context,
 ) {
-
     private val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun save(session: AuthSession) {
@@ -25,10 +24,8 @@ class AuthSessionStore @Inject constructor(
     }
 
     fun load(): AuthSession? {
-        val token = preferences.getString(KEY_TOKEN, null)?.trim().orEmpty()
-        if (token.isBlank()) {
-            return null
-        }
+        val token = preferences.getString(KEY_TOKEN, null)?.trim() ?: return null
+        if (token.isBlank()) return null
 
         return AuthSession(
             token = token,
@@ -38,10 +35,6 @@ class AuthSessionStore @Inject constructor(
             coupleConnected = preferences.getBoolean(KEY_COUPLE_CONNECTED, false),
             coupleId = preferences.getString(KEY_COUPLE_ID, null)
         )
-    }
-
-    fun clear() {
-        preferences.edit().clear().apply()
     }
 
     fun updateProfileState(profileCompleted: Boolean, coupleConnected: Boolean, coupleId: String? = null) {
@@ -55,9 +48,12 @@ class AuthSessionStore @Inject constructor(
         )
     }
 
+    fun clear() {
+        preferences.edit().clear().apply()
+    }
+
     private companion object {
         private const val PREFS_NAME = "auth_session"
-
         private const val KEY_TOKEN = "token"
         private const val KEY_USERNAME = "username"
         private const val KEY_EMAIL = "email"

@@ -19,7 +19,7 @@ public abstract class Goal {
 
     private String category;
 
-    private GoalType type;
+    private String type;
 
     private GoalStatus status;
 
@@ -36,7 +36,7 @@ public abstract class Goal {
         this.coupleId = coupleId;
         this.name = name;
         this.category = category;
-        this.type = type;
+        this.type = type != null ? type.name() : GoalType.SAVING.name();
         this.deadline = deadline;
         this.status = GoalStatus.IN_PROGRESS;
         this.createdAt = Instant.now();
@@ -74,12 +74,28 @@ public abstract class Goal {
         this.category = category;
     }
 
-    public GoalType getType() {
-        return type;
+    public String getType() {
+        try {
+            if (type != null) {
+                GoalType.valueOf(type);
+                return type;
+            }
+        } catch (Exception e) {
+            // Ignore invalid DB string and fallback to SAVING
+        }
+        return GoalType.SAVING.name();
     }
 
-    public void setType(GoalType type) {
+    public void setType(String type) {
         this.type = type;
+    }
+
+    public GoalType getGoalTypeEnum() {
+        try {
+            return type != null ? GoalType.valueOf(type) : GoalType.SAVING;
+        } catch (Exception e) {
+            return GoalType.SAVING;
+        }
     }
 
     public GoalStatus getStatus() {

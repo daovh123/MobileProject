@@ -65,7 +65,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -841,7 +840,7 @@ private fun PlaceDetailBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = colorResource(R.color.md3_surface),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             modifier = Modifier
@@ -858,14 +857,14 @@ private fun PlaceDetailBottomSheet(
                     Icon(
                         painter = painterResource(R.drawable.ic_close_24),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_primary),
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Text(
                     text = stringResource(R.string.explore_detail_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.md3_on_surface),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
 
@@ -878,7 +877,7 @@ private fun PlaceDetailBottomSheet(
                             if (isFavorite) R.drawable.ic_heart_filled else R.drawable.ic_heart_outline,
                         ),
                         contentDescription = stringResource(R.string.explore_toggle_favorite),
-                        tint = colorResource(R.color.md3_primary),
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -889,19 +888,19 @@ private fun PlaceDetailBottomSheet(
                     .height(220.dp)
                     .clip(RoundedCornerShape(22.dp)),
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface_variant)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(colorResource(R.color.md3_tertiary_container)),
+                            .background(MaterialTheme.colorScheme.tertiaryContainer),
                     )
 
                     Icon(
                         painter = painterResource(R.drawable.ic_restaurant_24),
                         contentDescription = null,
-                        tint = colorResource(R.color.md3_on_tertiary_container),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(48.dp),
                     )
 
@@ -918,7 +917,7 @@ private fun PlaceDetailBottomSheet(
                 text = valueOrUpdating(place.name, context),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.md3_on_surface),
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             val location = normalizedValue(place.province)
@@ -932,7 +931,7 @@ private fun PlaceDetailBottomSheet(
                     location,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -969,7 +968,7 @@ private fun PlaceDetailBottomSheet(
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface_variant)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(18.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
@@ -978,19 +977,19 @@ private fun PlaceDetailBottomSheet(
                         text = stringResource(R.string.explore_detail_summary_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.md3_on_surface),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = buildOverviewText(place, context),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colorResource(R.color.md3_on_surface_variant),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface_variant)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(18.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
@@ -999,12 +998,12 @@ private fun PlaceDetailBottomSheet(
                         text = stringResource(R.string.explore_detail_address_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.md3_on_surface),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = buildAddressText(place, context),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colorResource(R.color.md3_on_surface_variant),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -1013,14 +1012,14 @@ private fun PlaceDetailBottomSheet(
             Text(
                 text = detailLine(R.string.explore_detail_coordinates, coordinatesValue, context),
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             val currentLocationValue = coordinatesOrUpdating(currentLocationLat, currentLocationLng, context)
             Text(
                 text = detailLine(R.string.explore_detail_current_location, currentLocationValue, context),
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -1031,8 +1030,8 @@ private fun PlaceDetailBottomSheet(
 @Composable
 private fun BadgePill(text: String) {
     Surface(
-        color = colorResource(R.color.md3_secondary_container),
-        contentColor = colorResource(R.color.md3_on_secondary_container),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         shape = RoundedCornerShape(12.dp),
     ) {
         Text(

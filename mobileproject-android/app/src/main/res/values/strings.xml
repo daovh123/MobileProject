@@ -6,7 +6,7 @@
     <string name="login_username">Tài khoản</string>
     <string name="login_password">Mật khẩu</string>
     <string name="login_button">Đăng nhập</string>
-    <string name="login_welcome_title">Chào mừng trở lại, tình yêu</string>
+    <string name="login_welcome_title">Chào mừng trở lại</string>
     <string name="login_welcome_subtitle">Tiếp tục hành trình chung cùng You &amp; Me</string>
     <string name="login_email_label">Địa chỉ Email</string>
     <string name="login_email_hint">heart@together.com</string>
@@ -54,6 +54,20 @@
     <string name="profile_error_load">Không tải được hồ sơ</string>
     <string name="profile_error_save">Lưu hồ sơ thất bại</string>
     <string name="profile_select_date">Chọn ngày sinh</string>
+    <string name="profile_edit_title">Chỉnh sửa hồ sơ</string>
+    <string name="profile_edit_subtitle">Cập nhật lại thông tin cá nhân của bạn.</string>
+    <string name="profile_info_section_title">Thông tin cá nhân</string>
+    <string name="profile_info_section_subtitle">Xem nhanh hồ sơ của bạn.</string>
+    <string name="profile_settings_title">Cài đặt</string>
+    <string name="profile_settings_hint">Tùy chỉnh giao diện và thông báo.</string>
+    <string name="profile_logout_hint">Đăng xuất khỏi tài khoản đang dùng.</string>
+    <string name="profile_value_empty">Chưa cập nhật</string>
+    <string name="profile_username_fallback">Bạn</string>
+    <string name="profile_change_frame">Đổi khung</string>
+    <string name="profile_choose_avatar_frame">Chọn khung avatar</string>
+    <string name="profile_avatar_frame_none">Không dùng</string>
+    <string name="profile_avatar_cd">Ảnh đại diện</string>
+    <string name="profile_camera_cd">Chọn ảnh đại diện</string>
     <string name="profile_couple_status">Trạng thái ghép đôi</string>
     <string name="profile_couple_days_together">%1$d ngày bên nhau</string>
     <string name="profile_couple_pending">Đang chờ phản hồi</string>
@@ -224,6 +238,8 @@
     <string name="chat_input_placeholder">Nhập tin nhắn…</string>
     <string name="chat_send">Gửi</string>
     <string name="chat_fab_label">Chat</string>
+    <string name="chat_typing_indicator">Đang nhập…</string>
+    <string name="chat_online_status">Đang hoạt động</string>
 
     <string name="chat_notification_channel_name">Tin nhắn</string>
     <string name="chat_notification_channel_description">Thông báo khi có tin nhắn chat mới.</string>
@@ -239,6 +255,7 @@
     <string name="cd_avatar">Ảnh đại diện</string>
     <string name="cd_favorite">Yêu thích</string>
     <string name="cd_close">Đóng</string>
+    <string name="cd_cancel_reply">Hủy trả lời</string>
 
     <string name="action_notifications">Thông báo</string>
     <string name="action_logout">Đăng xuất</string>
@@ -249,10 +266,46 @@
     <string name="settings_logout_button">Đăng xuất tài khoản</string>
     <string name="settings_logout_hint">Bạn sẽ quay về màn hình đăng nhập sau khi đăng xuất.</string>
     <string name="settings_logout_processing">Đang đăng xuất...</string>
+    <string name="settings_profile_edit_title">Chỉnh sửa hồ sơ</string>
+    <string name="settings_profile_edit_subtitle">Cập nhật thông tin cá nhân của bạn.</string>
+    <string name="settings_appearance_section_title">Giao diện</string>
+    <string name="settings_appearance_section_subtitle">Tùy chỉnh chế độ hiển thị phù hợp.</string>
+    <string name="settings_theme_title">Chế độ nền</string>
+    <string name="settings_theme_subtitle">Chọn theo hệ thống hoặc tự đặt.</string>
+    <string name="settings_theme_system">Hệ thống</string>
+    <string name="settings_theme_light">Sáng</string>
+    <string name="settings_theme_dark">Tối</string>
     <string name="settings_profile_section_title">Thông tin cá nhân</string>
     <string name="settings_profile_section_subtitle">Cập nhật thông tin của bạn</string>
     <string name="profile_email">Email</string>
     <string name="profile_email_invalid">Email không hợp lệ</string>
+
+    <!-- Settings - Notifications -->
+    <string name="settings_notifications_section_title">Thông báo</string>
+    <string name="settings_notifications_section_subtitle">Tùy chỉnh cách nhận thông báo từ ứng dụng.</string>
+    <string name="settings_push_notifications_title">Thông báo đẩy</string>
+    <string name="settings_push_notifications_subtitle">Nhận thông báo khi có tin nhắn và hoạt động mới.</string>
+    <string name="settings_email_notifications_title">Thông báo email</string>
+    <string name="settings_email_notifications_subtitle">Nhận bản tóm tắt hoạt động qua email.</string>
+
+    <!-- Settings - Privacy -->
+    <string name="settings_privacy_section_title">Quyền riêng tư</string>
+    <string name="settings_privacy_section_subtitle">Kiểm soát thông tin bạn chia sẻ với người khác.</string>
+    <string name="settings_show_activity_title">Hiển thị trạng thái hoạt động</string>
+    <string name="settings_show_activity_subtitle">Cho phép đối phương thấy khi nào bạn đang online.</string>
+    <string name="settings_searchable_by_email_title">Tìm kiếm theo email</string>
+    <string name="settings_searchable_by_email_subtitle">Người khác có thể tìm thấy tài khoản của bạn qua email.</string>
+
+    <!-- Settings - About -->
+    <string name="settings_about_section_title">Về ứng dụng</string>
+    <string name="settings_about_section_subtitle">Thông tin về You &amp; Me.</string>
+    <string name="settings_app_version_title">Phiên bản</string>
+    <string name="settings_terms_of_service_title">Điều khoản dịch vụ</string>
+    <string name="settings_terms_of_service_subtitle">Xem điều khoản sử dụng của ứng dụng.</string>
+    <string name="settings_privacy_policy_title">Chính sách quyền riêng tư</string>
+    <string name="settings_privacy_policy_subtitle">Xem chính sách bảo mật dữ liệu.</string>
+    <string name="settings_open_source_title">Giấy phép mã nguồn mở</string>
+    <string name="settings_open_source_subtitle">Xem danh sách thư viện mã nguồn mở được sử dụng.</string>
 
     <!-- Navigation Bar Content Descriptions -->
     <string name="cd_home">Trang chủ</string>
@@ -262,4 +315,15 @@
     <string name="cd_wallet">Ví</string>
     <string name="cd_profile">Hồ sơ</string>
     <string name="memories_title">Kỉ niệm</string>
+
+    <!-- Memories - real data placeholders -->
+    <string name="memories_partner_unknown">Đối tác</string>
+    <string name="memories_partner_meta_unknown">Chưa kết nối</string>
+    <string name="memories_connected_since">Đã kết nối từ %1$s</string>
+    <string name="memories_event_title_placeholder">Sự kiện sắp tới</string>
+    <string name="memories_event_subtitle_placeholder">Chưa có sự kiện nào</string>
+
+    <!-- Settings - URLs (replace with real URLs before release) -->
+    <string name="url_terms_of_service">https://policies.google.com/terms</string>
+    <string name="url_privacy_policy">https://policies.google.com/privacy</string>
 </resources>

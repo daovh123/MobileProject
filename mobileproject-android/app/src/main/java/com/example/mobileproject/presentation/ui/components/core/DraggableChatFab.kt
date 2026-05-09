@@ -1,0 +1,91 @@
+package com.example.mobileproject.presentation.ui.components.core
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
+
+@Composable
+fun DraggableChatFab(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val colorScheme = MaterialTheme.colorScheme
+        val density = LocalDensity.current
+        val buttonSize = 56.dp
+        val buttonSizePx = with(density) { buttonSize.toPx() }
+        val marginPx = with(density) { 18.dp.toPx() }
+
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        val maxHeightPx = with(density) { maxHeight.toPx() }
+        val maxX = (maxWidthPx - buttonSizePx).coerceAtLeast(0f)
+        val maxY = (maxHeightPx - buttonSizePx).coerceAtLeast(0f)
+
+        val initialX = (maxX - marginPx).coerceAtLeast(0f)
+        val initialY = (maxY - marginPx).coerceAtLeast(0f)
+
+        var offsetX by rememberSaveable { mutableStateOf(Float.NaN) }
+        var offsetY by rememberSaveable { mutableStateOf(Float.NaN) }
+
+        LaunchedEffect(maxX, maxY, initialX, initialY) {
+            if (offsetX.isNaN() || offsetY.isNaN()) {
+                offsetX = initialX
+                offsetY = initialY
+            } else {
+                offsetX = offsetX.coerceIn(0f, maxX)
+                offsetY = offsetY.coerceIn(0f, maxY)
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
+                .size(buttonSize)
+                .pointerInput(maxX, maxY) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxX)
+                        offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxY)
+                    }
+                }
+                .clickable(onClick = onClick),
+            shape = CircleShape,
+            color = colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.3f)),
+            shadowElevation = 8.dp,
+            tonalElevation = 4.dp,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.chat_fab_label),
+                    color = colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+    }
+}

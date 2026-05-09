@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -76,9 +75,11 @@ class CoupleConnectActivity : ComponentActivity() {
                     accessToken = accessToken,
                     coupleViewModel = coupleViewModel,
                     onContinue = {
+                        val startAt = coupleViewModel.uiState.value.startAt.orEmpty()
                         startActivity(
                             Intent(this, CoupleConnectedActivity::class.java)
                                 .putExtra(CoupleConnectedActivity.EXTRA_ACCESS_TOKEN, accessToken)
+                                .putExtra(CoupleConnectedActivity.EXTRA_RELATIONSHIP_START_DATE, startAt)
                         )
                         finish()
                     }
@@ -115,17 +116,18 @@ private fun CoupleConnectScreen(
         }
     }
 
-    val surface = colorResource(R.color.surface)
-    val onSurface = colorResource(R.color.on_surface)
-    val surfaceContainerLow = colorResource(R.color.surface_container_low)
-    val primary = colorResource(R.color.primary)
-    val primaryContainer = colorResource(R.color.primary_container)
-    val primaryDim = colorResource(R.color.primary_dim)
-    val secondary = colorResource(R.color.secondary)
-    val secondaryContainer = colorResource(R.color.secondary_container)
-    val onSecondaryContainer = colorResource(R.color.on_secondary_container)
-    val outlineVariant = colorResource(R.color.outline_variant)
-    val errorContainer = colorResource(R.color.error_container)
+    val colorScheme = MaterialTheme.colorScheme
+    val surface = colorScheme.surface
+    val onSurface = colorScheme.onSurface
+    val surfaceContainerLow = colorScheme.surfaceContainerLow
+    val primary = colorScheme.primary
+    val primaryContainer = colorScheme.primaryContainer
+    val primaryDim = colorScheme.primary.copy(alpha = 0.7f)
+    val secondary = colorScheme.secondary
+    val secondaryContainer = colorScheme.secondaryContainer
+    val onSecondaryContainer = colorScheme.onSecondaryContainer
+    val outlineVariant = colorScheme.outlineVariant
+    val errorContainer = colorScheme.errorContainer
 
     Box(
         modifier = Modifier
@@ -161,7 +163,7 @@ private fun CoupleConnectScreen(
                     Text(
                         text = stringResource(R.string.couple_connect_subtitle),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = colorResource(R.color.on_surface_variant),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 1.6f.em(),
                         modifier = Modifier.fillMaxWidth(0.85f)
                     )
@@ -175,7 +177,7 @@ private fun CoupleConnectScreen(
                         .fillMaxWidth()
                         .padding(bottom = 24.dp),
                     shape = RoundedCornerShape(48.dp),
-                    color = colorResource(R.color.surface_container_lowest)
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest
                 ) {
                     Column(
                         modifier = Modifier
@@ -244,7 +246,7 @@ private fun CoupleConnectScreen(
                                     uiState.myCoupleCodeExpiresAt ?: ""
                                 )}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = colorResource(R.color.on_surface_variant),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 letterSpacing = 0.08f.em()
                             )
                         }
@@ -252,7 +254,7 @@ private fun CoupleConnectScreen(
                         if (uiState.outgoingStatus.equals("PENDING", ignoreCase = true)) {
                             Surface(
                                 shape = RoundedCornerShape(24.dp),
-                                color = colorResource(R.color.surface_container_high),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
@@ -274,7 +276,7 @@ private fun CoupleConnectScreen(
                             ) {
                                 Text(
                                     text = "❌ ${stringResource(R.string.couple_request_rejected)}",
-                                    color = colorResource(R.color.error),
+                                    color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.labelSmall,
                                     letterSpacing = 0.08f.em(),
                                     modifier = Modifier.padding(12.dp),
@@ -293,7 +295,7 @@ private fun CoupleConnectScreen(
                         .fillMaxWidth()
                         .padding(bottom = 32.dp),
                     shape = RoundedCornerShape(48.dp),
-                    color = colorResource(R.color.surface_container_low)
+                    color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Column(
                         modifier = Modifier
@@ -338,7 +340,7 @@ private fun CoupleConnectScreen(
                             placeholder = {
                                 Text(
                                     stringResource(R.string.couple_partner_code_hint),
-                                    color = colorResource(R.color.on_surface_variant)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
                             singleLine = true,
@@ -346,8 +348,8 @@ private fun CoupleConnectScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Color.Transparent,
                                 unfocusedBorderColor = Color.Transparent,
-                                focusedContainerColor = colorResource(R.color.surface_container_high),
-                                unfocusedContainerColor = colorResource(R.color.surface_container),
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                                 focusedTextColor = onSurface,
                                 unfocusedTextColor = onSurface
                             ),
@@ -366,7 +368,7 @@ private fun CoupleConnectScreen(
                             shape = RoundedCornerShape(32.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = primary,
-                                disabledContainerColor = colorResource(R.color.surface_container_high)
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                             )
                         ) {
                             Box(
@@ -402,7 +404,7 @@ private fun CoupleConnectScreen(
                 item {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = colorResource(R.color.surface_container),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
@@ -434,7 +436,7 @@ private fun CoupleConnectScreen(
                             text = "⚠️ ${uiState.errorMessage ?: ""}",
                             style = MaterialTheme.typography.labelSmall,
                             letterSpacing = 0.08f.em(),
-                            color = colorResource(R.color.error),
+                            color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -449,7 +451,7 @@ private fun CoupleConnectScreen(
                 item {
                     Surface(
                         shape = RoundedCornerShape(48.dp),
-                        color = colorResource(R.color.primary_fixed),
+                        color = MaterialTheme.colorScheme.primaryFixed,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 24.dp, bottom = 32.dp)
@@ -468,7 +470,7 @@ private fun CoupleConnectScreen(
                                     text = stringResource(R.string.couple_incoming_request_title),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = colorResource(R.color.on_primary_container),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -532,7 +534,7 @@ private fun CoupleConnectScreen(
                                         .weight(1f)
                                         .height(48.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = colorResource(R.color.surface_container_high)
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                     ),
                                     shape = RoundedCornerShape(32.dp)
                                 ) {

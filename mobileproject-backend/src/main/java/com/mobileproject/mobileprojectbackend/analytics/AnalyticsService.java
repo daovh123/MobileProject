@@ -60,7 +60,8 @@ public class AnalyticsService {
         AggregationResults<CategoryBreakdownItem> results = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                CategoryBreakdownItem.class);
+                CategoryBreakdownItem.class
+        );
 
         System.out.println("Results count: " + results.getMappedResults().size());
         return results.getMappedResults();
@@ -70,12 +71,12 @@ public class AnalyticsService {
         if (year == null || month == null) {
             return List.of();
         }
-
+        
         ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
         ZonedDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
 
-        Instant startInstant = startOfMonth.toInstant();
-        Instant endInstant = endOfMonth.toInstant();
+        Instant startInstant = startOfMonth != null ? startOfMonth.toInstant() : null;
+        Instant endInstant = endOfMonth != null ? endOfMonth.toInstant() : null;
 
         System.out.println("=== DEBUG getSpendingTrend ===");
         System.out.println("coupleId: " + coupleId);
@@ -100,12 +101,14 @@ public class AnalyticsService {
                 Aggregation.unwind("dates"),
                 Aggregation.project()
                         .and("dates").as("date")
-                        .and("totalAmount").as("totalAmount"));
+                        .and("totalAmount").as("totalAmount")
+        );
 
-        AggregationResults<?> rawResults = mongoTemplate.aggregate(
+        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                Map.class);
+                Map.class
+        );
 
         System.out.println("Raw results count: " + rawResults.getMappedResults().size());
 

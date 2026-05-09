@@ -33,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -318,11 +317,11 @@ fun TrendingPlaceCard(
 
 @Composable
 private fun PlaceImagePlaceholder(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.background(colorResource(R.color.md3_tertiary_container)), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.background(MaterialTheme.colorScheme.tertiaryContainer), contentAlignment = Alignment.Center) {
         Icon(
             painter = painterResource(R.drawable.ic_restaurant_24),
             contentDescription = null,
-            tint = colorResource(R.color.md3_on_tertiary_container),
+            tint = MaterialTheme.colorScheme.onTertiaryContainer,
             modifier = Modifier.size(44.dp),
         )
     }

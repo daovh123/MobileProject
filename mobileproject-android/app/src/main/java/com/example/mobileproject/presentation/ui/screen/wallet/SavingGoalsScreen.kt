@@ -28,6 +28,7 @@ fun SavingGoalsScreen(
     onNavigateBack: () -> Unit,
     viewModel: SavingGoalViewModel = hiltViewModel()
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -37,23 +38,23 @@ fun SavingGoalsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Saving Goals", fontWeight = FontWeight.Bold) },
+                title = { Text("Saving Goals", fontWeight = FontWeight.Bold, color = colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = colorScheme.onSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color(0xFF4A3434)
+                    containerColor = colorScheme.surface,
+                    titleContentColor = colorScheme.onSurface
                 )
             )
         },
-        containerColor = Color(0xFFFFF0F0)
+        containerColor = colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading && uiState.goals.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFF8A80))
+                CircularProgressIndicator(color = colorScheme.primary)
             }
         } else {
             val sortedGoals = uiState.goals.sortedWith(

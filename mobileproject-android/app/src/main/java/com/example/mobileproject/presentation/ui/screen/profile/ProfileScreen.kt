@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +25,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,6 +61,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.presentation.ui.icons.LucideCamera
+import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
+import com.example.mobileproject.presentation.ui.icons.LucideLogOut
+import com.example.mobileproject.presentation.ui.icons.LucideMail
+import com.example.mobileproject.presentation.ui.icons.LucideSettings
+import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 
 @Composable
@@ -69,6 +74,8 @@ fun ProfileScreen(
     accessToken: String,
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
+    onEditProfile: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
@@ -112,7 +119,7 @@ fun ProfileScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = colorResource(R.color.md3_surface_variant),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
@@ -137,7 +144,7 @@ fun ProfileScreen(
             Text(
                 text = stringResource(R.string.profile_title),
                 style = MaterialTheme.typography.headlineMedium,
-                color = colorResource(R.color.md3_primary),
+                color = MaterialTheme.colorScheme.primary,
             )
 
             HeaderCard(
@@ -158,97 +165,24 @@ fun ProfileScreen(
                 onSelectFrame = { frameId -> viewModel.selectFrame(accessToken, frameId) },
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-                shape = RoundedCornerShape(20.dp),
-            ) {
-                ProfileFormContent(
-                    fullName = uiState.fullName,
-                    nickName = uiState.nickName,
-                    birthDate = uiState.birthDate,
-                    gender = uiState.gender,
-                    isSaving = uiState.isSaving,
-                    onFullNameChange = {
-                        viewModel.updateDraft(
-                            fullName = it,
-                            nickName = uiState.nickName,
-                            birthDate = uiState.birthDate,
-                            gender = uiState.gender,
-                        )
-                    },
-                    onNickNameChange = {
-                        viewModel.updateDraft(
-                            fullName = uiState.fullName,
-                            nickName = it,
-                            birthDate = uiState.birthDate,
-                            gender = uiState.gender,
-                        )
-                    },
-                    onBirthDateChange = {
-                        viewModel.updateDraft(
-                            fullName = uiState.fullName,
-                            nickName = uiState.nickName,
-                            birthDate = it,
-                            gender = uiState.gender,
-                        )
-                    },
-                    onGenderChange = {
-                        viewModel.updateDraft(
-                            fullName = uiState.fullName,
-                            nickName = uiState.nickName,
-                            birthDate = uiState.birthDate,
-                            gender = it,
-                        )
-                    },
-                    onSave = { viewModel.saveProfile(accessToken) },
-                    modifier = Modifier.padding(16.dp),
-                    showSaveButton = false,
-                )
-            }
+            ProfileInfoCard(
+                fullName = uiState.fullName,
+                nickName = uiState.nickName,
+                birthDate = uiState.birthDate,
+                gender = uiState.gender,
+                email = uiState.email,
+                onEditProfile = onEditProfile,
+            )
 
             CoupleStatusCard(
                 isLoading = uiState.isLoadingCouple,
                 status = uiState.coupleStatus,
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
-                shape = RoundedCornerShape(20.dp),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    OutlinedButton(
-                        onClick = onLogout,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = colorResource(R.color.auth_pink),
-                        ),
-                    ) {
-                        Text(text = stringResource(R.string.profile_logout))
-                    }
-
-                    Button(
-                        onClick = { viewModel.saveProfile(accessToken) },
-                        enabled = uiState.isDirty && !uiState.isSaving,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        if (uiState.isSaving) {
-                            CircularProgressIndicator(
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        } else {
-                            Text(text = stringResource(R.string.profile_save))
-                        }
-                    }
-                }
-            }
+            ProfileActionsCard(
+                onOpenSettings = onOpenSettings,
+                onLogout = onLogout,
+            )
 
             OutlinedButton(
                 onClick = onNavigateBack,
@@ -277,7 +211,7 @@ private fun HeaderCard(
     onHideFrameSelector: () -> Unit,
     onSelectFrame: (String?) -> Unit,
 ) {
-    val displayUsername = username.ifBlank { "User" }
+    val displayUsername = username.ifBlank { stringResource(R.string.profile_username_fallback) }
     val avatarText = displayUsername.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
     val context = LocalContext.current
 
@@ -314,7 +248,7 @@ private fun HeaderCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
@@ -342,19 +276,19 @@ private fun HeaderCard(
                         Box(
                             modifier = Modifier
                                 .size(96.dp)
-                                .background(colorResource(R.color.md3_primary), CircleShape),
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(40.dp),
-                                color = colorResource(R.color.md3_on_primary),
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 3.dp,
                             )
                         }
                     } else if (avatarBitmap != null) {
                         Image(
                             bitmap = avatarBitmap.asImageBitmap(),
-                            contentDescription = "Avatar",
+                            contentDescription = stringResource(R.string.profile_avatar_cd),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(96.dp)
@@ -364,13 +298,13 @@ private fun HeaderCard(
                         Box(
                             modifier = Modifier
                                 .size(96.dp)
-                                .background(colorResource(R.color.md3_primary), CircleShape),
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = avatarText,
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = colorResource(R.color.md3_on_primary),
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -384,9 +318,10 @@ private fun HeaderCard(
                         .size(32.dp)
                         .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
                 ) {
-                    Text(
-                        text = "📷",
-                        style = MaterialTheme.typography.titleMedium,
+                    Icon(
+                        imageVector = LucideCamera,
+                        contentDescription = stringResource(R.string.profile_camera_cd),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
@@ -395,17 +330,17 @@ private fun HeaderCard(
             Text(
                 text = displayUsername,
                 style = MaterialTheme.typography.titleLarge,
-                color = colorResource(R.color.md3_on_surface),
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = "@$displayUsername",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(4.dp))
             TextButton(onClick = onShowFrameSelector) {
-                Text(text = "Change Frame")
+                Text(text = stringResource(R.string.profile_change_frame))
             }
         }
     }
@@ -425,7 +360,7 @@ private fun FrameSelectorContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Choose Avatar Frame",
+            text = stringResource(R.string.profile_choose_avatar_frame),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(vertical = 12.dp),
         )
@@ -440,7 +375,7 @@ private fun FrameSelectorContent(
                 // "No Frame" option
                 item {
                     FrameItem(
-                        label = "None",
+                        label = stringResource(R.string.profile_avatar_frame_none),
                         borderColor = MaterialTheme.colorScheme.outline,
                         isSelected = selectedFrameId == null,
                         showNoFrame = true,
@@ -516,6 +451,165 @@ private fun FrameItem(
 }
 
 @Composable
+private fun ProfileInfoCard(
+    fullName: String,
+    nickName: String,
+    birthDate: String,
+    gender: String,
+    email: String,
+    onEditProfile: () -> Unit,
+) {
+    val emptyValue = stringResource(R.string.profile_value_empty)
+    val genderText = when (gender) {
+        "MALE" -> stringResource(R.string.profile_gender_male)
+        "FEMALE" -> stringResource(R.string.profile_gender_female)
+        "OTHER" -> stringResource(R.string.profile_gender_other)
+        else -> emptyValue
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.profile_info_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.profile_info_section_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            ProfileInfoRow(
+                title = stringResource(R.string.profile_fullname),
+                value = fullName.ifBlank { emptyValue },
+                icon = LucideUser,
+            )
+            ProfileInfoRow(
+                title = stringResource(R.string.profile_nickname),
+                value = nickName.ifBlank { emptyValue },
+                icon = LucideUser,
+            )
+            ProfileInfoRow(
+                title = stringResource(R.string.profile_birthdate),
+                value = birthDate.ifBlank { emptyValue },
+                icon = LucideUser,
+            )
+            ProfileInfoRow(
+                title = stringResource(R.string.profile_gender),
+                value = genderText,
+                icon = LucideUser,
+            )
+            ProfileInfoRow(
+                title = stringResource(R.string.profile_email),
+                value = email.ifBlank { emptyValue },
+                icon = LucideMail,
+            )
+
+            TextButton(onClick = onEditProfile, modifier = Modifier.fillMaxWidth()) {
+                Text(text = stringResource(R.string.profile_edit_title))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileInfoRow(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = { Text(text = value) },
+        leadingContent = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    )
+}
+
+@Composable
+private fun ProfileActionsCard(
+    onOpenSettings: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        ) {
+            ProfileActionItem(
+                title = stringResource(R.string.profile_settings_title),
+                subtitle = stringResource(R.string.profile_settings_hint),
+                icon = LucideSettings,
+                onClick = onOpenSettings,
+                showChevron = true,
+            )
+            ProfileActionItem(
+                title = stringResource(R.string.profile_logout),
+                subtitle = stringResource(R.string.profile_logout_hint),
+                icon = LucideLogOut,
+                onClick = onLogout,
+                showChevron = false,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileActionItem(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    showChevron: Boolean,
+) {
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = { Text(text = subtitle) },
+        leadingContent = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        trailingContent = {
+            if (showChevron) {
+                Icon(
+                    imageVector = LucideChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    )
+}
+
+@Composable
 private fun CoupleStatusCard(
     isLoading: Boolean,
     status: CoupleStatus?,
@@ -535,7 +629,7 @@ private fun CoupleStatusCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.md3_surface)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
@@ -547,12 +641,12 @@ private fun CoupleStatusCard(
             Text(
                 text = stringResource(R.string.profile_couple_status),
                 style = MaterialTheme.typography.titleMedium,
-                color = colorResource(R.color.md3_on_surface),
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.md3_on_surface_variant),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

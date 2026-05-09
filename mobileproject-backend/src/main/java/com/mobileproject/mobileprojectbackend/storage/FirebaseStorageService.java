@@ -97,6 +97,7 @@ public class FirebaseStorageService {
             BlobId blobId = BlobId.of(bucketName, objectPath);
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(contentType)
+                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
                     .build();
 
             storage.create(blobInfo, imageBytes);

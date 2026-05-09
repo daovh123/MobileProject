@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,7 +68,9 @@ import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
+import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -105,7 +108,11 @@ class LoginActivity : ComponentActivity() {
         }
 
         setContent {
-            MobileProjectTheme(dynamicColor = false) {
+            val themeViewModel: ThemeModeViewModel = hiltViewModel()
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+
+            MobileProjectTheme(darkTheme = darkTheme, dynamicColor = false) {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
                     onLoginSuccess = { session ->

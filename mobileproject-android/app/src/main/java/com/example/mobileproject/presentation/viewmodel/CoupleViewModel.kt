@@ -2,7 +2,7 @@ package com.example.mobileproject.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -18,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CoupleViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
+    private val authSessionStore: AuthSessionStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CoupleUiState())
@@ -26,119 +27,24 @@ class CoupleViewModel @Inject constructor(
     private var token: String? = null
     private var pollingJob: Job? = null
 
-    fun startPolling(accessToken: String) {
-        if (accessToken.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
-            return
-        }
-
-        token = accessToken.trim()
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            refreshStatus(showLoading = true)
-            while (isActive) {
-                delay(POLLING_INTERVAL_MS)
-                refreshStatus(showLoading = false)
-            }
+    init {
+        // Tự động load status nếu đã có token trong store
+        authSessionStore.load()?.token?.let {
+            loadStatus(it)
         }
     }
 
     fun loadStatus(accessToken: String) {
-        if (accessToken.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
-            return
-        }
-
+        if (accessToken.isBlank()) return
         token = accessToken.trim()
-        pollingJob?.cancel()
-        pollingJob = null
-
+        
         viewModelScope.launch {
             refreshStatus(showLoading = true)
         }
     }
 
-    fun sendCoupleRequest(partnerCode: String) {
-        val accessToken = token
-        if (accessToken.isNullOrBlank()) {
-            _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
-            return
-        }
-        if (partnerCode.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Vui long nhap ma doi tac") }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching {
-                onboardingRepository.sendCoupleRequest(accessToken, partnerCode.trim())
-            }.onSuccess { action ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        infoMessage = action.message,
-                        errorMessage = null,
-                    )
-                }
-                refreshStatus(showLoading = false)
-            }.onFailure { throwable ->
-                _uiState.update { current ->
-                    current.copy(
-                        isLoading = false,
-                        errorMessage = throwable.message ?: "Gui loi moi ghep doi that bai",
-                    )
-                }
-            }
-        }
-    }
-
-    fun respondIncomingRequest(requestId: String, accept: Boolean) {
-        val accessToken = token
-        if (accessToken.isNullOrBlank()) {
-            _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
-            return
-        }
-        if (requestId.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Khong tim thay yeu cau ghep doi") }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching {
-                onboardingRepository.decideCoupleRequest(accessToken, requestId, accept)
-            }.onSuccess { action ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        infoMessage = action.message,
-                        errorMessage = null,
-                    )
-                }
-                refreshStatus(showLoading = false)
-            }.onFailure { throwable ->
-                _uiState.update { current ->
-                    current.copy(
-                        isLoading = false,
-                        errorMessage = throwable.message ?: "Xu ly yeu cau ghep doi that bai",
-                    )
-                }
-            }
-        }
-    }
-
-    fun clearTransientMessages() {
-        _uiState.update { it.copy(errorMessage = null, infoMessage = null) }
-    }
-
-    fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
-
     private suspend fun refreshStatus(showLoading: Boolean) {
-        val accessToken = token ?: return
+        val accessToken = token ?: authSessionStore.load()?.token ?: return
 
         if (showLoading) {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -155,15 +61,14 @@ class CoupleViewModel @Inject constructor(
                     partnerUsername = status.partnerUsername,
                     myCoupleCode = status.myCoupleCode,
                     myCoupleCodeExpiresAt = status.myCoupleCodeExpiresAt,
-                    incomingRequestId = status.incomingRequestId,
-                    incomingRequesterUsername = status.incomingRequesterUsername,
-                    incomingRequesterDisplayName = status.incomingRequesterDisplayName,
                     startAt = status.startAt,
                     daysTogether = status.daysTogether,
                     anniversaryTomorrow = status.anniversaryTomorrow,
-                    outgoingRequestId = status.outgoingRequestId,
-                    outgoingRecipientUsername = status.outgoingRecipientUsername,
-                    outgoingStatus = status.outgoingStatus,
+                    coupleId = status.coupleId,
+                    incomingRequestId = status.incomingRequestId,
+                    incomingRequesterUsername = status.incomingRequesterUsername,
+                    incomingRequesterDisplayName = status.incomingRequesterDisplayName,
+                    outgoingStatus = status.outgoingStatus
                 )
             }
         }.onFailure { throwable ->
@@ -176,13 +81,80 @@ class CoupleViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        stopPolling()
-        super.onCleared()
+    fun clearTransientMessages() {
+        _uiState.update { it.copy(errorMessage = null, infoMessage = null) }
     }
 
-    private companion object {
-        const val POLLING_INTERVAL_MS: Long = 3000L
+    fun sendCoupleRequest(partnerCode: String) {
+        val accessToken = token ?: return
+        if (partnerCode.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, infoMessage = null) }
+            runCatching {
+                onboardingRepository.sendCoupleRequest(accessToken, partnerCode)
+            }.onSuccess { action ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        infoMessage = action.message,
+                        outgoingStatus = action.status
+                    )
+                }
+                refreshStatus(false)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "Failed to send couple request"
+                    )
+                }
+            }
+        }
+    }
+
+    fun respondIncomingRequest(requestId: String, accept: Boolean) {
+        val accessToken = token ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, infoMessage = null) }
+            runCatching {
+                onboardingRepository.decideCoupleRequest(accessToken, requestId, accept)
+            }.onSuccess { action ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        infoMessage = action.message,
+                        incomingRequestId = if (accept) null else it.incomingRequestId
+                    )
+                }
+                refreshStatus(false)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "Failed to respond to request"
+                    )
+                }
+            }
+        }
+    }
+
+    fun startPolling(accessToken: String) {
+        if (accessToken.isBlank()) return
+        token = accessToken.trim()
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                refreshStatus(showLoading = false)
+                delay(3000L)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        pollingJob?.cancel()
+        super.onCleared()
     }
 }
 
@@ -195,13 +167,12 @@ data class CoupleUiState(
     val partnerUsername: String? = null,
     val myCoupleCode: String? = null,
     val myCoupleCodeExpiresAt: String? = null,
-    val incomingRequestId: String? = null,
-    val incomingRequesterUsername: String? = null,
-    val incomingRequesterDisplayName: String? = null,
     val startAt: String? = null,
     val daysTogether: Long? = null,
     val anniversaryTomorrow: Boolean? = null,
-    val outgoingRequestId: String? = null,
-    val outgoingRecipientUsername: String? = null,
-    val outgoingStatus: String? = null,
+    val coupleId: String? = null,
+    val incomingRequestId: String? = null,
+    val incomingRequesterUsername: String? = null,
+    val incomingRequesterDisplayName: String? = null,
+    val outgoingStatus: String? = null
 )
