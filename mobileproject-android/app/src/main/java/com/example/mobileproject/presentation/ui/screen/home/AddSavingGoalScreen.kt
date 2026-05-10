@@ -1,5 +1,6 @@
 package com.example.mobileproject.presentation.ui.screen.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -37,14 +39,31 @@ fun AddSavingGoalScreen(
     onNavigateBack: () -> Unit,
     viewModel: GoalViewModel = hiltViewModel()
 ) {
+    val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    
     var name by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<ExpenseCategory>(ExpenseCategory.Travel) }
     var showCategorySheet by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
-
+    
     val datePickerState = rememberDatePickerState()
+
+    LaunchedEffect(state.createSuccess) {
+        if (state.createSuccess) {
+            onNavigateBack()
+            viewModel.clearMessage()
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearMessage()
+        }
+    }
     
     val pinkBackground = Color(0xFFFFF0F0)
     val primaryPink = Color(0xFFFF8A80)
@@ -232,17 +251,21 @@ fun AddSavingGoalScreen(
             Button(
                 onClick = {
                     if (isFormValid) {
-                        val deadlineStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(selectedDateMillis!!))
+                        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                            timeZone = TimeZone.getTimeZone("UTC")
+                        }
+                        val deadlineStr = sdf.format(Date(selectedDateMillis!!))
                         viewModel.createSavingGoal(
                             name = name,
                             category = selectedCategory.id,
                             targetAmount = targetAmount.toLongOrNull() ?: 0L,
                             deadline = deadlineStr
                         )
-                        onNavigateBack()
+                    } else {
+                        Toast.makeText(context, "Please fill in all required fields (Name, Amount, Date)", Toast.LENGTH_SHORT).show()
                     }
                 },
-                enabled = isFormValid,
+                enabled = !state.isCreating,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -257,8 +280,12 @@ fun AddSavingGoalScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Text("Create Saving Goal", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    if (state.isCreating) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                    }
+                    Text(if (state.isCreating) "Creating..." else "Create Saving Goal", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             }
             

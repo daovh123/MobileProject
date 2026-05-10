@@ -25,7 +25,7 @@ data class GoalDto(
 data class GoalTaskDto(
     @SerializedName("taskId") val taskId: String?,
     @SerializedName("content") val content: String?, // Chấp nhận null từ server và xử lý ở mapper
-    @SerializedName("isCompleted") val isCompleted: Boolean = false
+    @SerializedName("completed") val isCompleted: Boolean = false
 )
 
 data class CreateGoalRequestDto(

@@ -18,7 +18,9 @@ data class GoalUiState(
     val isLoading: Boolean = false,
     val goals: List<Goal> = emptyList(),
     val error: String? = null,
-    val contributionMessage: String? = null
+    val contributionMessage: String? = null,
+    val isCreating: Boolean = false,
+    val createSuccess: Boolean = false
 )
 
 @HiltViewModel
@@ -55,9 +57,18 @@ class GoalViewModel @Inject constructor(
     fun createSavingGoal(name: String, category: String, targetAmount: Long, deadline: String?) {
         val cid = getCoupleId() ?: return
         viewModelScope.launch {
+            _uiState.update { it.copy(isCreating = true, createSuccess = false, error = null) }
             createGoalUseCase(cid, name, category, "SAVING", targetAmount, deadline).collect { resource ->
-                if (resource is Resource.Success) loadGoals()
-                else if (resource is Resource.Error) _uiState.update { it.copy(error = resource.throwable.message) }
+                when (resource) {
+                    is Resource.Loading -> _uiState.update { it.copy(isCreating = true) }
+                    is Resource.Success -> {
+                        loadGoals()
+                        _uiState.update { it.copy(isCreating = false, createSuccess = true) }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(isCreating = false, error = resource.throwable.message) }
+                    }
+                }
             }
         }
     }
@@ -65,9 +76,18 @@ class GoalViewModel @Inject constructor(
     fun createFutureGoal(name: String, category: String, deadline: String?, tasks: List<GoalTask>) {
         val cid = getCoupleId() ?: return
         viewModelScope.launch {
+            _uiState.update { it.copy(isCreating = true, createSuccess = false, error = null) }
             createGoalUseCase(cid, name, category, "FUTURE", deadline = deadline, tasks = tasks).collect { resource ->
-                if (resource is Resource.Success) loadGoals()
-                else if (resource is Resource.Error) _uiState.update { it.copy(error = resource.throwable.message) }
+                when (resource) {
+                    is Resource.Loading -> _uiState.update { it.copy(isCreating = true) }
+                    is Resource.Success -> {
+                        loadGoals()
+                        _uiState.update { it.copy(isCreating = false, createSuccess = true) }
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(isCreating = false, error = resource.throwable.message) }
+                    }
+                }
             }
         }
     }
@@ -115,6 +135,6 @@ class GoalViewModel @Inject constructor(
     }
 
     fun clearMessage() {
-        _uiState.update { it.copy(contributionMessage = null, error = null) }
+        _uiState.update { it.copy(contributionMessage = null, error = null, createSuccess = false) }
     }
 }

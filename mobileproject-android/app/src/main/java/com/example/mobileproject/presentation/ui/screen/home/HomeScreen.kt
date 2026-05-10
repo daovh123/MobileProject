@@ -54,6 +54,9 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.TimeZone
@@ -88,6 +91,21 @@ fun HomeScreen(
     var myMarker by remember { mutableStateOf<Marker?>(null) }
     var partnerMarker by remember { mutableStateOf<Marker?>(null) }
     var hasCenteredOnce by remember { mutableStateOf(false) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (coupleState.coupleId != null) {
+                    goalViewModel.loadGoals()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Hiển thị thông báo lỗi nếu có
     LaunchedEffect(coupleState.errorMessage) {
@@ -220,9 +238,17 @@ fun HomeScreen(
     }
 
     val goals = goalState.goals
+    val sortedGoals = goals.sortedWith(
+        compareBy<Goal> { goal ->
+            val isAchieved = goal.status == GoalStatus.ACHIEVED ||
+                (goal as? SavingGoal)?.let { it.targetAmount > 0 && it.currentAmount >= it.targetAmount } == true ||
+                (goal as? FutureGoal)?.let { it.progress >= 100.0 } == true
+            isAchieved
+        }.thenBy { it.deadline ?: "9999-12-31" }
+    )
     val walletBalance = walletState.wallet?.balance ?: 0L
-    val inProgressSaving = goals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
-    val achievedSaving = goals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
+    val inProgressSaving = sortedGoals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
+    val achievedSaving = sortedGoals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
     val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -231,7 +257,7 @@ fun HomeScreen(
             walletBalance = displaySharedBalance,
             actualWalletBalance = walletBalance,
             daysTogether = coupleState.daysTogether ?: computeDaysTogetherFromStartAt(coupleState.startAt) ?: 1L,
-            goals = goals,
+            goals = sortedGoals,
             onPairNow = {
                 if (accessToken.isNotBlank()) {
                     context.startActivity(Intent(context, CoupleConnectActivity::class.java).putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken))
