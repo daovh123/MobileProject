@@ -1,8 +1,14 @@
 package com.example.mobileproject.presentation.ui.component.wallet
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,35 +17,47 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mobileproject.presentation.ui.theme.AppTheme
 import java.text.DecimalFormat
-import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun BalanceSection(
     balance: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+    val extendedColors = AppTheme.extendedColors
+
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
     ) {
-        Text(
-            text = "TOTAL BALANCE",
-            style = MaterialTheme.typography.labelMedium,
-            color = colorScheme.onSurfaceVariant,
-            letterSpacing = 1.sp
-        )
-        Text(
-            text = formatSimpleAmount(balance),
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontWeight = FontWeight.Black,
-                fontSize = 40.sp
-            ),
-            color = colorScheme.onSurface
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(extendedColors.cardGradient)
+                .padding(vertical = 28.dp, horizontal = 24.dp),
+        ) {
+            Column {
+                Text(
+                    text = "TOTAL BALANCE",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.90f),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatSimpleAmount(balance),
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 40.sp,
+                    ),
+                    color = Color.White,
+                )
+            }
+        }
     }
 }
 

@@ -1,6 +1,12 @@
 package com.example.mobileproject.presentation.ui.components.auth
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -16,13 +22,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
+import com.example.mobileproject.presentation.ui.theme.AppTheme
+import com.example.mobileproject.presentation.ui.components.core.AuthScreenStickers
 
 @Composable
 fun AuthBackdrop(
@@ -30,21 +43,35 @@ fun AuthBackdrop(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val backgroundBrush = remember(colorScheme) {
-        Brush.linearGradient(
-            colors = listOf(
-                colorScheme.surface,
-                colorScheme.surfaceContainerLow.copy(alpha = 0.92f),
-                colorScheme.surfaceVariant.copy(alpha = 0.92f),
-            ),
-        )
-    }
+    val extendedColors = AppTheme.extendedColors
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(backgroundBrush),
+        modifier = modifier.fillMaxSize(),
     ) {
+        // Background image
+        Image(
+            painter = painterResource(R.drawable.bg_auth_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Dark scrim overlay for readability
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.35f),
+                            Color.Black.copy(alpha = 0.55f),
+                            Color.Black.copy(alpha = 0.70f),
+                        ),
+                    ),
+                ),
+        )
+
+        // Decorative blur circles
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -53,7 +80,7 @@ fun AuthBackdrop(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.primary.copy(alpha = 0.22f),
+                            colorScheme.primary.copy(alpha = 0.28f),
                             Color.Transparent,
                         ),
                     ),
@@ -69,29 +96,15 @@ fun AuthBackdrop(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.secondary.copy(alpha = 0.18f),
+                            colorScheme.secondary.copy(alpha = 0.22f),
                             Color.Transparent,
                         ),
                     ),
                     shape = CircleShape,
                 ),
         )
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .offset(x = (-24).dp, y = 72.dp)
-                .size(180.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
-                            Color.Transparent,
-                        ),
-                    ),
-                    shape = CircleShape,
-                ),
-        )
+        // Cute stickers
+        AuthScreenStickers()
 
         content()
     }
@@ -100,21 +113,35 @@ fun AuthBackdrop(
 @Composable
 fun AuthBrandMark(modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
+    val extendedColors = AppTheme.extendedColors
+
+    val pulseTransition = rememberInfiniteTransition(label = "brand-pulse")
+    val pulseScale by pulseTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "brand-scale",
+    )
 
     Surface(
-        modifier = modifier.size(104.dp),
+        modifier = modifier
+            .size(120.dp)
+            .scale(pulseScale),
         shape = CircleShape,
         color = colorScheme.primaryContainer.copy(alpha = 0.92f),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
-        shadowElevation = 16.dp,
-        tonalElevation = 10.dp,
+        border = BorderStroke(2.dp, colorScheme.primary.copy(alpha = 0.35f)),
+        shadowElevation = 24.dp,
+        tonalElevation = 12.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = "❤",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onPrimaryContainer,
+                color = colorScheme.primary,
             )
         }
     }
@@ -126,17 +153,18 @@ fun AuthFormSurface(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val extendedColors = AppTheme.extendedColors
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = colorScheme.surface.copy(alpha = 0.94f),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.18f)),
-        shadowElevation = 12.dp,
-        tonalElevation = 6.dp,
+        color = extendedColors.glassBackground,
+        border = BorderStroke(1.dp, extendedColors.glassBorder),
+        shadowElevation = 16.dp,
+        tonalElevation = 8.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
             content = content,
         )
     }

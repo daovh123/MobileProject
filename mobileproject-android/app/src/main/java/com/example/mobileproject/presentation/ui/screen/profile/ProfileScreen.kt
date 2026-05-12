@@ -62,6 +62,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.presentation.ui.icons.LucideCamera
+import com.example.mobileproject.presentation.ui.components.core.ProfileHeaderStickers
 import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
 import com.example.mobileproject.presentation.ui.icons.LucideLogOut
 import com.example.mobileproject.presentation.ui.icons.LucideMail
@@ -119,7 +120,7 @@ fun ProfileScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
@@ -144,6 +145,7 @@ fun ProfileScreen(
             Text(
                 text = stringResource(R.string.profile_title),
                 style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
 
@@ -248,21 +250,23 @@ private fun HeaderCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Avatar with camera-icon overlay
             Box(contentAlignment = Alignment.BottomEnd) {
                 // Outer frame border + avatar
                 Box(
                     modifier = Modifier
-                        .size(96.dp)
+                        .size(110.dp)
                         .then(
                             if (frameColor != null) {
                                 Modifier.border(4.dp, frameColor, CircleShape)
@@ -342,6 +346,8 @@ private fun HeaderCard(
             TextButton(onClick = onShowFrameSelector) {
                 Text(text = stringResource(R.string.profile_change_frame))
             }
+            }
+            ProfileHeaderStickers()
         }
     }
 }
@@ -469,8 +475,9 @@ private fun ProfileInfoCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier
@@ -549,8 +556,9 @@ private fun ProfileActionsCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier
@@ -629,8 +637,9 @@ private fun CoupleStatusCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier

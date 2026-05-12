@@ -39,7 +39,7 @@
     <string name="profile_setup_subtitle">Điền hồ sơ cá nhân sau khi đăng nhập để tiếp tục.</string>
     <string name="profile_save_continue">Lưu và tiếp tục</string>
     <string name="profile_saving">Đang lưu...</string>
-    <string name="profile_title">Hồ sơ của tôi</string>
+    <string name="profile_title">Hồ sơ</string>
     <string name="profile_fullname">Họ và tên *</string>
     <string name="profile_nickname">Biệt danh</string>
     <string name="profile_birthdate">Ngày sinh *</string>

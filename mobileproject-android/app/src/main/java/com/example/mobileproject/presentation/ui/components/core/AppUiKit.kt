@@ -42,8 +42,8 @@ fun AppScreenBackground(
         Brush.verticalGradient(
             colors = listOf(
                 colorScheme.surface,
-                colorScheme.surfaceVariant.copy(alpha = 0.95f),
-                colorScheme.background,
+                colorScheme.surfaceContainerLow,
+                colorScheme.surfaceContainer.copy(alpha = 0.85f),
             ),
         )
     }
@@ -61,7 +61,7 @@ fun AppScreenBackground(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.primary.copy(alpha = 0.16f),
+                            colorScheme.primary.copy(alpha = 0.14f),
                             Color.Transparent,
                         ),
                     ),
@@ -77,7 +77,7 @@ fun AppScreenBackground(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.tertiary.copy(alpha = 0.14f),
+                            colorScheme.tertiary.copy(alpha = 0.10f),
                             Color.Transparent,
                         ),
                     ),
@@ -98,10 +98,10 @@ fun AppSurfaceCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = colorScheme.surface.copy(alpha = 0.92f),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
-        shadowElevation = 8.dp,
-        tonalElevation = 3.dp,
+        color = colorScheme.surfaceContainerLowest.copy(alpha = 0.95f),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+        shadowElevation = 6.dp,
+        tonalElevation = 2.dp,
     ) {
         content()
     }
@@ -141,18 +141,18 @@ fun AppPrimaryButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.extraLarge,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -186,10 +186,10 @@ fun AppFormTextField(
         keyboardActions = keyboardActions,
         shape = MaterialTheme.shapes.medium,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.42f),
-            unfocusedContainerColor = colorScheme.surfaceVariant.copy(alpha = 0.22f),
+            focusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.95f),
+            unfocusedContainerColor = colorScheme.surfaceContainerLowest.copy(alpha = 0.90f),
             focusedBorderColor = colorScheme.primary,
-            unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.45f),
+            unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.40f),
             focusedLabelColor = colorScheme.primary,
             unfocusedLabelColor = colorScheme.onSurfaceVariant,
             cursorColor = colorScheme.primary,
@@ -245,9 +245,9 @@ fun AppMetricChip(
     val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.small,
         color = colorScheme.secondaryContainer.copy(alpha = 0.7f),
-        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -277,8 +277,8 @@ fun AppEmptyState(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.95f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.18f)),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp),

@@ -9,7 +9,12 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,12 +25,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,6 +51,9 @@ import com.example.mobileproject.domain.entity.*
 import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
+import com.example.mobileproject.presentation.ui.theme.AppTheme
+import com.example.mobileproject.presentation.ui.components.core.BalanceCardStickers
+import com.example.mobileproject.presentation.ui.components.core.DaysTogetherStickers
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
@@ -71,7 +82,8 @@ fun HomeScreen(
     onSeeAllGoals: () -> Unit,
     onSeeAllFutureGoals: () -> Unit,
     onNavigateToAddSavingGoal: () -> Unit,
-    onNavigateToAddFutureGoal: () -> Unit
+    onNavigateToAddFutureGoal: () -> Unit,
+    onNavigateToChat: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -251,6 +263,8 @@ fun HomeScreen(
     val achievedSaving = sortedGoals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
     val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
             state = coupleState,
@@ -271,14 +285,15 @@ fun HomeScreen(
             accessToken = accessToken
         )
 
-        // FAB Logic
+        // FAB Logic — combined Chat + Add goals
         if (isFabExpanded) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)).clickable { isFabExpanded = false })
+            Box(modifier = Modifier.fillMaxSize().background(colorScheme.scrim.copy(alpha = 0.4f)).clickable { isFabExpanded = false })
             Column(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 24.dp),
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                GoalFabItem("Chat", Icons.AutoMirrored.Filled.Chat) { isFabExpanded = false; onNavigateToChat() }
                 GoalFabItem("Add Future Goal", Icons.Default.Event) { isFabExpanded = false; onNavigateToAddFutureGoal() }
                 GoalFabItem("Add Saving Goal", Icons.Default.Savings) { isFabExpanded = false; onNavigateToAddSavingGoal() }
             }
@@ -287,24 +302,25 @@ fun HomeScreen(
         val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f)
         FloatingActionButton(
             onClick = { isFabExpanded = !isFabExpanded },
-            containerColor = Color(0xFFFF8A80),
-            contentColor = Color.White,
+            containerColor = if (isFabExpanded) colorScheme.primary.copy(alpha = 0.85f) else colorScheme.primary,
+            contentColor = colorScheme.onPrimary,
             shape = CircleShape,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).size(64.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).size(60.dp)
         ) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(32.dp).rotate(rotation))
+            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp).rotate(rotation))
         }
     }
 }
 
 @Composable
 private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.clickable(onClick = onClick)) {
-            Text(text = text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Surface(shape = MaterialTheme.shapes.medium, color = colorScheme.surfaceContainerLowest, shadowElevation = 4.dp, modifier = Modifier.clickable(onClick = onClick)) {
+            Text(text = text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
         }
         Spacer(modifier = Modifier.width(16.dp))
-        FloatingActionButton(onClick = onClick, containerColor = Color.White, contentColor = Color(0xFFFF8A80), shape = CircleShape, modifier = Modifier.size(48.dp)) {
+        FloatingActionButton(onClick = onClick, containerColor = colorScheme.surfaceContainerLowest, contentColor = colorScheme.primary, shape = CircleShape, modifier = Modifier.size(48.dp)) {
             Icon(imageVector = icon, contentDescription = null)
         }
     }
@@ -325,7 +341,21 @@ private fun HomeContent(
     mapView: MapView?,
     accessToken: String
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFFF0F0))) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        colorScheme.surface,
+                        colorScheme.surfaceContainerLow,
+                        colorScheme.surfaceContainer.copy(alpha = 0.7f),
+                    ),
+                ),
+            ),
+    ) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -343,16 +373,36 @@ private fun HomeContent(
             GoalListSection("Saving Goals", goals.filterIsInstance<SavingGoal>(), onSeeAllGoals, onTaskToggle)
 
             if (!state.paired) {
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
+                ) {
                     PairSection(state, accessToken, onPairNow)
                 }
             } else {
                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Where is your partner?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434), modifier = Modifier.padding(horizontal = 8.dp))
-                    Card(modifier = Modifier.fillMaxWidth().height(250.dp), shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Text(
+                        "Where is your partner?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth().height(250.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
+                    ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (mapView != null) AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
-                            SmallFloatingActionButton(onClick = onCenterMe, containerColor = Color.White, contentColor = Color(0xFFFF8A80), modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp), shape = CircleShape) {
+                            SmallFloatingActionButton(
+                                onClick = onCenterMe,
+                                containerColor = colorScheme.surfaceContainerLowest,
+                                contentColor = colorScheme.primary,
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                                shape = CircleShape,
+                            ) {
                                 Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
                             }
                         }
@@ -366,11 +416,12 @@ private fun HomeContent(
 
 @Composable
 private fun GoalListSection(title: String, goals: List<Goal>, onSeeAllClick: () -> Unit, onTaskToggle: (String, String) -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     if (goals.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
-            TextButton(onClick = onSeeAllClick) { Text("See All", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) }
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
+            TextButton(onClick = onSeeAllClick) { Text("See All", color = colorScheme.primary, fontWeight = FontWeight.Bold) }
         }
         goals.take(2).forEach { GoalCard(it, onTaskToggle) }
     }
@@ -378,44 +429,127 @@ private fun GoalListSection(title: String, goals: List<Goal>, onSeeAllClick: () 
 
 @Composable
 fun SharedBalanceCard(balance: Long) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(35.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFF8A80))) {
-        Column(modifier = Modifier.padding(vertical = 28.dp, horizontal = 24.dp)) {
-            Text("SHARED BALANCE", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.Bold)
-            Text(formatSimpleAmount(balance), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = Color.White)
+    val colorScheme = MaterialTheme.colorScheme
+    val extendedColors = AppTheme.extendedColors
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.Transparent),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(extendedColors.cardGradient)
+                .padding(vertical = 28.dp, horizontal = 24.dp),
+        ) {
+            Column {
+                Text(
+                    "SHARED BALANCE",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.90f),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    formatSimpleAmount(balance),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                )
+            }
+            BalanceCardStickers()
         }
     }
 }
 
 @Composable
 fun DaysTogetherModernCard(daysTogether: Long) {
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(40.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Favorite, null, tint = Color(0xFFFF8A80), modifier = Modifier.size(72.dp))
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("$daysTogether Days Together", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
-            Text("Our shared journey continues", style = MaterialTheme.typography.bodyMedium, color = Color.Gray.copy(alpha = 0.8f))
+    val colorScheme = MaterialTheme.colorScheme
+    val extendedColors = AppTheme.extendedColors
+
+    val pulseTransition = rememberInfiniteTransition(label = "heart-pulse")
+    val pulseScale by pulseTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "heart-scale",
+    )
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    Icons.Default.Favorite,
+                    null,
+                    tint = extendedColors.heartPulse,
+                    modifier = Modifier.size(72.dp).scale(pulseScale),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "$daysTogether Days Together",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colorScheme.onSurface,
+                )
+                Text(
+                    "Our shared journey continues",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+            DaysTogetherStickers()
         }
     }
 }
 
 @Composable
 fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE4E1).copy(alpha = 0.7f))) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    ElevatedCard(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLow),
+    ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Icon(icon, null, tint = Color(0xFFFF8A80), modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = colorScheme.primary, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(title, style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A3434))
+            Text(
+                title,
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+            )
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
         }
     }
 }
 
 @Composable
 private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.padding(20.dp)) {
-        Text("Connect with your partner", fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
+        Text("Connect with your partner", fontWeight = FontWeight.Bold, color = colorScheme.primary)
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onPairNow, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)), shape = RoundedCornerShape(16.dp)) {
+        Button(
+            onClick = onPairNow,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary, contentColor = colorScheme.onPrimary),
+            shape = MaterialTheme.shapes.extraLarge,
+        ) {
             Text("Pair Now", fontWeight = FontWeight.Bold)
         }
     }

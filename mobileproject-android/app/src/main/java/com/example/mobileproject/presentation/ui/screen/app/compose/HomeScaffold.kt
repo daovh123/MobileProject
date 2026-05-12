@@ -135,7 +135,11 @@ fun HomeScaffold(
     val colorScheme = MaterialTheme.colorScheme
     val bgBrush = remember(colorScheme) {
         Brush.verticalGradient(
-            listOf(colorScheme.surface, colorScheme.surfaceVariant.copy(alpha = 0.95f), colorScheme.background),
+            listOf(
+                colorScheme.surface,
+                colorScheme.surfaceContainerLow,
+                colorScheme.surfaceContainer.copy(alpha = 0.85f),
+            ),
         )
     }
 
@@ -177,7 +181,7 @@ fun HomeScaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (!hideTopAndBottomBar) {
-                CenterAlignedTopAppBar(
+                TopAppBar(
                     title = {
                         Text(
                             text = when (currentRoute) {
@@ -185,7 +189,8 @@ fun HomeScaffold(
                                 HomeRoutes.MEMORIES -> stringResource(R.string.memories_title)
                                 else -> stringResource(currentItem.labelRes)
                             },
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             color = colorScheme.onSurface,
                         )
                     },
@@ -218,13 +223,12 @@ fun HomeScaffold(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = colorScheme.surface.copy(alpha = 0.98f),
-                        scrolledContainerColor = colorScheme.surfaceColorAtElevation(3.dp),
+                        containerColor = colorScheme.surface,
+                        scrolledContainerColor = colorScheme.surface,
                         titleContentColor = colorScheme.onSurface,
                         navigationIconContentColor = colorScheme.primary,
                         actionIconContentColor = colorScheme.primary,
                     ),
-                    modifier = Modifier.padding(bottom = 4.dp),
                 )
             }
         },
@@ -260,7 +264,7 @@ fun HomeScaffold(
             Box(
                 modifier = Modifier.align(Alignment.TopEnd).size(280.dp).offset(x = 90.dp, y = (-110).dp)
                     .background(
-                        brush = Brush.radialGradient(colors = listOf(colorScheme.primary.copy(alpha = 0.18f), Color.Transparent)),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.primary.copy(alpha = 0.12f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )
@@ -268,7 +272,7 @@ fun HomeScaffold(
             Box(
                 modifier = Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-110).dp, y = 130.dp)
                     .background(
-                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.14f), Color.Transparent)),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.08f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )
@@ -285,7 +289,12 @@ fun HomeScaffold(
                         onSeeAllGoals = { navController.navigate(HomeRoutes.SAVING_GOALS) },
                         onSeeAllFutureGoals = { navController.navigate(HomeRoutes.FUTURE_GOALS) },
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
-                        onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) }
+                        onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
+                        onNavigateToChat = {
+                            navController.navigate(HomeRoutes.CHAT) {
+                                launchSingleTop = true
+                            }
+                        },
                     )
                 }
                 
@@ -369,16 +378,7 @@ fun HomeScaffold(
                 onDispose { }
             }
 
-            if (!hideTopAndBottomBar) {
-                DraggableChatFab(
-                    onClick = {
-                        navController.navigate(HomeRoutes.CHAT) {
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+            // Chat FAB is now integrated into HomeScreen's speed-dial FAB
         }
     }
 }

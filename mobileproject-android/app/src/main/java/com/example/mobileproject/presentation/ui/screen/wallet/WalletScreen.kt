@@ -56,7 +56,7 @@ fun WalletScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = colorScheme.background,
+            containerColor = colorScheme.surfaceContainerLow,
             floatingActionButton = { }
         ) { paddingValues ->
             if (uiState.isLoading && uiState.wallet == null) {
@@ -108,8 +108,8 @@ fun WalletScreen(
                     .width(280.dp)
                     .heightIn(max = 450.dp)
                     .padding(16.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -167,8 +167,8 @@ fun WalletScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium,
+                        color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             isContributeSheetVisible = true 
@@ -187,7 +187,7 @@ fun WalletScreen(
                             isFabExpanded = false
                             isContributeSheetVisible = true 
                         },
-                        containerColor = colorScheme.surface,
+                        containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
@@ -198,8 +198,8 @@ fun WalletScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium,
+                        color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             onNavigateToAddExpense() 
@@ -218,7 +218,7 @@ fun WalletScreen(
                             isFabExpanded = false
                             onNavigateToAddExpense() 
                         },
-                        containerColor = colorScheme.surface,
+                        containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
@@ -229,8 +229,8 @@ fun WalletScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium,
+                        color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
                             onNavigateToTopUp() 
@@ -249,7 +249,7 @@ fun WalletScreen(
                             isFabExpanded = false
                             onNavigateToTopUp() 
                         },
-                        containerColor = colorScheme.surface,
+                        containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)

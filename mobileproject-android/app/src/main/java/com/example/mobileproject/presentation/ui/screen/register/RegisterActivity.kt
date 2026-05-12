@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -132,10 +133,10 @@ private fun RegisterScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = colorScheme.surfaceContainer.copy(alpha = 0.92f),
-        unfocusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.92f),
+        focusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.95f),
+        unfocusedContainerColor = colorScheme.surfaceContainerLowest.copy(alpha = 0.90f),
         focusedBorderColor = colorScheme.primary,
-        unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.28f),
+        unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.40f),
         focusedLabelColor = colorScheme.primary,
         unfocusedLabelColor = colorScheme.onSurfaceVariant,
         cursorColor = colorScheme.primary,
@@ -182,7 +183,7 @@ private fun RegisterScreen(
                 text = stringResource(R.string.register_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface,
+                color = Color.White,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -190,7 +191,7 @@ private fun RegisterScreen(
             Text(
                 text = stringResource(R.string.register_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -317,14 +318,15 @@ private fun RegisterScreen(
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary,
                     ),
-                    shape = MaterialTheme.shapes.large,
+                    shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                 ) {
                     Text(
                         text = if (uiState.isLoading) "Đang tạo tài khoản..." else stringResource(R.string.register_button),
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 

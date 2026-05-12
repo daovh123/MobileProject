@@ -75,8 +75,8 @@ fun DraggableChatFab(
                 .clickable(onClick = onClick),
             shape = CircleShape,
             color = colorScheme.primaryContainer,
-            border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.3f)),
-            shadowElevation = 8.dp,
+            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+            shadowElevation = 12.dp,
             tonalElevation = 4.dp,
         ) {
             Box(contentAlignment = Alignment.Center) {

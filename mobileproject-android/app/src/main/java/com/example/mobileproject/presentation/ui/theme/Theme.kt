@@ -9,6 +9,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -41,6 +42,27 @@ private val AppTypography = Typography(
         lineHeight = 48.sp,
         letterSpacing = (-0.8).sp,
     ),
+    displayMedium = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 34.sp,
+        lineHeight = 42.sp,
+        letterSpacing = (-0.5).sp,
+    ),
+    displaySmall = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.3).sp,
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.3).sp,
+    ),
     headlineMedium = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.SemiBold,
@@ -48,11 +70,32 @@ private val AppTypography = Typography(
         lineHeight = 32.sp,
         letterSpacing = (-0.3).sp,
     ),
+    headlineSmall = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.2).sp,
+    ),
     titleLarge = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
         lineHeight = 28.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleMedium = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp,
+    ),
+    titleSmall = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.sp,
     ),
     bodyLarge = TextStyle(
@@ -69,20 +112,41 @@ private val AppTypography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.sp,
     ),
+    bodySmall = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.sp,
+    ),
     labelLarge = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp,
+    ),
+    labelMedium = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.6.sp,
+        letterSpacing = 0.5.sp,
+    ),
+    labelSmall = TextStyle(
+        fontFamily = AppFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp,
     ),
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(4.dp),
+    extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(28.dp),
+    large = RoundedCornerShape(24.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
 
@@ -102,10 +166,18 @@ fun MobileProjectTheme(
         else -> MobileProjectLightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        shapes = AppShapes,
-        content = content,
-    )
+    val extendedColors = if (darkTheme) {
+        ExtendedColorScheme.dark()
+    } else {
+        ExtendedColorScheme.light()
+    }
+
+    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content,
+        )
+    }
 }

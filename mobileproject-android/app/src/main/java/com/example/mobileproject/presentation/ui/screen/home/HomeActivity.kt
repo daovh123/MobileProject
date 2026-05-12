@@ -9,6 +9,9 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +55,7 @@ class HomeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableImmersiveMode()
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         if (accessToken.isBlank()) {
             accessToken = authSessionStore.load()?.token.orEmpty()
@@ -204,5 +208,13 @@ class HomeActivity : ComponentActivity() {
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
         const val EXTRA_OPEN_CHAT: String = "extra_open_chat"
         const val KEY_SELECTED_NAV_ITEM_ID: String = "selected_nav_item_id"
+    }
+
+    private fun enableImmersiveMode() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.statusBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
     }
 }
