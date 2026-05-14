@@ -1,11 +1,9 @@
 package com.mobileproject.mobileprojectbackend.goal;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
+import java.time.Instant;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.time.Instant;
 
 @Document(collection = "saving_goals")
 public class SavingGoal extends Goal {

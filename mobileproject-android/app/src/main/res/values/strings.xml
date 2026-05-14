@@ -323,6 +323,28 @@
     <string name="memories_event_title_placeholder">Sự kiện sắp tới</string>
     <string name="memories_event_subtitle_placeholder">Chưa có sự kiện nào</string>
 
+    <!-- Memories - Locket style -->
+    <string name="memories_locket_title">Khoảnh khắc</string>
+    <string name="memories_locket_subtitle">Lưu ảnh nhanh mỗi ngày cho hai bạn.</string>
+    <string name="memories_locket_recent_title">Khoảnh khắc trước đó</string>
+    <string name="memories_locket_capture">Chụp ảnh</string>
+    <string name="memories_locket_capture_hint">Chạm để chụp khoảnh khắc mới</string>
+    <string name="memories_locket_gallery">Chọn ảnh</string>
+    <string name="memories_locket_save">Lưu khoảnh khắc</string>
+    <string name="memories_locket_title_hint">Thêm tiêu đề...</string>
+    <string name="memories_locket_empty_title">Chưa có khoảnh khắc nào</string>
+    <string name="memories_locket_empty_subtitle">Hãy chụp một tấm để bắt đầu bộ sưu tập của hai bạn.</string>
+    <string name="memories_locket_title_fallback">Khoảnh khắc mới</string>
+    <string name="memories_locket_react">Thả tim</string>
+    <string name="memories_locket_comments">Bình luận</string>
+    <string name="memories_locket_comments_empty">Chưa có bình luận.</string>
+    <string name="memories_locket_comment_hint">Viết bình luận...</string>
+    <string name="memories_locket_send">Gửi</string>
+    <string name="memories_locket_comment_author_fallback">Bạn</string>
+    <string name="memories_locket_close">Đóng</string>
+    <string name="memories_locket_widget_title">Locket của bạn</string>
+    <string name="memories_locket_widget_empty">Chưa có khoảnh khắc</string>
+
     <!-- Settings - URLs (replace with real URLs before release) -->
     <string name="url_terms_of_service">https://policies.google.com/terms</string>
     <string name="url_privacy_policy">https://policies.google.com/privacy</string>

@@ -39,7 +39,8 @@ import com.example.mobileproject.presentation.ui.screen.home.AddFutureGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.AddSavingGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
-import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
+import com.example.mobileproject.presentation.ui.screen.memories.CaptureMomentScreen
+import com.example.mobileproject.presentation.ui.screen.memories.LocketMemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
@@ -58,6 +59,7 @@ object HomeRoutes {
     const val WALLET: String = "wallet"
     const val EXPLORE: String = "explore"
     const val MEMORIES: String = "memories"
+    const val MEMORIES_CAPTURE: String = "memories_capture"
     const val SETTINGS: String = "settings"
     const val PROFILE: String = "profile"
     const val PROFILE_EDIT: String = "profile_edit"
@@ -101,10 +103,12 @@ fun HomeScaffold(
     val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
     val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
     val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
+    val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
     
-    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || 
-                             isRecentTransactionsRoute || isSavingGoalsRoute || 
-                             isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute || isProfileEditRoute
+    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
+        isRecentTransactionsRoute || isSavingGoalsRoute ||
+        isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
+        isProfileEditRoute || isMemoriesCaptureRoute
     
     val snackbarHostState = remember { SnackbarHostState() }
     val notifications = remember {
@@ -339,17 +343,15 @@ fun HomeScaffold(
                     ExploreRoute(accessToken = accessToken)
                 }
                 composable(HomeRoutes.MEMORIES) {
-                    MemoriesScreen(
+                    LocketMemoriesScreen(
                         accessToken = accessToken,
-                        onNavigateToExplore = {
-                            navController.navigate(HomeRoutes.EXPLORE) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onOpenCapture = { navController.navigate(HomeRoutes.MEMORIES_CAPTURE) },
+                    )
+                }
+                composable(HomeRoutes.MEMORIES_CAPTURE) {
+                    CaptureMomentScreen(
+                        accessToken = accessToken,
+                        onClose = { navController.popBackStack() }
                     )
                 }
                 composable(HomeRoutes.SETTINGS) {

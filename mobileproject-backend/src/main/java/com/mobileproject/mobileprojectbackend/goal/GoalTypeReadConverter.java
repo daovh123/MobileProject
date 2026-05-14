@@ -2,7 +2,6 @@ package com.mobileproject.mobileprojectbackend.goal;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
-import org.springframework.data.convert.WritingConverter;
 
 @ReadingConverter
 public enum GoalTypeReadConverter implements Converter<String, GoalType> {

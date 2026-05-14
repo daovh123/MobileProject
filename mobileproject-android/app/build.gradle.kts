@@ -54,6 +54,13 @@ android {
         compose = true
         buildConfig = true
     }
+
+    sourceSets {
+        getByName("test") {
+            java.srcDirs("src/test/single/java")
+            resources.srcDirs("src/test/single/resources")
+        }
+    }
 }
 
 kotlin {
@@ -98,6 +105,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation(libs.androidx.junit)
@@ -106,6 +115,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation("androidx.glance:glance:1.1.0")
+    implementation("androidx.glance:glance-appwidget:1.1.0")
 
     implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
     implementation("com.google.firebase:firebase-analytics")

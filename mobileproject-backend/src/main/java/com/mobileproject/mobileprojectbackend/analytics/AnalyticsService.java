@@ -54,14 +54,12 @@ public class AnalyticsService {
                         .sum("amount").as("totalAmount"),
                 Aggregation.project()
                         .and("_id").as("category")
-                        .and("totalAmount").as("totalAmount")
-        );
+                        .and("totalAmount").as("totalAmount"));
 
         AggregationResults<CategoryBreakdownItem> results = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                CategoryBreakdownItem.class
-        );
+                CategoryBreakdownItem.class);
 
         System.out.println("Results count: " + results.getMappedResults().size());
         return results.getMappedResults();
@@ -71,7 +69,7 @@ public class AnalyticsService {
         if (year == null || month == null) {
             return List.of();
         }
-        
+
         ZonedDateTime startOfMonth = ZonedDateTime.of(year, month, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
         ZonedDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
 
@@ -101,24 +99,23 @@ public class AnalyticsService {
                 Aggregation.unwind("dates"),
                 Aggregation.project()
                         .and("dates").as("date")
-                        .and("totalAmount").as("totalAmount")
-        );
+                        .and("totalAmount").as("totalAmount"));
 
-        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
-                aggregation,
-                "transactions",
-                Map.class
-        );
+        @SuppressWarnings("unchecked")
+        AggregationResults<Map<String, Object>> rawResults = (AggregationResults<Map<String, Object>>) (Object) mongoTemplate
+                .aggregate(
+                        aggregation,
+                        "transactions",
+                        Map.class);
 
         System.out.println("Raw results count: " + rawResults.getMappedResults().size());
 
         Map<Integer, Long> dailySpending = new HashMap<>();
-        for (Object rawResult : rawResults.getMappedResults()) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = (Map<String, Object>) rawResult;
+        for (Map<String, Object> result : rawResults.getMappedResults()) {
             Object dateObj = result.get("date");
             Number totalAmt = (Number) result.get("totalAmount");
-            if (dateObj == null || totalAmt == null) continue;
+            if (dateObj == null || totalAmt == null)
+                continue;
             int day;
             if (dateObj instanceof Number n) {
                 day = n.intValue();
@@ -164,8 +161,7 @@ public class AnalyticsService {
                 .andOperator(
                         Criteria.where("type").is("EXPENSE"),
                         Criteria.where("id_couple").is(coupleId),
-                        Criteria.where("created_at").gte(startInstant).lte(endInstant)
-                );
+                        Criteria.where("created_at").gte(startInstant).lte(endInstant));
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
@@ -173,14 +169,12 @@ public class AnalyticsService {
                         .sum("amount").as("totalAmount"),
                 Aggregation.project()
                         .and("_id").as("category")
-                        .and("totalAmount").as("totalAmount")
-        );
+                        .and("totalAmount").as("totalAmount"));
 
         AggregationResults<CategoryBreakdownItem> results = mongoTemplate.aggregate(
                 aggregation,
                 "transactions",
-                CategoryBreakdownItem.class
-        );
+                CategoryBreakdownItem.class);
 
         List<CategoryBreakdownItem> list = results.getMappedResults();
         System.out.println("Results count: " + (list == null ? 0 : list.size()));
@@ -206,8 +200,7 @@ public class AnalyticsService {
         Criteria criteria = new Criteria()
                 .andOperator(
                         Criteria.where("id_couple").is(coupleId),
-                        Criteria.where("created_at").gte(startInstant).lte(endInstant)
-                );
+                        Criteria.where("created_at").gte(startInstant).lte(endInstant));
 
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
@@ -221,25 +214,25 @@ public class AnalyticsService {
                         .and("month").as("month")
                         .and("type").as("type")
                         .and("total").as("total"),
-                Aggregation.sort(Sort.by(Sort.Direction.ASC, "month"))
-        );
+                Aggregation.sort(Sort.by(Sort.Direction.ASC, "month")));
 
-        AggregationResults<Map> rawResults = mongoTemplate.aggregate(
-                aggregation,
-                "transactions",
-                Map.class
-        );
+        @SuppressWarnings("unchecked")
+        AggregationResults<Map<String, Object>> rawResults = (AggregationResults<Map<String, Object>>) (Object) mongoTemplate
+                .aggregate(
+                        aggregation,
+                        "transactions",
+                        Map.class);
 
-        System.out.println("Raw results count: " + (rawResults.getMappedResults() == null ? 0 : rawResults.getMappedResults().size()));
+        System.out.println("Raw results count: "
+                + (rawResults.getMappedResults() == null ? 0 : rawResults.getMappedResults().size()));
 
         Map<Integer, Map<String, Long>> monthlyData = new HashMap<>();
-        for (Object rawResult : rawResults.getMappedResults()) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> m = (Map<String, Object>) rawResult;
+        for (Map<String, Object> m : rawResults.getMappedResults()) {
             Integer monthObj = (Integer) m.get("month");
             String type = (String) m.get("type");
             Long total = (m.get("total") instanceof Number n) ? n.longValue() : 0L;
-            if (monthObj == null || type == null) continue;
+            if (monthObj == null || type == null)
+                continue;
             monthlyData.computeIfAbsent(monthObj, k -> new HashMap<>()).put(type, total);
         }
 

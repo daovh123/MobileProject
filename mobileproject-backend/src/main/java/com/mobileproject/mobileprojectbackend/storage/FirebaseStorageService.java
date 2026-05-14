@@ -28,13 +28,15 @@ public class FirebaseStorageService {
     }
 
     /**
-     * Uploads avatar bytes to Firebase Storage at path avatars/{userId}/avatar_{timestamp}.{ext}.
+     * Uploads avatar bytes to Firebase Storage at path
+     * avatars/{userId}/avatar_{timestamp}.{ext}.
      * Returns the public download URL.
      * Falls back to a placeholder URL if Firebase Storage is not configured.
      */
     public String uploadAvatar(String userId, byte[] imageBytes, String contentType) {
         if (bucketName.isBlank()) {
-            LOGGER.warn("firebase.storage.bucket is not configured — returning placeholder avatar URL for user={}", userId);
+            LOGGER.warn("firebase.storage.bucket is not configured — returning placeholder avatar URL for user={}",
+                    userId);
             return placeholderUrl(userId);
         }
 
@@ -74,7 +76,8 @@ public class FirebaseStorageService {
     }
 
     private String extensionForContentType(String contentType) {
-        if (contentType == null) return "jpg";
+        if (contentType == null)
+            return "jpg";
         return switch (contentType.toLowerCase()) {
             case "image/png" -> "png";
             case "image/gif" -> "gif";
@@ -85,8 +88,8 @@ public class FirebaseStorageService {
 
     public String uploadMomentImage(String coupleId, byte[] imageBytes, String contentType) {
         if (bucketName.isBlank() || FirebaseApp.getApps().isEmpty()) {
-            LOGGER.warn("Firebase not configured — returning placeholder url for moment in couple={}", coupleId);
-            return "https://placehold.co/600x800/png?text=Moment+" + System.currentTimeMillis();
+            LOGGER.warn("Firebase not configured — returning inline data url for moment in couple={}", coupleId);
+            return dataUrlForBytes(imageBytes, contentType);
         }
 
         String extension = extensionForContentType(contentType);
@@ -110,7 +113,15 @@ public class FirebaseStorageService {
             return downloadUrl;
         } catch (Exception ex) {
             LOGGER.warn("Failed to upload moment image for couple={}: {}", coupleId, ex.getMessage(), ex);
-            return "https://placehold.co/600x800/png?text=Moment+Upload+Failed";
+            return dataUrlForBytes(imageBytes, contentType);
         }
+    }
+
+    private String dataUrlForBytes(byte[] imageBytes, String contentType) {
+        String safeContentType = (contentType == null || contentType.isBlank())
+                ? "image/jpeg"
+                : contentType;
+        String encoded = java.util.Base64.getEncoder().encodeToString(imageBytes);
+        return "data:" + safeContentType + ";base64," + encoded;
     }
 }

@@ -26,6 +26,10 @@ import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
 import com.example.mobileproject.data.model.moment.MomentDto
+import com.example.mobileproject.data.model.moment.MomentCommentDto
+import com.example.mobileproject.data.model.moment.MomentCommentRequestDto
+import com.example.mobileproject.data.model.moment.MomentReactionRequestDto
+import com.example.mobileproject.data.model.moment.MomentReactionResponseDto
 import com.example.mobileproject.data.model.moment.MomentRequestDto
 import com.example.mobileproject.data.model.moment.MomentResponseDto
 import com.example.mobileproject.data.model.ProductDto
@@ -227,4 +231,24 @@ interface ApiService {
         @Body request: MomentRequestDto,
         @Header("Authorization") authorization: String,
     ): Response<MomentResponseDto>
+
+    @POST("api/v1/moments/{momentId}/reactions")
+    suspend fun reactToMoment(
+        @Path("momentId") momentId: String,
+        @Body request: MomentReactionRequestDto,
+        @Header("Authorization") authorization: String,
+    ): Response<MomentReactionResponseDto>
+
+    @GET("api/v1/moments/{momentId}/comments")
+    suspend fun getMomentComments(
+        @Path("momentId") momentId: String,
+        @Header("Authorization") authorization: String,
+    ): Response<List<MomentCommentDto>>
+
+    @POST("api/v1/moments/{momentId}/comments")
+    suspend fun createMomentComment(
+        @Path("momentId") momentId: String,
+        @Body request: MomentCommentRequestDto,
+        @Header("Authorization") authorization: String,
+    ): Response<MomentCommentDto>
 }
