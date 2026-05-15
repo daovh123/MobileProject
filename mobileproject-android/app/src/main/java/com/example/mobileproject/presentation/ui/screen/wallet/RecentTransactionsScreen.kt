@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.screen.wallet
+﻿package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,7 +35,7 @@ fun RecentTransactionsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "All Transactions",
+                        text = "Tất cả giao dịch",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.primary
@@ -45,7 +45,7 @@ fun RecentTransactionsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = "Quay lại",
                             tint = colorScheme.primary
                         )
                     }
@@ -62,7 +62,7 @@ fun RecentTransactionsScreen(
                 )
             } else if (uiState.allTransactions.isEmpty()) {
                 Text(
-                    text = "No transactions found",
+                    text = "Không tìm thấy giao dịch",
                     modifier = Modifier.align(Alignment.Center),
                     color = colorScheme.onSurfaceVariant
                 )
@@ -80,3 +80,5 @@ fun RecentTransactionsScreen(
         }
     }
 }
+
+

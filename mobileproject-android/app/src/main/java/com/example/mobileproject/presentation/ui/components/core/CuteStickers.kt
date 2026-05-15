@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.components.core
+﻿package com.example.mobileproject.presentation.ui.components.core
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
  * These float around screens with subtle animations.
  */
 
-// ─── Individual Animated Sticker ─────────────────────────────────────
+// â”€â”€â”€ Individual Animated Sticker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @Composable
 fun FloatingSticker(
     emoji: String,
@@ -71,34 +71,34 @@ fun FloatingSticker(
     )
 }
 
-// ─── Preset Sticker Sets ─────────────────────────────────────────────
+// â”€â”€â”€ Preset Sticker Sets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Love-themed stickers for the home dashboard */
 @Composable
 fun BoxScope.HomeLoveStickers() {
     FloatingSticker(
-        emoji = "💕",
+        emoji = "ðŸ’•",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 12.dp, y = 8.dp),
         size = 22.dp,
         alpha = 0.45f,
         animDuration = 2600,
     )
     FloatingSticker(
-        emoji = "✨",
+        emoji = "âœ¨",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-16).dp, y = 14.dp),
         size = 18.dp,
         alpha = 0.40f,
         animDuration = 1800,
     )
     FloatingSticker(
-        emoji = "🌸",
+        emoji = "ðŸŒ¸",
         modifier = Modifier.align(Alignment.BottomStart).offset(x = 20.dp, y = (-12).dp),
         size = 20.dp,
         alpha = 0.38f,
         animDuration = 3000,
     )
     FloatingSticker(
-        emoji = "💗",
+        emoji = "ðŸ’—",
         modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-14).dp, y = (-16).dp),
         size = 20.dp,
         alpha = 0.42f,
@@ -106,25 +106,25 @@ fun BoxScope.HomeLoveStickers() {
     )
 }
 
-/** Stickers around the "Days Together" card */
+/** Stickers around the "Ngày bên nhau" card */
 @Composable
 fun BoxScope.DaysTogetherStickers() {
     FloatingSticker(
-        emoji = "💑",
+        emoji = "ðŸ’‘",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 14.dp, y = 10.dp),
         size = 24.dp,
         alpha = 0.50f,
         animDuration = 2800,
     )
     FloatingSticker(
-        emoji = "🦋",
+        emoji = "ðŸ¦‹",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = 8.dp),
         size = 20.dp,
         alpha = 0.42f,
         animDuration = 2000,
     )
     FloatingSticker(
-        emoji = "🌷",
+        emoji = "ðŸŒ·",
         modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-16).dp, y = (-10).dp),
         size = 20.dp,
         alpha = 0.40f,
@@ -136,14 +136,14 @@ fun BoxScope.DaysTogetherStickers() {
 @Composable
 fun BoxScope.BalanceCardStickers() {
     FloatingSticker(
-        emoji = "💰",
+        emoji = "ðŸ’°",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-14).dp, y = 8.dp),
         size = 22.dp,
         alpha = 0.38f,
         animDuration = 2600,
     )
     FloatingSticker(
-        emoji = "🌟",
+        emoji = "ðŸŒŸ",
         modifier = Modifier.align(Alignment.BottomStart).offset(x = 10.dp, y = (-8).dp),
         size = 16.dp,
         alpha = 0.35f,
@@ -155,42 +155,42 @@ fun BoxScope.BalanceCardStickers() {
 @Composable
 fun BoxScope.CoupleConnectStickers() {
     FloatingSticker(
-        emoji = "💘",
+        emoji = "ðŸ’˜",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 24.dp, y = 60.dp),
         size = 28.dp,
         alpha = 0.50f,
         animDuration = 2400,
     )
     FloatingSticker(
-        emoji = "🌹",
+        emoji = "ðŸŒ¹",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-20).dp, y = 80.dp),
         size = 24.dp,
         alpha = 0.45f,
         animDuration = 3200,
     )
     FloatingSticker(
-        emoji = "💫",
+        emoji = "ðŸ’«",
         modifier = Modifier.align(Alignment.CenterStart).offset(x = 16.dp),
         size = 22.dp,
         alpha = 0.40f,
         animDuration = 2000,
     )
     FloatingSticker(
-        emoji = "🦢",
+        emoji = "ðŸ¦¢",
         modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-18).dp),
         size = 26.dp,
         alpha = 0.42f,
         animDuration = 2800,
     )
     FloatingSticker(
-        emoji = "🌸",
+        emoji = "ðŸŒ¸",
         modifier = Modifier.align(Alignment.BottomStart).offset(x = 30.dp, y = (-80).dp),
         size = 22.dp,
         alpha = 0.38f,
         animDuration = 2600,
     )
     FloatingSticker(
-        emoji = "💝",
+        emoji = "ðŸ’",
         modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-24).dp, y = (-100).dp),
         size = 24.dp,
         alpha = 0.44f,
@@ -202,21 +202,21 @@ fun BoxScope.CoupleConnectStickers() {
 @Composable
 fun BoxScope.ProfileHeaderStickers() {
     FloatingSticker(
-        emoji = "👑",
+        emoji = "ðŸ‘‘",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 16.dp, y = 8.dp),
         size = 20.dp,
         alpha = 0.42f,
         animDuration = 2400,
     )
     FloatingSticker(
-        emoji = "💎",
+        emoji = "ðŸ’Ž",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-14).dp, y = 10.dp),
         size = 18.dp,
         alpha = 0.38f,
         animDuration = 2800,
     )
     FloatingSticker(
-        emoji = "🌺",
+        emoji = "ðŸŒº",
         modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-18).dp, y = (-6).dp),
         size = 18.dp,
         alpha = 0.36f,
@@ -228,35 +228,35 @@ fun BoxScope.ProfileHeaderStickers() {
 @Composable
 fun BoxScope.AuthScreenStickers() {
     FloatingSticker(
-        emoji = "💕",
+        emoji = "ðŸ’•",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 20.dp, y = 50.dp),
         size = 26.dp,
         alpha = 0.50f,
         animDuration = 2600,
     )
     FloatingSticker(
-        emoji = "🌙",
+        emoji = "ðŸŒ™",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-18).dp, y = 70.dp),
         size = 22.dp,
         alpha = 0.44f,
         animDuration = 3000,
     )
     FloatingSticker(
-        emoji = "✨",
+        emoji = "âœ¨",
         modifier = Modifier.align(Alignment.CenterStart).offset(x = 14.dp, y = (-40).dp),
         size = 18.dp,
         alpha = 0.38f,
         animDuration = 1800,
     )
     FloatingSticker(
-        emoji = "🌸",
+        emoji = "ðŸŒ¸",
         modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-16).dp, y = 30.dp),
         size = 20.dp,
         alpha = 0.40f,
         animDuration = 2400,
     )
     FloatingSticker(
-        emoji = "💗",
+        emoji = "ðŸ’—",
         modifier = Modifier.align(Alignment.BottomStart).offset(x = 24.dp, y = (-60).dp),
         size = 22.dp,
         alpha = 0.42f,
@@ -268,14 +268,14 @@ fun BoxScope.AuthScreenStickers() {
 @Composable
 fun BoxScope.MemoriesStickers() {
     FloatingSticker(
-        emoji = "📸",
+        emoji = "ðŸ“¸",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-12).dp, y = 6.dp),
         size = 18.dp,
         alpha = 0.35f,
         animDuration = 2400,
     )
     FloatingSticker(
-        emoji = "🎀",
+        emoji = "ðŸŽ€",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 10.dp, y = 4.dp),
         size = 16.dp,
         alpha = 0.32f,
@@ -287,17 +287,18 @@ fun BoxScope.MemoriesStickers() {
 @Composable
 fun BoxScope.WalletStickers() {
     FloatingSticker(
-        emoji = "🐷",
+        emoji = "ðŸ·",
         modifier = Modifier.align(Alignment.TopEnd).offset(x = (-16).dp, y = 10.dp),
         size = 22.dp,
         alpha = 0.40f,
         animDuration = 2600,
     )
     FloatingSticker(
-        emoji = "💰",
+        emoji = "ðŸ’°",
         modifier = Modifier.align(Alignment.TopStart).offset(x = 14.dp, y = 8.dp),
         size = 18.dp,
         alpha = 0.35f,
         animDuration = 2200,
     )
 }
+

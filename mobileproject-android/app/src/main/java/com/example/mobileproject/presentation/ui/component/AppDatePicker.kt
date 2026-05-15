@@ -1,7 +1,9 @@
-package com.example.mobileproject.presentation.ui.component
+﻿package com.example.mobileproject.presentation.ui.component
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.example.mobileproject.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,12 +30,12 @@ fun AppDatePicker(
                     onDismiss()
                 }
             ) {
-                Text("OK")
+                Text(stringResource(R.string.common_ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         }
     ) {
@@ -49,7 +51,7 @@ object DateUtils {
     private val simpleBackendParser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     fun formatToDisplay(dateString: String?): String {
-        if (dateString.isNullOrEmpty()) return "Select a date"
+        if (dateString.isNullOrEmpty()) return "Chọn ngày"
         return try {
             val date = if (dateString.contains("T")) {
                 backendParser.parse(dateString)
@@ -62,3 +64,4 @@ object DateUtils {
         }
     }
 }
+

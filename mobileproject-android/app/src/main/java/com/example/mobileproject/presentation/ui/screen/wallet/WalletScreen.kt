@@ -113,7 +113,7 @@ fun WalletScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Select Month",
+                        text = "Chọn tháng",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface
@@ -175,7 +175,7 @@ fun WalletScreen(
                         }
                     ) {
                         Text(
-                            text = "Contribute to Goal",
+                            text = "Đóng góp vào mục tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
@@ -206,7 +206,7 @@ fun WalletScreen(
                         }
                     ) {
                         Text(
-                            text = "Add Expense",
+                            text = "Thêm chi tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
@@ -237,7 +237,7 @@ fun WalletScreen(
                         }
                     ) {
                         Text(
-                            text = "Top Up",
+                            text = "Nạp tiền",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold

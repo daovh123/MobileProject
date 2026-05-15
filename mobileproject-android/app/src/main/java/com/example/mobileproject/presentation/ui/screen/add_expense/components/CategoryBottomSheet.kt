@@ -18,9 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.model.ExpenseCategory
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +51,7 @@ fun CategoryBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Categories",
+                    text = stringResource(R.string.category_sheet_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2D2D2D)
@@ -58,7 +60,7 @@ fun CategoryBottomSheet(
                     onClick = onDismiss,
                     modifier = Modifier.background(Color(0xFFFFF0F0), CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close), tint = Color.Gray)
                 }
             }
 
@@ -68,7 +70,7 @@ fun CategoryBottomSheet(
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
-                placeholder = { Text("Search for categories", color = Color.LightGray) },
+                placeholder = { Text(stringResource(R.string.category_search_placeholder), color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -94,9 +96,14 @@ fun CategoryBottomSheet(
                     val categoriesInGroup = allCategories.filter { it.type == type }
                     
                     if (categoriesInGroup.isNotEmpty()) {
+                        val groupLabelRes = when (type) {
+                            ExpenseCategory.CategoryType.ESSENTIALS -> R.string.category_group_essentials
+                            ExpenseCategory.CategoryType.LIFESTYLE -> R.string.category_group_lifestyle
+                            ExpenseCategory.CategoryType.FINANCIALS -> R.string.category_group_financials
+                        }
                         item(key = "header_${type.name}") {
                             Text(
-                                text = type.name.replace("_", " "),
+                                text = stringResource(groupLabelRes),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Gray,

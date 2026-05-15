@@ -15,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.CategoryBreakdown
 import java.text.DecimalFormat
 import java.text.DateFormatSymbols
@@ -48,7 +50,7 @@ fun MonthlySpendingCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Monthly Spending",
+                    text = stringResource(R.string.wallet_monthly_spending_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface
@@ -76,7 +78,7 @@ fun MonthlySpendingCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No transaction in this month",
+                        text = stringResource(R.string.wallet_monthly_spending_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -137,7 +139,7 @@ fun MonthlySpendingCard(
                                     maxLines = 1
                                 )
                             } else {
-                                Text(text = "TOTAL", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                                Text(text = stringResource(R.string.wallet_total_label), style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
                                 val total = spendingList.sumOf { it.totalAmount }
                                 Text(
                                     text = formatSimpleAmount(total), 

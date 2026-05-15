@@ -35,7 +35,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         val conversationKey = message.data["coupleId"].orEmpty().ifBlank { "couple_chat" }
-        val senderUsername = message.data["senderUsername"].orEmpty().ifBlank { "Partner" }
+        val senderUsername = message.data["senderUsername"].orEmpty().ifBlank { "Đối phương" }
         val conversationTitle = message.data["conversationTitle"].orEmpty().ifBlank { senderUsername }
 
         val text = message.data["text"]

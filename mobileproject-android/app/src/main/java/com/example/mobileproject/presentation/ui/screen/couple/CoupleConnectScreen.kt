@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -59,7 +60,6 @@ import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideShare2
 import com.example.mobileproject.presentation.ui.theme.AppTheme
-import com.example.mobileproject.presentation.ui.components.core.CoupleConnectStickers
 
 @Composable
 fun CoupleConnectContent(
@@ -131,9 +131,6 @@ fun CoupleConnectContent(
                 ),
         )
 
-        // Cute stickers overlay
-        CoupleConnectStickers()
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -190,76 +187,87 @@ fun CoupleConnectContent(
 
             // My code card (glassmorphism)
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = extendedColors.glassBackground,
-                    border = BorderStroke(1.dp, extendedColors.glassBorder),
-                    shadowElevation = 16.dp,
-                    tonalElevation = 6.dp,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = extendedColors.glassBackground,
+                        border = BorderStroke(1.dp, extendedColors.glassBorder),
+                        shadowElevation = 16.dp,
+                        tonalElevation = 6.dp,
                     ) {
-                        Text(
-                            text = stringResource(R.string.couple_option_1),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                        )
-
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(96.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            color = colorScheme.surfaceContainerLow.copy(alpha = 0.80f),
-                            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize(),
+                            Text(
+                                text = stringResource(R.string.couple_option_1),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = colorScheme.surfaceContainerLow.copy(alpha = 0.80f),
+                                border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
                             ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize(),
+                                ) {
+                                    Text(
+                                        text = uiState.myCoupleCode.takeIf { !it.isNullOrBlank() } ?: "000000",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colorScheme.primary,
+                                        letterSpacing = 4.sp,
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    uiState.myCoupleCode?.let { clipboardManager.setText(AnnotatedString(it)) }
+                                },
+                                enabled = !uiState.myCoupleCode.isNullOrBlank(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorScheme.primary,
+                                    contentColor = colorScheme.onPrimary,
+                                ),
+                            ) {
+                                Icon(
+                                    imageVector = LucideShare2,
+                                    contentDescription = null,
+                                    tint = colorScheme.onPrimary,
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = uiState.myCoupleCode.takeIf { !it.isNullOrBlank() } ?: "000000",
-                                    style = MaterialTheme.typography.displaySmall,
+                                    text = stringResource(R.string.couple_copy_share),
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = colorScheme.primary,
-                                    letterSpacing = 4.sp,
                                 )
                             }
                         }
-
-                        Button(
-                            onClick = {
-                                uiState.myCoupleCode?.let { clipboardManager.setText(AnnotatedString(it)) }
-                            },
-                            enabled = !uiState.myCoupleCode.isNullOrBlank(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colorScheme.primary,
-                                contentColor = colorScheme.onPrimary,
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = LucideShare2,
-                                contentDescription = null,
-                                tint = colorScheme.onPrimary,
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = stringResource(R.string.couple_copy_share),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
                     }
+
+                    Image(
+                        painter = painterResource(R.drawable.sticker_2),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(84.dp)
+                            .align(Alignment.BottomStart)
+                            .offset(x = (-8).dp, y = 14.dp),
+                    )
                 }
             }
 
@@ -289,74 +297,85 @@ fun CoupleConnectContent(
 
             // Enter partner code card
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = extendedColors.glassBackground,
-                    border = BorderStroke(1.dp, extendedColors.glassBorder),
-                    shadowElevation = 16.dp,
-                    tonalElevation = 6.dp,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = extendedColors.glassBackground,
+                        border = BorderStroke(1.dp, extendedColors.glassBorder),
+                        shadowElevation = 16.dp,
+                        tonalElevation = 6.dp,
                     ) {
-                        Text(
-                            text = stringResource(R.string.couple_option_2),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.onSurfaceVariant,
-                        )
-
-                        OutlinedTextField(
-                            value = partnerCode,
-                            onValueChange = {
-                                partnerCode = it
-                                coupleViewModel.clearTransientMessages()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            placeholder = {
-                                Text(
-                                    text = stringResource(R.string.couple_partner_code_hint),
-                                    color = colorScheme.onSurfaceVariant,
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = LucideLink,
-                                    contentDescription = null,
-                                    tint = colorScheme.onSurfaceVariant,
-                                )
-                            },
-                            singleLine = true,
-                            colors = fieldColors,
-                            shape = MaterialTheme.shapes.extraLarge,
-                            textStyle = MaterialTheme.typography.bodyLarge,
-                        )
-
-                        Button(
-                            onClick = {
-                                coupleViewModel.sendCoupleRequest(partnerCode)
-                            },
-                            enabled = !uiState.isLoading && partnerCode.isNotBlank(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colorScheme.primary,
-                                contentColor = colorScheme.onPrimary,
-                            ),
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(18.dp),
                         ) {
                             Text(
-                                text = stringResource(R.string.couple_connect_now),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                text = stringResource(R.string.couple_option_2),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurfaceVariant,
                             )
+
+                            OutlinedTextField(
+                                value = partnerCode,
+                                onValueChange = {
+                                    partnerCode = it
+                                    coupleViewModel.clearTransientMessages()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                placeholder = {
+                                    Text(
+                                        text = stringResource(R.string.couple_partner_code_hint),
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = LucideLink,
+                                        contentDescription = null,
+                                        tint = colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                                singleLine = true,
+                                colors = fieldColors,
+                                shape = MaterialTheme.shapes.extraLarge,
+                                textStyle = MaterialTheme.typography.bodyLarge,
+                            )
+
+                            Button(
+                                onClick = {
+                                    coupleViewModel.sendCoupleRequest(partnerCode)
+                                },
+                                enabled = !uiState.isLoading && partnerCode.isNotBlank(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorScheme.primary,
+                                    contentColor = colorScheme.onPrimary,
+                                ),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.couple_connect_now),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
+
+                    Image(
+                        painter = painterResource(R.drawable.sticker_12),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(96.dp)
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 10.dp, y = 20.dp),
+                    )
                 }
             }
 

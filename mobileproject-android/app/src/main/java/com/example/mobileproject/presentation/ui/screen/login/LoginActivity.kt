@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -173,10 +175,10 @@ private fun LoginScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.95f),
-        unfocusedContainerColor = colorScheme.surfaceContainerLowest.copy(alpha = 0.90f),
-        focusedBorderColor = colorScheme.primary,
-        unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.40f),
+        focusedContainerColor = Color(0xFFF7F7F8),
+        unfocusedContainerColor = Color(0xFFF7F7F8),
+        focusedBorderColor = colorScheme.primary.copy(alpha = 0.7f),
+        unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.22f),
         focusedLabelColor = colorScheme.primary,
         unfocusedLabelColor = colorScheme.onSurfaceVariant,
         cursorColor = colorScheme.primary,
@@ -194,6 +196,8 @@ private fun LoginScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -205,7 +209,7 @@ private fun LoginScreen(
                 text = stringResource(R.string.login_welcome_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -213,7 +217,7 @@ private fun LoginScreen(
             Text(
                 text = stringResource(R.string.login_welcome_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.85f),
+                color = colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -308,7 +312,7 @@ private fun LoginScreen(
                                 } else {
                                     stringResource(R.string.login_password_label)
                                 },
-                                tint = colorScheme.primary,
+                                tint = colorScheme.onSurfaceVariant,
                             )
                         }
                     },

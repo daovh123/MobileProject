@@ -17,6 +17,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,8 +54,6 @@ import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.ui.theme.AppTheme
-import com.example.mobileproject.presentation.ui.components.core.BalanceCardStickers
-import com.example.mobileproject.presentation.ui.components.core.DaysTogetherStickers
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
@@ -87,6 +87,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val locationPermissionMessage = stringResource(R.string.home_location_permission_required)
 
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
@@ -203,7 +204,7 @@ fun HomeScreen(
         if (granted) {
             coupleState.coupleId?.let { cid -> MapShareForegroundService.start(context, accessToken, cid) }
         } else {
-            Toast.makeText(context, "Location permission is required to share location with your partner.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, locationPermissionMessage, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -293,9 +294,9 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                GoalFabItem("Chat", Icons.AutoMirrored.Filled.Chat) { isFabExpanded = false; onNavigateToChat() }
-                GoalFabItem("Add Future Goal", Icons.Default.Event) { isFabExpanded = false; onNavigateToAddFutureGoal() }
-                GoalFabItem("Add Saving Goal", Icons.Default.Savings) { isFabExpanded = false; onNavigateToAddSavingGoal() }
+                GoalFabItem(stringResource(R.string.home_fab_chat), Icons.AutoMirrored.Filled.Chat) { isFabExpanded = false; onNavigateToChat() }
+                GoalFabItem(stringResource(R.string.home_fab_add_future_goal), Icons.Default.Event) { isFabExpanded = false; onNavigateToAddFutureGoal() }
+                GoalFabItem(stringResource(R.string.home_fab_add_saving_goal), Icons.Default.Savings) { isFabExpanded = false; onNavigateToAddSavingGoal() }
             }
         }
 
@@ -316,8 +317,35 @@ fun HomeScreen(
 private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(shape = MaterialTheme.shapes.medium, color = colorScheme.surfaceContainerLowest, shadowElevation = 4.dp, modifier = Modifier.clickable(onClick = onClick)) {
-            Text(text = text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+        Box {
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = colorScheme.surfaceContainerLowest,
+                shadowElevation = 4.dp,
+                modifier = Modifier.clickable(onClick = onClick),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 28.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
+                    )
+                }
+            }
+            Icon(
+                painter = painterResource(R.drawable.sticker_13),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier
+                    .size(34.dp)
+                    .align(Alignment.CenterStart)
+                    .offset(x = (-14).dp, y = (-4).dp)
+                    .rotate(-20f),
+            )
         }
         Spacer(modifier = Modifier.width(16.dp))
         FloatingActionButton(onClick = onClick, containerColor = colorScheme.surfaceContainerLowest, contentColor = colorScheme.primary, shape = CircleShape, modifier = Modifier.size(48.dp)) {
@@ -365,12 +393,23 @@ private fun HomeContent(
             DaysTogetherModernCard(daysTogether = daysTogether)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MiniMetricCard("SAVINGS", formatSimpleAmount(actualWalletBalance), Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                MiniMetricCard("MEMORIES", "12 New", Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f))
+                MiniMetricCard(stringResource(R.string.home_mini_metric_savings), formatSimpleAmount(actualWalletBalance), Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
+                MiniMetricCard(stringResource(R.string.home_mini_metric_memories), stringResource(R.string.home_mini_metric_new_format, 12), Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f))
             }
 
-            GoalListSection("Future Goals", goals.filterIsInstance<FutureGoal>(), onSeeAllFutureGoals, onTaskToggle)
-            GoalListSection("Saving Goals", goals.filterIsInstance<SavingGoal>(), onSeeAllGoals, onTaskToggle)
+            GoalListSection(
+                title = stringResource(R.string.home_future_goals_title),
+                goals = goals.filterIsInstance<FutureGoal>(),
+                onSeeAllClick = onSeeAllFutureGoals,
+                onTaskToggle = onTaskToggle,
+                stickerRes = R.drawable.sticker_11,
+            )
+            GoalListSection(
+                title = stringResource(R.string.home_saving_goals_title),
+                goals = goals.filterIsInstance<SavingGoal>(),
+                onSeeAllClick = onSeeAllGoals,
+                onTaskToggle = onTaskToggle,
+            )
 
             if (!state.paired) {
                 ElevatedCard(
@@ -383,29 +422,39 @@ private fun HomeContent(
             } else {
                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Where is your partner?",
+                        stringResource(R.string.home_where_partner),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 8.dp),
                     )
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth().height(250.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            if (mapView != null) AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
-                            SmallFloatingActionButton(
-                                onClick = onCenterMe,
-                                containerColor = colorScheme.surfaceContainerLowest,
-                                contentColor = colorScheme.primary,
-                                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
-                                shape = CircleShape,
-                            ) {
-                                Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth().height(250.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (mapView != null) AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+                                SmallFloatingActionButton(
+                                    onClick = onCenterMe,
+                                    containerColor = colorScheme.surfaceContainerLowest,
+                                    contentColor = colorScheme.primary,
+                                    modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                                    shape = CircleShape,
+                                ) {
+                                    Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
+                                }
                             }
                         }
+                        Image(
+                            painter = painterResource(R.drawable.sticker_6),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-10).dp, y = (-18).dp),
+                        )
                     }
                 }
             }
@@ -415,13 +464,34 @@ private fun HomeContent(
 }
 
 @Composable
-private fun GoalListSection(title: String, goals: List<Goal>, onSeeAllClick: () -> Unit, onTaskToggle: (String, String) -> Unit) {
+private fun GoalListSection(
+    title: String,
+    goals: List<Goal>,
+    onSeeAllClick: () -> Unit,
+    onTaskToggle: (String, String) -> Unit,
+    stickerRes: Int? = null,
+) {
     val colorScheme = MaterialTheme.colorScheme
     if (goals.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
-            TextButton(onClick = onSeeAllClick) { Text("See All", color = colorScheme.primary, fontWeight = FontWeight.Bold) }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
+                if (stickerRes != null) {
+                    Image(
+                        painter = painterResource(stickerRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+            }
+            TextButton(onClick = onSeeAllClick) {
+                Text(stringResource(R.string.common_see_all), color = colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
         }
         goals.take(2).forEach { GoalCard(it, onTaskToggle) }
     }
@@ -431,6 +501,18 @@ private fun GoalListSection(title: String, goals: List<Goal>, onSeeAllClick: () 
 fun SharedBalanceCard(balance: Long) {
     val colorScheme = MaterialTheme.colorScheme
     val extendedColors = AppTheme.extendedColors
+    val balanceText = formatSimpleAmount(balance)
+    var balanceFontSize by remember(balanceText) {
+        mutableStateOf(
+            when {
+                balanceText.length <= 10 -> 46.sp
+                balanceText.length <= 14 -> 38.sp
+                balanceText.length <= 18 -> 32.sp
+                else -> 28.sp
+            }
+        )
+    }
+    val minBalanceFontSize = 18.sp
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -440,12 +522,17 @@ fun SharedBalanceCard(balance: Long) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 150.dp)
                 .background(extendedColors.cardGradient)
                 .padding(vertical = 28.dp, horizontal = 24.dp),
         ) {
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+            ) {
                 Text(
-                    "SHARED BALANCE",
+                    stringResource(R.string.home_shared_balance_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.90f),
                     fontWeight = FontWeight.Bold,
@@ -453,13 +540,19 @@ fun SharedBalanceCard(balance: Long) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    formatSimpleAmount(balance),
-                    style = MaterialTheme.typography.displayMedium,
+                    balanceText,
+                    fontSize = balanceFontSize,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
+                    maxLines = 1,
+                    softWrap = false,
+                    onTextLayout = { textLayoutResult ->
+                        if (textLayoutResult.hasVisualOverflow && balanceFontSize > minBalanceFontSize) {
+                            balanceFontSize = (balanceFontSize.value - 2f).sp
+                        }
+                    },
                 )
             }
-            BalanceCardStickers()
         }
     }
 }
@@ -486,6 +579,14 @@ fun DaysTogetherModernCard(daysTogether: Long) {
         colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
+            Image(
+                painter = painterResource(R.drawable.sticker_5),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(98.dp)
+                    .align(Alignment.CenterStart)
+                    .offset(x = (-16).dp, y = 6.dp),
+            )
             Column(
                 modifier = Modifier.fillMaxWidth().padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -498,18 +599,17 @@ fun DaysTogetherModernCard(daysTogether: Long) {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    "$daysTogether Days Together",
+                    stringResource(R.string.home_days_together_format, daysTogether),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = colorScheme.onSurface,
                 )
                 Text(
-                    "Our shared journey continues",
+                    stringResource(R.string.home_days_together_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant,
                 )
             }
-            DaysTogetherStickers()
         }
     }
 }
@@ -542,7 +642,7 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
 private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.padding(20.dp)) {
-        Text("Connect with your partner", fontWeight = FontWeight.Bold, color = colorScheme.primary)
+        Text(stringResource(R.string.home_connect_partner), fontWeight = FontWeight.Bold, color = colorScheme.primary)
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = onPairNow,
@@ -550,7 +650,7 @@ private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: ()
             colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary, contentColor = colorScheme.onPrimary),
             shape = MaterialTheme.shapes.extraLarge,
         ) {
-            Text("Pair Now", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.home_pair_now), fontWeight = FontWeight.Bold)
         }
     }
 }

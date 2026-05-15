@@ -62,7 +62,6 @@ import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.presentation.ui.icons.LucideCamera
-import com.example.mobileproject.presentation.ui.components.core.ProfileHeaderStickers
 import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
 import com.example.mobileproject.presentation.ui.icons.LucideLogOut
 import com.example.mobileproject.presentation.ui.icons.LucideMail
@@ -347,7 +346,6 @@ private fun HeaderCard(
                 Text(text = stringResource(R.string.profile_change_frame))
             }
             }
-            ProfileHeaderStickers()
         }
     }
 }

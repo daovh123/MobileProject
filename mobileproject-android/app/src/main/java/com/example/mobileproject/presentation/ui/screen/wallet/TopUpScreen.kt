@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.R
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 
@@ -46,10 +48,10 @@ fun TopUpScreen(
         containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Top Up", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.primary) },
+                title = { Text(stringResource(R.string.top_up_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colorScheme.primary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -72,7 +74,7 @@ fun TopUpScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "How much to add?", color = colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.top_up_amount_prompt), color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Box(
@@ -106,7 +108,7 @@ fun TopUpScreen(
                             ) {
                                 if (uiState.amount.isEmpty()) {
                                     Text(
-                                        text = "0.00",
+                                        text = stringResource(R.string.top_up_amount_placeholder),
                                         style = TextStyle(
                                             fontSize = fontSize,
                                             fontWeight = FontWeight.Bold,
@@ -126,7 +128,7 @@ fun TopUpScreen(
 
             // Destination
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "DESTINATION", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.top_up_destination_label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(24.dp),
@@ -146,12 +148,12 @@ fun TopUpScreen(
 
             // Note
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "GHI CHÚ (OPTIONAL)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.top_up_note_label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = uiState.note,
                     onValueChange = viewModel::onNoteChange,
-                    placeholder = { Text("What is this for?", color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
+                    placeholder = { Text(stringResource(R.string.top_up_note_placeholder), color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -173,7 +175,7 @@ fun TopUpScreen(
                     modifier = Modifier.padding(20.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "Số dư dự kiến sau khi nạp: ", color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                    Text(text = stringResource(R.string.top_up_predicted_balance_label), color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     Text(
                         text = formatSimpleAmount(uiState.predictedBalance),
                         color = colorScheme.primary,
@@ -200,12 +202,12 @@ fun TopUpScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Top Up Now", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.top_up_action), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(text = "SECURE ENCRYPTED TRANSACTION", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                Text(text = stringResource(R.string.top_up_secure_note), style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
             }
         }
     }

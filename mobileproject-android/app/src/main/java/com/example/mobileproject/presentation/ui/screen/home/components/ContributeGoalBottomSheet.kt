@@ -18,9 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.utils.formatSimpleAmount
 
@@ -57,7 +59,7 @@ fun ContributeGoalBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Contribute to Goal",
+                    text = stringResource(R.string.contribute_goal_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2D2D2D)
@@ -66,14 +68,14 @@ fun ContributeGoalBottomSheet(
                     onClick = onDismiss,
                     modifier = Modifier.background(Color(0xFFFFF0F0), CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close), tint = Color.Gray)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Goal Selector (if not pre-selected or to change)
-            Text("Select Goal", fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(stringResource(R.string.contribute_select_goal), fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Surface(
                 onClick = { if (availableGoals.size > 1) showGoalPicker = true },
@@ -88,7 +90,7 @@ fun ContributeGoalBottomSheet(
                     Icon(Icons.Default.Payments, contentDescription = null, tint = Color(0xFFFF8A80))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = goal?.name ?: "Select a goal",
+                        text = goal?.name ?: stringResource(R.string.contribute_select_goal_placeholder),
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
@@ -101,21 +103,21 @@ fun ContributeGoalBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Contribution Type
-            Text("Payment Method", fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(stringResource(R.string.contribute_payment_method), fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 PaymentMethodCard(
-                    title = "From Wallet",
+                    title = stringResource(R.string.contribute_from_wallet),
                     icon = Icons.Default.AccountBalanceWallet,
                     isSelected = !isDirect,
                     modifier = Modifier.weight(1f),
                     onClick = { isDirect = false }
                 )
                 PaymentMethodCard(
-                    title = "Direct Pay",
+                    title = stringResource(R.string.contribute_direct_pay),
                     icon = Icons.Default.Payments,
                     isSelected = isDirect,
                     modifier = Modifier.weight(1f),
@@ -126,7 +128,7 @@ fun ContributeGoalBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Amount Input
-            Text("Amount", fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(stringResource(R.string.contribute_amount_label), fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = amount,
@@ -146,7 +148,7 @@ fun ContributeGoalBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Note
-            Text("Note (Optional)", fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(stringResource(R.string.contribute_note_label), fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = note,
@@ -178,7 +180,7 @@ fun ContributeGoalBottomSheet(
                 shape = RoundedCornerShape(28.dp),
                 enabled = goal != null && amount.isNotBlank()
             ) {
-                Text("Confirm Contribution", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.contribute_confirm), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -238,7 +240,7 @@ fun GoalPickerSheet(
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.White) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text("Select a Goal", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.contribute_select_goal_placeholder), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
             goals.forEach { goal ->
                 Surface(

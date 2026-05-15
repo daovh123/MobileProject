@@ -214,6 +214,7 @@ fun HomeScaffold(
                                 imageVector = LucideUser,
                                 contentDescription = stringResource(R.string.cd_open_profile),
                                 tint = colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     },
@@ -223,6 +224,7 @@ fun HomeScaffold(
                                 imageVector = LucideBell,
                                 contentDescription = stringResource(R.string.action_notifications),
                                 tint = colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     },

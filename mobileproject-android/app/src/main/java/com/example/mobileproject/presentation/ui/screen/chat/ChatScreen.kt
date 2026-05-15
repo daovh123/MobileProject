@@ -903,7 +903,7 @@ private fun PendingMessageBubble(
             IconButton(onClick = onRetry, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = LucideRefreshCw,
-                    contentDescription = "Retry",
+                    contentDescription = "Thử lại",
                     tint = colorScheme.error,
                     modifier = Modifier.size(16.dp),
                 )

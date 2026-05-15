@@ -15,9 +15,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.screen.add_expense.components.*
 import com.example.mobileproject.presentation.viewmodel.AddExpenseViewModel
 
@@ -42,14 +44,15 @@ fun AddExpenseScreen(
             TopAppBar(
                 title = {
                     Column {
+                        val availableText = stringResource(R.string.add_expense_available, "%,d".format(uiState.availableBalance))
                         Text(
-                            text = "Add Expense",
+                            text = stringResource(R.string.add_expense_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFF8A80)
                         )
                         Text(
-                            text = "AVAILABLE: $${"%,d".format(uiState.availableBalance)}",
+                            text = availableText,
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray
                         )
@@ -59,7 +62,7 @@ fun AddExpenseScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = Color(0xFFFF8A80)
                         )
                     }
@@ -107,11 +110,11 @@ fun AddExpenseScreen(
             uiState.error?.let { err ->
                 AlertDialog(
                     onDismissRequest = { viewModel.clearError() },
-                    title = { Text("Error") },
+                    title = { Text(stringResource(R.string.common_error)) },
                     text = { Text(err) },
                     confirmButton = {
                         TextButton(onClick = { viewModel.clearError() }) {
-                            Text("OK")
+                            Text(stringResource(R.string.common_ok))
                         }
                     }
                 )
@@ -142,7 +145,7 @@ fun AddExpenseScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Add Expense",
+                                text = stringResource(R.string.add_expense_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -194,13 +197,13 @@ fun AttachReceiptSection() {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "Attach Receipt",
+                    text = stringResource(R.string.add_expense_attach_title),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2D2D2D)
                 )
                 Text(
-                    text = "Capture memories with your ledger",
+                    text = stringResource(R.string.add_expense_attach_subtitle),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
