@@ -9,9 +9,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +38,7 @@ fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToTopUp: () -> Unit,
     onSeeAllTransactions: () -> Unit,
+    onNavigateToTransferMoney: () -> Unit,
     onNavigateToQRScanner: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel(),
     savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
@@ -50,6 +51,7 @@ fun WalletScreen(
     var isMonthPickerVisible by remember { mutableStateOf(false) }
     var isFabExpanded by remember { mutableStateOf(false) }
     var isContributeSheetVisible by remember { mutableStateOf(false) }
+    var isTransferOptionsVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -167,18 +169,18 @@ fun WalletScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // QR Scanner option
+                // Transfer option
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.clickable { 
                             isFabExpanded = false
-                            onNavigateToQRScanner() 
+                            isTransferOptionsVisible = true
                         }
                     ) {
                         Text(
-                            text = "Quét QR thanh toán",
+                            text = "Chuyen tien",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
@@ -188,14 +190,14 @@ fun WalletScreen(
                     FloatingActionButton(
                         onClick = { 
                             isFabExpanded = false
-                            onNavigateToQRScanner() 
+                            isTransferOptionsVisible = true
                         },
                         containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
+                        Icon(imageVector = Icons.Default.AccountBalance, contentDescription = null)
                     }
                 }
 
@@ -329,6 +331,20 @@ fun WalletScreen(
                     )
                     isContributeSheetVisible = false
                 }
+            )
+        }
+
+        if (isTransferOptionsVisible) {
+            TransferOptionsBottomSheet(
+                onDismiss = { isTransferOptionsVisible = false },
+                onManualTransfer = {
+                    isTransferOptionsVisible = false
+                    onNavigateToTransferMoney()
+                },
+                onScanQr = {
+                    isTransferOptionsVisible = false
+                    onNavigateToQRScanner()
+                },
             )
         }
     }

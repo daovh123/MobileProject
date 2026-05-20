@@ -43,6 +43,7 @@ class ChatFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
 
         val type = message.data["type"].orEmpty().lowercase()
+        NotificationRefreshBus.emitRefresh()
 
         CoroutineScope(Dispatchers.IO).launch {
             when (type) {

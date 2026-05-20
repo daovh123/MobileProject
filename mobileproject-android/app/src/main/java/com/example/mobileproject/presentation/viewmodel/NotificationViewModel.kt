@@ -107,6 +107,11 @@ class NotificationViewModel @Inject constructor(
         loadNotifications(reset = false)
     }
 
+    fun refresh() {
+        loadUnreadCount()
+        loadNotifications(reset = true)
+    }
+
     fun markAllRead() {
         val token = authSessionStore.load()?.token ?: return
         viewModelScope.launch {

@@ -20,6 +20,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -32,6 +35,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.notification.ChatInAppNotificationBus
 import com.example.mobileproject.presentation.notification.ChatNotificationGate
+import com.example.mobileproject.presentation.notification.NotificationRefreshBus
 import com.example.mobileproject.presentation.ui.navigation.AppNavigationBar
 import com.example.mobileproject.presentation.ui.navigation.NavigationConfig
 import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
@@ -52,6 +56,7 @@ import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.QRScannerScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TransferMoneyScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
@@ -73,6 +78,7 @@ object HomeRoutes {
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
+    const val TRANSFER_MONEY: String = "transfer_money"
     const val TOP_UP_QR: String = "top_up_qr/{amount}/{bankId}/{bankName}/{note}"
     const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{amount}/{bankId}/{bankName}/{note}"
     const val QR_SCANNER: String = "qr_scanner"
@@ -118,6 +124,7 @@ fun HomeScaffold(
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
+    val isTransferMoneyRoute = currentRoute == HomeRoutes.TRANSFER_MONEY
     val isTopUpQRRoute = currentRoute.startsWith("top_up_qr/")
     val isTopUpBankRedirectRoute = currentRoute.startsWith("top_up_bank_redirect/")
     val isQRScannerRoute = currentRoute == HomeRoutes.QR_SCANNER
@@ -129,7 +136,7 @@ fun HomeScaffold(
     val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
     val isNotificationsRoute = currentRoute == HomeRoutes.NOTIFICATIONS
 
-    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
+    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || isTransferMoneyRoute ||
         isTopUpQRRoute || isTopUpBankRedirectRoute || isQRScannerRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
@@ -150,6 +157,12 @@ fun HomeScaffold(
 
     val openLabel = stringResource(R.string.chat_in_app_open_action)
     val msgFormat = stringResource(R.string.chat_in_app_message_format)
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(notificationViewModel) {
+        notificationViewModel.refresh()
+    }
+
     LaunchedEffect(navController, openLabel, msgFormat) {
         ChatInAppNotificationBus.events.collect { event ->
             val msg = msgFormat.format(
@@ -159,6 +172,24 @@ fun HomeScaffold(
             if (snackbarHostState.showSnackbar(msg, openLabel, withDismissAction = true) == SnackbarResult.ActionPerformed) {
                 navController.navigate(HomeRoutes.CHAT) { launchSingleTop = true }
             }
+        }
+    }
+
+    LaunchedEffect(notificationViewModel) {
+        NotificationRefreshBus.events.collect {
+            notificationViewModel.refresh()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, notificationViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationViewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -260,6 +291,9 @@ fun HomeScaffold(
                         onSeeAllFutureGoals = { navController.navigate(HomeRoutes.FUTURE_GOALS) },
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
+                        onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
+                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) },
                         onNavigateToChat = {
                             navController.navigate(HomeRoutes.CHAT) {
                                 launchSingleTop = true
@@ -282,6 +316,7 @@ fun HomeScaffold(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
                         onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
                         onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) }
                     )
                 }
@@ -301,6 +336,11 @@ fun HomeScaffold(
                                 HomeRoutes.topUpBankRedirectRoute(amount, bankId, bankName, note)
                             )
                         }
+                    )
+                }
+                composable(HomeRoutes.TRANSFER_MONEY) {
+                    TransferMoneyScreen(
+                        onNavigateBack = { navController.popBackStack() },
                     )
                 }
                 composable(

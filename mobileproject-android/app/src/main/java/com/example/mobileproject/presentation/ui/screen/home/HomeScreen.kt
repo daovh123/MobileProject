@@ -53,7 +53,9 @@ import com.example.mobileproject.domain.entity.*
 import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
+import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
 import com.example.mobileproject.presentation.ui.theme.AppTheme
+import com.example.mobileproject.presentation.ui.screen.wallet.TransferOptionsBottomSheet
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
@@ -83,6 +85,9 @@ fun HomeScreen(
     onSeeAllFutureGoals: () -> Unit,
     onNavigateToAddSavingGoal: () -> Unit,
     onNavigateToAddFutureGoal: () -> Unit,
+    onNavigateToTopUp: () -> Unit,
+    onNavigateToTransferMoney: () -> Unit,
+    onNavigateToQRScanner: () -> Unit,
     onNavigateToChat: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -100,6 +105,8 @@ fun HomeScreen(
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var isFabExpanded by remember { mutableStateOf(false) }
+    var isTransferOptionsVisible by remember { mutableStateOf(false) }
+    var isContributeSheetVisible by remember { mutableStateOf(false) }
 
     var myMarker by remember { mutableStateOf<Marker?>(null) }
     var partnerMarker by remember { mutableStateOf<Marker?>(null) }
@@ -265,6 +272,7 @@ fun HomeScreen(
     val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
     val colorScheme = MaterialTheme.colorScheme
+    val savingGoals = remember(sortedGoals) { sortedGoals.filterIsInstance<SavingGoal>() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
@@ -273,6 +281,10 @@ fun HomeScreen(
             actualWalletBalance = walletBalance,
             daysTogether = coupleState.daysTogether ?: computeDaysTogetherFromStartAt(coupleState.startAt) ?: 1L,
             goals = sortedGoals,
+            canContribute = savingGoals.isNotEmpty(),
+            onTopUpClick = onNavigateToTopUp,
+            onTransferClick = { isTransferOptionsVisible = true },
+            onContributeClick = { isContributeSheetVisible = true },
             onPairNow = {
                 if (accessToken.isNotBlank()) {
                     context.startActivity(Intent(context, CoupleConnectActivity::class.java).putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken))
@@ -309,6 +321,37 @@ fun HomeScreen(
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).size(60.dp)
         ) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp).rotate(rotation))
+        }
+
+        if (isTransferOptionsVisible) {
+            TransferOptionsBottomSheet(
+                onDismiss = { isTransferOptionsVisible = false },
+                onManualTransfer = {
+                    isTransferOptionsVisible = false
+                    onNavigateToTransferMoney()
+                },
+                onScanQr = {
+                    isTransferOptionsVisible = false
+                    onNavigateToQRScanner()
+                },
+            )
+        }
+
+        if (isContributeSheetVisible) {
+            ContributeGoalBottomSheet(
+                selectedGoal = null,
+                availableGoals = savingGoals,
+                onDismiss = { isContributeSheetVisible = false },
+                onConfirm = { goalId, amount, note, isDirect ->
+                    goalViewModel.contribute(
+                        goalId = goalId,
+                        amount = amount,
+                        note = note,
+                        contributorId = if (isDirect) "me" else null,
+                    )
+                    isContributeSheetVisible = false
+                },
+            )
         }
     }
 }
@@ -361,6 +404,10 @@ private fun HomeContent(
     actualWalletBalance: Long,
     daysTogether: Long,
     goals: List<Goal>,
+    canContribute: Boolean,
+    onTopUpClick: () -> Unit,
+    onTransferClick: () -> Unit,
+    onContributeClick: () -> Unit,
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
     onSeeAllGoals: () -> Unit,
@@ -389,7 +436,13 @@ private fun HomeContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SharedBalanceCard(balance = walletBalance)
+            SharedBalanceCard(
+                balance = walletBalance,
+                canContribute = canContribute,
+                onTopUpClick = onTopUpClick,
+                onTransferClick = onTransferClick,
+                onContributeClick = onContributeClick,
+            )
             DaysTogetherModernCard(daysTogether = daysTogether)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -498,8 +551,13 @@ private fun GoalListSection(
 }
 
 @Composable
-fun SharedBalanceCard(balance: Long) {
-    val colorScheme = MaterialTheme.colorScheme
+fun SharedBalanceCard(
+    balance: Long,
+    canContribute: Boolean,
+    onTopUpClick: () -> Unit,
+    onTransferClick: () -> Unit,
+    onContributeClick: () -> Unit,
+) {
     val extendedColors = AppTheme.extendedColors
     val balanceText = formatSimpleAmount(balance)
     var balanceFontSize by remember(balanceText) {
@@ -552,7 +610,70 @@ fun SharedBalanceCard(balance: Long) {
                         }
                     },
                 )
+                Spacer(modifier = Modifier.height(18.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    SharedBalanceActionButton(
+                        label = "Nap tien",
+                        icon = Icons.Default.Bolt,
+                        onClick = onTopUpClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SharedBalanceActionButton(
+                        label = "Chuyen tien",
+                        icon = Icons.Default.AccountBalance,
+                        onClick = onTransferClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SharedBalanceActionButton(
+                        label = "Dong gop",
+                        icon = Icons.Default.Savings,
+                        onClick = onContributeClick,
+                        enabled = canContribute,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun SharedBalanceActionButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White.copy(alpha = if (enabled) 0.18f else 0.10f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = if (enabled) 1f else 0.55f),
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = if (enabled) 1f else 0.55f),
+            )
         }
     }
 }
