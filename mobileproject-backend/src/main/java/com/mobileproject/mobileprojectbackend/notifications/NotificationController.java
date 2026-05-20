@@ -5,15 +5,14 @@ import com.mobileproject.mobileprojectbackend.auth.AuthUser;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -24,6 +23,8 @@ public class NotificationController {
 
     private final AuthIdentityService authIdentityService;
     private final UserFcmTokenRepository userFcmTokenRepository;
+    private final NotificationService notificationService;
+    private final AppNotificationRepository notificationRepository;
 
     @PostMapping("/fcm-token")
     public ResponseEntity<Void> registerFcmToken(
@@ -31,25 +32,87 @@ public class NotificationController {
             @RequestBody FcmTokenRequest request
     ) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
-
         String token = request == null ? null : request.token();
         if (token == null || token.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-
-        userFcmTokenRepository.save(
-                new UserFcmToken(
-                        user.getId(),
-                        token.trim(),
-                        Instant.now()
-                )
-        );
-
+        userFcmTokenRepository.save(new UserFcmToken(user.getId(), token.trim(), Instant.now()));
         LOGGER.info("Registered FCM token for user {}", user.getId());
-
         return ResponseEntity.ok().build();
     }
 
-    public record FcmTokenRequest(String token) {
+    @GetMapping
+    public ResponseEntity<NotificationPageResponse> getNotifications(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        AuthUser user = authIdentityService.requireCurrentUser(authHeader);
+        Page<AppNotification> result = notificationService.getNotifications(user.getId(), page);
+        List<NotificationDto> dtos = result.getContent().stream()
+                .map(n -> new NotificationDto(
+                        n.getId(),
+                        n.getType() != null ? n.getType().name() : "GENERAL",
+                        n.getTitle(),
+                        n.getBody(),
+                        n.isRead(),
+                        n.getCreatedAt()
+                ))
+                .toList();
+        return ResponseEntity.ok(new NotificationPageResponse(
+                dtos,
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.getNumber(),
+                result.hasNext()
+        ));
     }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader
+    ) {
+        AuthUser user = authIdentityService.requireCurrentUser(authHeader);
+        long count = notificationService.getUnreadCount(user.getId());
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    @PutMapping("/read-all")
+    public ResponseEntity<Void> markAllRead(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader
+    ) {
+        AuthUser user = authIdentityService.requireCurrentUser(authHeader);
+        notificationService.markAllRead(user.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<Void> markRead(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @PathVariable String id
+    ) {
+        AuthUser user = authIdentityService.requireCurrentUser(authHeader);
+        notificationService.markRead(user.getId(), id);
+        return ResponseEntity.ok().build();
+    }
+
+    // --- Records ---
+
+    public record FcmTokenRequest(String token) {}
+
+    public record NotificationDto(
+            String id,
+            String type,
+            String title,
+            String body,
+            boolean read,
+            Instant createdAt
+    ) {}
+
+    public record NotificationPageResponse(
+            List<NotificationDto> content,
+            long totalElements,
+            int totalPages,
+            int currentPage,
+            boolean hasNext
+    ) {}
 }

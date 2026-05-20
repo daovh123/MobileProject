@@ -15,7 +15,10 @@ import com.example.mobileproject.data.model.goal.ContributionResponseDto
 import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
 import com.example.mobileproject.data.model.goal.GoalDto
 import com.example.mobileproject.data.model.map.MapLastLocationsResponseDto
+import com.example.mobileproject.data.model.notification.AppNotificationDto
 import com.example.mobileproject.data.model.notification.FcmTokenRequestDto
+import com.example.mobileproject.data.model.notification.NotificationPageDto
+import com.example.mobileproject.data.model.notification.UnreadCountDto
 import com.example.mobileproject.data.model.onboarding.AvatarFrameDto
 import com.example.mobileproject.data.model.onboarding.AvatarFrameRequestDto
 import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
@@ -130,6 +133,28 @@ interface ApiService {
     suspend fun registerFcmToken(
         @Header("Authorization") authorization: String,
         @Body request: FcmTokenRequestDto,
+    ): Response<Unit>
+
+    @GET("api/notifications")
+    suspend fun getNotifications(
+        @Header("Authorization") authorization: String,
+        @Query("page") page: Int = 0,
+    ): Response<NotificationPageDto>
+
+    @GET("api/notifications/unread-count")
+    suspend fun getUnreadNotificationCount(
+        @Header("Authorization") authorization: String,
+    ): Response<UnreadCountDto>
+
+    @PUT("api/notifications/read-all")
+    suspend fun markAllNotificationsRead(
+        @Header("Authorization") authorization: String,
+    ): Response<Unit>
+
+    @PUT("api/notifications/{id}/read")
+    suspend fun markNotificationRead(
+        @Header("Authorization") authorization: String,
+        @Path("id") notificationId: String,
     ): Response<Unit>
 
     // Wallet APIs

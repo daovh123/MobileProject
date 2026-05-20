@@ -53,6 +53,8 @@ import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen
 import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
 object HomeRoutes {
     const val HOME: String = "home"
@@ -89,6 +91,7 @@ fun HomeScaffold(
     onNavControllerReady: (NavHostController) -> Unit,
 ) {
     val navController = rememberNavController()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
@@ -104,38 +107,14 @@ fun HomeScaffold(
     val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
     val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
     val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
-    
+
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
         isProfileEditRoute || isMemoriesCaptureRoute
-    
+
     val snackbarHostState = remember { SnackbarHostState() }
-    val notifications = remember {
-        mutableStateListOf(
-            AppNotification(
-                id = "msg-1",
-                title = "Tin nhan moi",
-                subtitle = "Ban co 1 tin nhan moi tu doi tac.",
-                timestampLabel = "Vua xong",
-                isUnread = true,
-            ),
-            AppNotification(
-                id = "wallet-1",
-                title = "Chi tieu moi",
-                subtitle = "Vi chung vua ghi nhan mot khoan chi.",
-                timestampLabel = "5 phut truoc",
-                isUnread = true,
-            ),
-            AppNotification(
-                id = "memory-1",
-                title = "Ky niem vua luu",
-                subtitle = "Anh ky niem moi da san sang.",
-                timestampLabel = "Hom nay",
-                isUnread = false,
-            ),
-        )
-    }
+    val notifState by notificationViewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val bgBrush = remember(colorScheme) {
         Brush.verticalGradient(
@@ -185,56 +164,19 @@ fun HomeScaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (!hideTopAndBottomBar) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = when (currentRoute) {
-                                HomeRoutes.PROFILE -> stringResource(R.string.profile_title)
-                                HomeRoutes.MEMORIES -> stringResource(R.string.memories_title)
-                                else -> stringResource(currentItem.labelRes)
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = colorScheme.onSurface,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(HomeRoutes.PROFILE) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                        ) {
-                            Icon(
-                                imageVector = LucideUser,
-                                contentDescription = stringResource(R.string.cd_open_profile),
-                                tint = colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { /* TODO: notifications */ }) {
-                            Icon(
-                                imageVector = LucideBell,
-                                contentDescription = stringResource(R.string.action_notifications),
-                                tint = colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = colorScheme.surface,
-                        scrolledContainerColor = colorScheme.surface,
-                        titleContentColor = colorScheme.onSurface,
-                        navigationIconContentColor = colorScheme.primary,
-                        actionIconContentColor = colorScheme.primary,
-                    ),
+                HomeTopBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    isChatRoute = isChatRoute,
+                    isProfileRoute = currentRoute == HomeRoutes.PROFILE,
+                    isProfileEditRoute = isProfileEditRoute,
+                    isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES,
+                    notifState = notifState,
+                    onMarkAllRead = { notificationViewModel.markAllRead() },
+                    onLoadNextPage = { notificationViewModel.loadNextPage() },
+                    isHomeRoute = currentRoute == HomeRoutes.HOME,
+                    isWalletRoute = currentRoute == HomeRoutes.WALLET,
+                    isExploreRoute = currentRoute == HomeRoutes.EXPLORE,
                 )
             }
         },
