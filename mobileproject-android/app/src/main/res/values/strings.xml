@@ -404,6 +404,28 @@
     <string name="top_up_predicted_balance_label">Số dư dự kiến sau khi nạp: </string>
     <string name="top_up_action">Nạp ngay</string>
     <string name="top_up_secure_note">GIAO DỊCH ĐƯỢC MÃ HÓA AN TOÀN</string>
+    <string name="top_up_select_bank">Chọn ngân hàng</string>
+    <string name="top_up_qr_title">Thanh toán QR</string>
+    <string name="top_up_qr_scan_hint">Quét mã QR bằng app ngân hàng để thanh toán</string>
+    <string name="top_up_qr_confirm">Tôi đã thanh toán</string>
+    <string name="top_up_qr_expires">Mã QR hết hạn sau: %1$s</string>
+    <string name="top_up_bank_label">Ngân hàng</string>
+    <string name="top_up_account_label">Số tài khoản</string>
+    <string name="top_up_account_holder">Chủ tài khoản</string>
+    <string name="top_up_amount_label">Số tiền</string>
+    <string name="top_up_content_label">Nội dung</string>
+    <string name="top_up_redirect_connecting">Đang chuyển tiếp tới</string>
+    <string name="top_up_redirect_wait">Vui lòng không tắt ứng dụng...</string>
+    <string name="top_up_redirect_processing">Đang xử lý thanh toán...</string>
+    <string name="top_up_success">Nạp tiền thành công!</string>
+    <string name="top_up_back_to_wallet">Quay lại ví</string>
+    <string name="qr_scanner_title">Quét mã QR</string>
+    <string name="qr_scanner_hint">Đưa mã QR vào khung hình để quét</string>
+    <string name="qr_scanner_manual_input">Nhập mã thủ công</string>
+    <string name="qr_scanner_processing">Đang xử lý...</string>
+    <string name="qr_scanner_success">Quét thành công!</string>
+    <string name="qr_scanner_confirm">Xác nhận thanh toán</string>
+    <string name="wallet_fab_scan_qr">Quét QR thanh toán</string>
 
     <!-- Home -->
     <string name="home_fab_chat">Chat</string>

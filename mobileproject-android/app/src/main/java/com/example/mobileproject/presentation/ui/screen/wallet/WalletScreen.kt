@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,6 +38,7 @@ fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToTopUp: () -> Unit,
     onSeeAllTransactions: () -> Unit,
+    onNavigateToQRScanner: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel(),
     savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
 ) {
@@ -165,6 +167,39 @@ fun WalletScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // QR Scanner option
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = colorScheme.surfaceContainerLowest,
+                        modifier = Modifier.clickable { 
+                            isFabExpanded = false
+                            onNavigateToQRScanner() 
+                        }
+                    ) {
+                        Text(
+                            text = "Quét QR thanh toán",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FloatingActionButton(
+                        onClick = { 
+                            isFabExpanded = false
+                            onNavigateToQRScanner() 
+                        },
+                        containerColor = colorScheme.surfaceContainerLowest,
+                        contentColor = colorScheme.primary,
+                        shape = CircleShape,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
+                    }
+                }
+
+                // Contribute to goal option
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,

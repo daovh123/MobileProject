@@ -22,10 +22,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.notification.ChatInAppNotificationBus
@@ -47,6 +49,9 @@ import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransaction
 import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.FutureGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.QRScannerScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
@@ -68,12 +73,23 @@ object HomeRoutes {
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
+    const val TOP_UP_QR: String = "top_up_qr/{amount}/{bankId}/{bankName}/{note}"
+    const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{amount}/{bankId}/{bankName}/{note}"
+    const val QR_SCANNER: String = "qr_scanner"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
     const val ADD_SAVING_GOAL: String = "add_saving_goal"
     const val ADD_FUTURE_GOAL: String = "add_future_goal"
     const val FUTURE_GOALS: String = "future_goals"
     const val NOTIFICATIONS: String = "notifications"
+
+    fun topUpQRRoute(amount: Long, bankId: String, bankName: String, note: String): String {
+        return "top_up_qr/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    }
+
+    fun topUpBankRedirectRoute(amount: Long, bankId: String, bankName: String, note: String): String {
+        return "top_up_bank_redirect/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    }
 }
 
 data class AppNotification(
@@ -102,6 +118,9 @@ fun HomeScaffold(
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
+    val isTopUpQRRoute = currentRoute.startsWith("top_up_qr/")
+    val isTopUpBankRedirectRoute = currentRoute.startsWith("top_up_bank_redirect/")
+    val isQRScannerRoute = currentRoute == HomeRoutes.QR_SCANNER
     val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
@@ -111,6 +130,7 @@ fun HomeScaffold(
     val isNotificationsRoute = currentRoute == HomeRoutes.NOTIFICATIONS
 
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
+        isTopUpQRRoute || isTopUpBankRedirectRoute || isQRScannerRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
         isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute
@@ -261,14 +281,88 @@ fun HomeScaffold(
                     WalletScreen(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
-                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) }
+                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) },
+                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) }
                     )
                 }
                 composable(HomeRoutes.ADD_EXPENSE) {
                     AddExpenseScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.TOP_UP) {
-                    TopUpScreen(onNavigateBack = { navController.popBackStack() })
+                    TopUpScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToQR = { amount, bankId, bankName, note ->
+                            navController.navigate(
+                                HomeRoutes.topUpQRRoute(amount, bankId, bankName, note)
+                            )
+                        },
+                        onNavigateToBankRedirect = { amount, bankId, bankName, note ->
+                            navController.navigate(
+                                HomeRoutes.topUpBankRedirectRoute(amount, bankId, bankName, note)
+                            )
+                        }
+                    )
+                }
+                composable(
+                    route = HomeRoutes.TOP_UP_QR,
+                    arguments = listOf(
+                        navArgument("amount") { type = NavType.LongType },
+                        navArgument("bankId") { type = NavType.StringType },
+                        navArgument("bankName") { type = NavType.StringType },
+                        navArgument("note") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
+                    val bankName = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
+                    )
+                    val note = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    )
+                    TopUpQRScreen(
+                        amount = amount,
+                        bankId = bankId,
+                        bankName = bankName,
+                        note = note,
+                        onNavigateBack = { navController.popBackStack() },
+                        onPaymentSuccess = {
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
+                        }
+                    )
+                }
+                composable(
+                    route = HomeRoutes.TOP_UP_BANK_REDIRECT,
+                    arguments = listOf(
+                        navArgument("amount") { type = NavType.LongType },
+                        navArgument("bankId") { type = NavType.StringType },
+                        navArgument("bankName") { type = NavType.StringType },
+                        navArgument("note") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
+                    val bankName = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
+                    )
+                    val note = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    )
+                    TopUpBankRedirectScreen(
+                        amount = amount,
+                        bankId = bankId,
+                        bankName = bankName,
+                        note = note,
+                        onNavigateBack = { navController.popBackStack() },
+                        onPaymentSuccess = {
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
+                        }
+                    )
+                }
+                composable(HomeRoutes.QR_SCANNER) {
+                    QRScannerScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.RECENT_TRANSACTIONS) {
                     RecentTransactionsScreen(onNavigateBack = { navController.popBackStack() })

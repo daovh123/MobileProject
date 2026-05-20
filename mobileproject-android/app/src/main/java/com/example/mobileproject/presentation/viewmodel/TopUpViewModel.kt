@@ -10,6 +10,19 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// Vietnamese bank data model
+data class VietnamBank(
+    val id: String,
+    val name: String,
+    val shortName: String,
+    val color: Long // ARGB color as Long
+)
+
+enum class TopUpStep {
+    AMOUNT,       // Step 1: Enter amount & note
+    BANK_SELECT   // Step 2: Choose bank & payment method
+}
+
 data class TopUpUiState(
     val amount: String = "",
     val note: String = "",
@@ -17,13 +30,18 @@ data class TopUpUiState(
     val currentBalance: Long = 0L,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val currentStep: TopUpStep = TopUpStep.AMOUNT,
+    val selectedBank: VietnamBank? = null
 ) {
     val predictedBalance: Long
         get() {
             val addAmount = amount.toLongOrNull() ?: 0L
             return currentBalance + addAmount
         }
+
+    val isAmountValid: Boolean
+        get() = (amount.toLongOrNull() ?: 0L) > 0
 }
 
 @HiltViewModel
@@ -62,6 +80,24 @@ class TopUpViewModel @Inject constructor(
 
     fun onNoteChange(newNote: String) {
         _uiState.update { it.copy(note = newNote) }
+    }
+
+    fun onBankSelected(bank: VietnamBank) {
+        _uiState.update { it.copy(selectedBank = bank) }
+    }
+
+    fun goToNextStep() {
+        val state = _uiState.value
+        if (state.currentStep == TopUpStep.AMOUNT && state.isAmountValid) {
+            _uiState.update { it.copy(currentStep = TopUpStep.BANK_SELECT) }
+        }
+    }
+
+    fun goToPreviousStep() {
+        val state = _uiState.value
+        if (state.currentStep == TopUpStep.BANK_SELECT) {
+            _uiState.update { it.copy(currentStep = TopUpStep.AMOUNT, selectedBank = null) }
+        }
     }
 
     fun topUpNow() {
@@ -104,5 +140,22 @@ class TopUpViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    companion object {
+        val vietnamBanks = listOf(
+            VietnamBank("vcb", "Vietcombank", "VCB", 0xFF1A6634),
+            VietnamBank("tcb", "Techcombank", "TCB", 0xFFE31837),
+            VietnamBank("bidv", "BIDV", "BIDV", 0xFF1B3A8C),
+            VietnamBank("vtb", "VietinBank", "VTB", 0xFF1B4F9B),
+            VietnamBank("mb", "MB Bank", "MB", 0xFF1E4D8C),
+            VietnamBank("acb", "ACB", "ACB", 0xFF1A237E),
+            VietnamBank("tpb", "TPBank", "TPB", 0xFF6A1B9A),
+            VietnamBank("agr", "Agribank", "AGR", 0xFFE65100),
+            VietnamBank("vpb", "VPBank", "VPB", 0xFF388E3C),
+            VietnamBank("stb", "Sacombank", "STB", 0xFF00695C),
+            VietnamBank("shb", "SHB", "SHB", 0xFFE53935),
+            VietnamBank("hdb", "HDBank", "HDB", 0xFFFF6F00),
+        )
     }
 }
