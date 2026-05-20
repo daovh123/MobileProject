@@ -73,6 +73,7 @@ object HomeRoutes {
     const val ADD_SAVING_GOAL: String = "add_saving_goal"
     const val ADD_FUTURE_GOAL: String = "add_future_goal"
     const val FUTURE_GOALS: String = "future_goals"
+    const val NOTIFICATIONS: String = "notifications"
 }
 
 data class AppNotification(
@@ -107,11 +108,12 @@ fun HomeScaffold(
     val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
     val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
     val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
+    val isNotificationsRoute = currentRoute == HomeRoutes.NOTIFICATIONS
 
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
-        isProfileEditRoute || isMemoriesCaptureRoute
+        isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute
 
     val snackbarHostState = remember { SnackbarHostState() }
     val notifState by notificationViewModel.uiState.collectAsState()
@@ -316,6 +318,12 @@ fun HomeScaffold(
                 }
                 composable(HomeRoutes.CHAT) {
                     ChatScreen(accessToken = accessToken)
+                }
+                composable(HomeRoutes.NOTIFICATIONS) {
+                    com.example.mobileproject.presentation.ui.screen.notification.NotificationScreen(
+                        navController = navController,
+                        viewModel = notificationViewModel
+                    )
                 }
             }
 

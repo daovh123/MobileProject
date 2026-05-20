@@ -135,18 +135,16 @@ fun ChatScreen(
         // Derive display name: prefer server-provided partnerName, else
         // the username portion before '@' (e.g. "thaiviethoang2910" from email).
         val partnerRawUsername = uiState.messages.firstOrNull { !it.mine }?.senderUsername
-        val displayPartnerName = uiState.partnerName
-            ?: (uiState.partnerName
-                ?: partnerRawUsername?.substringBefore("@")?.takeIf { it.isNotBlank() })
+        val rawPartnerName = uiState.partnerName ?: partnerRawUsername
+        val displayPartnerName = rawPartnerName?.substringBefore("@")?.takeIf { it.isNotBlank() } ?: "Partner"
         // Initial letter for fallback avatar (always available from username)
-        val partnerInitial = displayPartnerName?.firstOrNull()?.toString()
+        val partnerInitial = displayPartnerName.firstOrNull()?.toString()
             ?: partnerRawUsername?.firstOrNull()?.toString()
 
         ChatTopBar(
             partnerName = displayPartnerName,
             partnerBitmap = partnerBitmap,
             partnerInitial = partnerInitial,
-            isOnline = uiState.isConnected,
             isTyping = uiState.isPartnerTyping,
         )
 
@@ -286,7 +284,6 @@ private fun ChatTopBar(
     partnerName: String?,
     partnerBitmap: Bitmap?,
     partnerInitial: String?,
-    isOnline: Boolean,
     isTyping: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -302,24 +299,12 @@ private fun ChatTopBar(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Avatar with online indicator
-            Box(modifier = Modifier.size(44.dp)) {
-                AvatarImage(
-                    bitmap = partnerBitmap,
-                    size = 44,
-                    initial = partnerInitial,
-                )
-                if (isOnline) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .align(Alignment.BottomEnd)
-                            .background(colorScheme.surface, CircleShape)
-                            .padding(2.dp)
-                            .background(colorScheme.tertiary, CircleShape),
-                    )
-                }
-            }
+            // Avatar (no online dot)
+            AvatarImage(
+                bitmap = partnerBitmap,
+                size = 44,
+                initial = partnerInitial,
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -332,15 +317,13 @@ private fun ChatTopBar(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = when {
-                        isTyping -> stringResource(R.string.chat_typing_indicator)
-                        isOnline -> stringResource(R.string.chat_online_status)
-                        else -> ""
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isTyping) colorScheme.primary else colorScheme.onSurfaceVariant,
-                )
+                if (isTyping) {
+                    Text(
+                        text = stringResource(R.string.chat_typing_indicator),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.primary,
+                    )
+                }
             }
         }
     }
@@ -1032,3 +1015,4 @@ private fun formatTimestamp(createdAt: String?): String {
         }
     }.getOrDefault(createdAt.trim())
 }
+

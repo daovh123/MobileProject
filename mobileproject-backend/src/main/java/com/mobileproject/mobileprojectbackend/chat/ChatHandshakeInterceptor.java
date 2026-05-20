@@ -70,10 +70,10 @@ public class ChatHandshakeInterceptor implements HandshakeInterceptor {
         String coupleId = coupleIdForUsers(user.getId(), partner.getId());
 
         attributes.put("userId", user.getId());
-        attributes.put("username", user.getUsername());
+        attributes.put("username", getDisplayName(user));
         attributes.put("avatarUrl", user.getAvatarUrl());
         attributes.put("partnerUserId", partner.getId());
-        attributes.put("partnerUsername", partner.getUsername());
+        attributes.put("partnerUsername", getDisplayName(partner));
         attributes.put("partnerAvatarUrl", partner.getAvatarUrl());
         attributes.put("coupleId", coupleId);
         return true;
@@ -114,6 +114,16 @@ public class ChatHandshakeInterceptor implements HandshakeInterceptor {
             }
         }
         return null;
+    }
+
+    private String getDisplayName(AuthUser user) {
+        if (!isBlank(user.getNickName())) return user.getNickName();
+        if (!isBlank(user.getFullName())) return user.getFullName();
+        String username = user.getUsername();
+        if (!isBlank(username) && username.contains("@")) {
+            return username.substring(0, username.indexOf("@"));
+        }
+        return username;
     }
 
     private boolean isBlank(String value) {

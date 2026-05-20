@@ -936,7 +936,8 @@ private fun PlaceDetailBottomSheet(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BadgePill(text = stringResource(R.string.explore_detail_opening_badge_format, valueOrUpdating(place.openHours, context)))
-                BadgePill(text = stringResource(R.string.explore_detail_price_badge_format, valueOrUpdating(place.priceRange, context)))
+                val formattedPrice = formatPriceRange(place.priceRange)
+                BadgePill(text = if (formattedPrice != null) "Giá: $formattedPrice" else stringResource(R.string.explore_detail_price_badge_format, context.getString(R.string.explore_updating)))
             }
 
             BadgePill(
@@ -1128,6 +1129,10 @@ private fun buildOverviewText(place: Place, context: Context): String {
     normalizedValue(place.mealType)?.let {
         lines.add(detailLine(R.string.explore_detail_meal_type, it, context))
     }
+    normalizedValue(place.priceRange)?.let { raw ->
+        val formatted = formatPriceRange(raw) ?: raw
+        lines.add(detailLine(R.string.explore_detail_price_range, formatted, context))
+    }
     normalizedValue(place.imageUrl)?.let {
         lines.add(detailLine(R.string.explore_detail_image_url, context.getString(R.string.explore_detail_available), context))
     }
@@ -1159,6 +1164,53 @@ private fun normalizedValue(value: String?): String? {
 
 private fun valueOrUpdating(value: String?, context: Context): String {
     return normalizedValue(value) ?: context.getString(R.string.explore_updating)
+}
+
+/**
+ * Parse priceRange như "20k - 35k", "20.000 - 35.000", "20000-35000"
+ * → "20.000 - 35.000 đồng"
+ */
+private fun formatPriceRange(raw: String?): String? {
+    val input = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+
+    // Tách bằng dấu "-" (bỏ qua khoảng trắng)
+    val parts = input.split(Regex("-")).map { it.trim() }
+
+    fun parseAmount(token: String): Long? {
+        val clean = token.replace(Regex("[,. ]"), "").lowercase()
+        return when {
+            clean.endsWith("k") -> clean.dropLast(1).toLongOrNull()?.times(1_000)
+            clean.endsWith("tr") || clean.endsWith("m") -> clean.dropLast(if (clean.endsWith("tr")) 2 else 1).toLongOrNull()?.times(1_000_000)
+            else -> clean.toLongOrNull()
+        }
+    }
+
+    fun formatAmount(amount: Long): String {
+        // Format với dấu chấm ngăn cách hàng nghìn
+        val str = amount.toString()
+        val sb = StringBuilder()
+        str.forEachIndexed { i, c ->
+            if (i > 0 && (str.length - i) % 3 == 0) sb.append('.')
+            sb.append(c)
+        }
+        return sb.toString()
+    }
+
+    if (parts.size == 2) {
+        val from = parseAmount(parts[0])
+        val to = parseAmount(parts[1])
+        if (from != null && to != null) {
+            return "${formatAmount(from)} - ${formatAmount(to)} đồng"
+        }
+    } else if (parts.size == 1) {
+        val amount = parseAmount(parts[0])
+        if (amount != null) {
+            return "${formatAmount(amount)} đồng"
+        }
+    }
+
+    // Fallback: trả về nguyên bản nếu không parse được
+    return input
 }
 
 private fun ratingOrUpdating(rating: Double?, reviewCount: Int?, context: Context): String {

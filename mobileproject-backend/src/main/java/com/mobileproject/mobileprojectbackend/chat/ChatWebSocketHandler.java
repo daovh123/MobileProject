@@ -2,6 +2,8 @@ package com.mobileproject.mobileprojectbackend.chat;
 
 import com.mobileproject.mobileprojectbackend.chat.ai.GroqChatClient;
 import com.mobileproject.mobileprojectbackend.notifications.FcmPushService;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationService;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,6 +38,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final GroqChatClient groqChatClient;
     private final FcmPushService fcmPushService;
+    private final NotificationService notificationService;
 
     private final Map<String, CopyOnWriteArraySet<WebSocketSession>> sessionsByCoupleId = new ConcurrentHashMap<>();
 
@@ -43,11 +46,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             ChatMessageRepository chatMessageRepository,
             ObjectMapper objectMapper,
             GroqChatClient groqChatClient,
-            FcmPushService fcmPushService) {
+            FcmPushService fcmPushService,
+            NotificationService notificationService) {
         this.chatMessageRepository = chatMessageRepository;
         this.objectMapper = objectMapper;
         this.groqChatClient = groqChatClient;
         this.fcmPushService = fcmPushService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -102,12 +107,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             ChatMessage saved = chatMessageRepository.save(entity);
             broadcastMessage(coupleId, saved);
 
+            String senderDisplayName = usernameOf(session);
+            String previewText = saved.getText().length() > 60
+                    ? saved.getText().substring(0, 60) + "..."
+                    : saved.getText();
+
+            // Lưu thông báo vào DB để người nhận thấy khi mở app sau
+            notificationService.createAndPush(
+                    receiverUserId,
+                    NotificationType.CHAT_MESSAGE,
+                    senderDisplayName != null ? senderDisplayName + " đã nhắn tin" : "Tin nhắn mới",
+                    previewText);
+
             // Always emit FCM push and let the client decide foreground/background
             // presentation.
             fcmPushService.sendChatMessagePush(
                     receiverUserId,
                     coupleId,
-                    usernameOf(session),
+                    senderDisplayName,
                     saved.getText(),
                     saved.getId(),
                     saved.getCreatedAt());
