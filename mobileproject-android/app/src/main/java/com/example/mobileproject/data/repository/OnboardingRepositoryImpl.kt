@@ -6,6 +6,7 @@ import com.example.mobileproject.data.model.onboarding.*
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import com.google.gson.Gson
@@ -80,6 +81,25 @@ class OnboardingRepositoryImpl @Inject constructor(
             val errorMsg = response.parseErrorMessage(gson) ?: "Khong the tai trang thai ghep doi"
             throw Exception(errorMsg)
         }
+    }
+
+    override suspend fun getPartnerProfileSummary(token: String): PartnerProfileSummary {
+        val response = apiService.getPartnerProfile(authorizationHeader(token))
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            return PartnerProfileSummary(
+                paired = body.paired,
+                message = body.message,
+                username = body.username,
+                fullName = body.fullName,
+                nickName = body.nickName,
+                avatarUrl = body.avatarUrl,
+                startAt = body.startAt,
+                daysTogether = body.daysTogether,
+            )
+        }
+        val errorMsg = response.parseErrorMessage(gson) ?: "Khong the tai thong tin doi phuong"
+        throw Exception(errorMsg)
     }
 
     override suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction {

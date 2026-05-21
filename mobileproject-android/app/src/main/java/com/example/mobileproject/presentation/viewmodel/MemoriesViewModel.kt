@@ -11,6 +11,7 @@ import com.example.mobileproject.data.model.moment.MomentDto
 import com.example.mobileproject.data.model.moment.MomentReactionRequestDto
 import com.example.mobileproject.data.model.moment.MomentReactionResponseDto
 import com.example.mobileproject.data.model.moment.MomentRequestDto
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import com.example.mobileproject.presentation.widget.MomentWidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -178,6 +179,38 @@ class MemoriesViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun onPartnerInfoClick() {
+        val token = accessToken ?: return
+        val current = _uiState.value
+        val willExpand = !current.isPartnerInfoExpanded
+
+        _uiState.update { it.copy(isPartnerInfoExpanded = willExpand) }
+        if (!willExpand || current.isPartnerInfoLoading) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPartnerInfoLoading = true, errorMessage = null) }
+            runCatching {
+                onboardingRepository.getPartnerProfileSummary(token)
+            }.onSuccess { profile ->
+                _uiState.update {
+                    it.copy(
+                        isPartnerInfoLoading = false,
+                        partnerProfile = profile,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isPartnerInfoLoading = false,
+                        errorMessage = throwable.message ?: "Khong the tai thong tin doi phuong",
+                    )
+                }
+            }
+        }
+    }
+
     fun submitComment(content: String) {
         val token = accessToken ?: return
         val momentId = _uiState.value.selectedMomentId ?: return
@@ -258,4 +291,7 @@ data class MemoriesUiState(
     val isCommentsLoading: Boolean = false,
     val selectedMomentId: String? = null,
     val comments: List<MomentCommentDto> = emptyList(),
+    val isPartnerInfoExpanded: Boolean = false,
+    val isPartnerInfoLoading: Boolean = false,
+    val partnerProfile: PartnerProfileSummary? = null,
 )

@@ -33,12 +33,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
 
@@ -80,6 +83,17 @@ fun PlaceCard(
     var imageModel by remember(place.id, primaryImageUrl) {
         mutableStateOf(primaryImageUrl ?: fallbackImageUrl)
     }
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val imageRequest = remember(imageModel, context, density) {
+        val widthPx = with(density) { 360.dp.roundToPx() }
+        val heightPx = with(density) { 250.dp.roundToPx() }
+        ImageRequest.Builder(context)
+            .data(imageModel)
+            .size(widthPx, heightPx)
+            .crossfade(true)
+            .build()
+    }
 
     Card(
         modifier = modifier
@@ -95,7 +109,7 @@ fun PlaceCard(
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
             AsyncImage(
-                model = imageModel,
+                model = imageRequest,
                 contentDescription = place.name ?: fallback,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -229,6 +243,17 @@ fun TrendingPlaceCard(
     var imageModel by remember(place.id, primaryImageUrl) {
         mutableStateOf(primaryImageUrl ?: fallbackImageUrl)
     }
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val imageRequest = remember(imageModel, context, density) {
+        val widthPx = with(density) { 238.dp.roundToPx() }
+        val heightPx = with(density) { 168.dp.roundToPx() }
+        ImageRequest.Builder(context)
+            .data(imageModel)
+            .size(widthPx, heightPx)
+            .crossfade(true)
+            .build()
+    }
 
     Card(
         modifier = modifier
@@ -244,7 +269,7 @@ fun TrendingPlaceCard(
         Box(modifier = Modifier.fillMaxSize()) {
             PlaceImagePlaceholder(modifier = Modifier.fillMaxSize())
             AsyncImage(
-                model = imageModel,
+                model = imageRequest,
                 contentDescription = place.name ?: fallback,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

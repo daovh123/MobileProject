@@ -61,6 +61,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.presentation.ui.icons.LucideCamera
 import com.example.mobileproject.presentation.ui.components.core.ProfileHeaderStickers
 import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
@@ -179,6 +180,7 @@ fun ProfileScreen(
             CoupleStatusCard(
                 isLoading = uiState.isLoadingCouple,
                 status = uiState.coupleStatus,
+                partnerProfile = uiState.partnerProfile,
             )
 
             ProfileActionsCard(
@@ -621,12 +623,18 @@ private fun ProfileActionItem(
 private fun CoupleStatusCard(
     isLoading: Boolean,
     status: CoupleStatus?,
+    partnerProfile: PartnerProfileSummary?,
 ) {
+    val partnerDisplayName = partnerProfile?.fullName
+        ?.takeIf { it.isNotBlank() }
+        ?: partnerProfile?.nickName?.takeIf { it.isNotBlank() }
+        ?: partnerProfile?.username?.takeIf { it.isNotBlank() }
+        ?: status?.partnerUsername
     val statusText = when {
         isLoading -> stringResource(R.string.explore_updating)
         status == null -> stringResource(R.string.profile_couple_none)
         status.paired -> {
-            val partner = status.partnerUsername ?: stringResource(R.string.home_pair_partner_unknown)
+            val partner = partnerDisplayName ?: stringResource(R.string.home_pair_partner_unknown)
             val days = status.daysTogether ?: 0
             "$partner • ${stringResource(R.string.profile_couple_days_together, days.toInt())}"
         }
@@ -657,6 +665,22 @@ private fun CoupleStatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (status?.paired == true && partnerProfile != null) {
+                partnerProfile.username?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = "@$it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                partnerProfile.startAt?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }

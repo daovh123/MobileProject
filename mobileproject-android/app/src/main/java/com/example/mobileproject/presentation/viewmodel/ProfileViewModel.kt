@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -81,8 +82,36 @@ class ProfileViewModel @Inject constructor(
 
             coupleResult.onSuccess { status ->
                 _uiState.update { it.copy(isLoadingCouple = false, coupleStatus = status) }
+                if (status.paired) {
+                    loadPartnerProfile(token)
+                } else {
+                    _uiState.update { it.copy(partnerProfile = null) }
+                }
             }.onFailure { error ->
-                _uiState.update { it.copy(isLoadingCouple = false, coupleError = error.message) }
+                _uiState.update {
+                    it.copy(
+                        isLoadingCouple = false,
+                        coupleError = error.message,
+                        partnerProfile = null,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadPartnerProfile(token: String) {
+        viewModelScope.launch {
+            runCatching {
+                onboardingRepository.getPartnerProfileSummary(token)
+            }.onSuccess { profile ->
+                _uiState.update { it.copy(partnerProfile = profile, coupleError = null) }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        partnerProfile = null,
+                        coupleError = error.message ?: "Khong the tai thong tin doi phuong",
+                    )
+                }
             }
         }
     }
@@ -316,6 +345,7 @@ data class ProfileUiState(
     val isLoadingCouple: Boolean = false,
     val coupleStatus: CoupleStatus? = null,
     val coupleError: String? = null,
+    val partnerProfile: PartnerProfileSummary? = null,
     val avatarUrl: String? = null,
     val avatarBitmap: Bitmap? = null,
     val avatarFrameId: String? = null,

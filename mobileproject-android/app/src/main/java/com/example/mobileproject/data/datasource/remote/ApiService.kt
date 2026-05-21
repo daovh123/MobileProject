@@ -22,6 +22,7 @@ import com.example.mobileproject.data.model.onboarding.AvatarUploadResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestActionResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestCreateRequestDto
 import com.example.mobileproject.data.model.onboarding.CoupleRequestDecisionRequestDto
+import com.example.mobileproject.data.model.onboarding.CouplePartnerProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.CoupleStatusResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileResponseDto
 import com.example.mobileproject.data.model.onboarding.ProfileUpsertRequestDto
@@ -73,6 +74,11 @@ interface ApiService {
     suspend fun getCoupleStatus(
         @Header("Authorization") authorization: String,
     ): Response<CoupleStatusResponseDto>
+
+    @GET("api/auth/couple/partner-profile")
+    suspend fun getPartnerProfile(
+        @Header("Authorization") authorization: String,
+    ): Response<CouplePartnerProfileResponseDto>
 
     @POST("api/auth/couple/requests")
     suspend fun sendCoupleRequest(

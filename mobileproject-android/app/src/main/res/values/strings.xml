@@ -120,6 +120,10 @@
     <string name="home_days_anniversary_tomorrow">Happy Anniversary!</string>
 
     <string name="home_open_map_button">Bản đồ cặp đôi</string>
+    <string name="home_map_partner_title">Vị trí của hai bạn</string>
+    <string name="home_map_share_location_title">Chia sẻ vị trí trực tiếp</string>
+    <string name="home_map_share_location_subtitle">Bật để cập nhật vị trí của bạn cho đối phương.</string>
+    <string name="home_map_share_permission_required">Bạn cần cấp quyền vị trí để bật chia sẻ vị trí.</string>
 
     <string name="map_share_title">Bản đồ</string>
     <string name="map_share_content_description">Bản đồ vị trí của hai bạn</string>
@@ -224,6 +228,11 @@
     <string name="memories_recent_moments">Khoảnh khắc gần đây</string>
     <string name="memories_more_count">+12</string>
     <string name="memories_partner_info">Thông tin đối tác</string>
+    <string name="memories_partner_info_hint">Chạm để xem thông tin người ấy</string>
+    <string name="memories_partner_loading">Đang tải thông tin đối tác...</string>
+    <string name="memories_partner_not_paired">Bạn chưa ghép đôi nên chưa có thông tin đối tác.</string>
+    <string name="memories_partner_days_together">Đã bên nhau %1$d ngày</string>
+    <string name="memories_partner_start_at">Bắt đầu từ: %1$s</string>
     <string name="memories_tab_favorites">Yêu thích</string>
     <string name="memories_tab_history">Lịch sử</string>
     <string name="memories_empty">Chưa có dữ liệu</string>

@@ -163,6 +163,34 @@ class CoupleServiceTest {
                 assertEquals("2030-01-01T00:00:00Z", response.myCoupleCodeExpiresAt());
         }
 
+        @Test
+        void getPartnerProfileReturnsSummaryWhenPaired() {
+                AuthUser user = user("u1", "alice");
+                user.setPartnerUserId("u2");
+                AuthUser partner = user("u2", "bob");
+                partner.setFullName("Bob Nguyen");
+                partner.setNickName("Bobby");
+                partner.setAvatarUrl("https://cdn.example/avatar-bob.png");
+
+                CoupleInfo info = new CoupleInfo();
+                info.setId("couple:u1:u2");
+                info.setStartAt("2026-01-01T00:00:00Z");
+
+                when(authIdentityService.requireCurrentUser("Bearer token-d")).thenReturn(user);
+                when(authUserCacheService.findById("u2")).thenReturn(Optional.of(partner));
+                when(coupleInfoRepository.findById("couple:u1:u2")).thenReturn(Optional.of(info));
+
+                var response = coupleService.getPartnerProfile("Bearer token-d");
+
+                assertTrue(response.success());
+                assertTrue(response.paired());
+                assertEquals("bob", response.username());
+                assertEquals("Bob Nguyen", response.fullName());
+                assertEquals("Bobby", response.nickName());
+                assertEquals("https://cdn.example/avatar-bob.png", response.avatarUrl());
+                assertEquals("2026-01-01T00:00:00Z", response.startAt());
+        }
+
         private AuthUser user(String id, String username) {
                 AuthUser user = new AuthUser(username, username + "@example.com", "hash", "2026-01-01T00:00:00Z");
                 user.setId(id);

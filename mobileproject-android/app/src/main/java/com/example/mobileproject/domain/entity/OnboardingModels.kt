@@ -47,3 +47,14 @@ data class CoupleStatus(
     val daysTogether: Long? = null,
     val anniversaryTomorrow: Boolean? = null,
 )
+
+data class PartnerProfileSummary(
+    val paired: Boolean,
+    val message: String,
+    val username: String?,
+    val fullName: String?,
+    val nickName: String?,
+    val avatarUrl: String?,
+    val startAt: String?,
+    val daysTogether: Long?,
+)

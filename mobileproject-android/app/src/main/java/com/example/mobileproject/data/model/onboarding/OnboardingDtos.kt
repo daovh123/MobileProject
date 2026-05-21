@@ -47,6 +47,18 @@ data class CoupleStatusResponseDto(
     @SerializedName("outgoingUpdatedAt") val outgoingUpdatedAt: String? = null,
 )
 
+data class CouplePartnerProfileResponseDto(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String,
+    @SerializedName("paired") val paired: Boolean,
+    @SerializedName("username") val username: String?,
+    @SerializedName("fullName") val fullName: String?,
+    @SerializedName("nickName") val nickName: String?,
+    @SerializedName("avatarUrl") val avatarUrl: String?,
+    @SerializedName("startAt") val startAt: String?,
+    @SerializedName("daysTogether") val daysTogether: Long?,
+)
+
 data class CoupleRequestCreateRequestDto(
     @SerializedName("partnerCode") val partnerCode: String,
 )

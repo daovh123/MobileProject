@@ -27,13 +27,6 @@ class CoupleViewModel @Inject constructor(
     private var token: String? = null
     private var pollingJob: Job? = null
 
-    init {
-        // Tự động load status nếu đã có token trong store
-        authSessionStore.load()?.token?.let {
-            loadStatus(it)
-        }
-    }
-
     fun loadStatus(accessToken: String) {
         if (accessToken.isBlank()) return
         token = accessToken.trim()

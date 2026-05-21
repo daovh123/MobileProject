@@ -3,6 +3,7 @@ package com.example.mobileproject.presentation.ui.screen.memories
 import android.util.Base64
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,9 +60,11 @@ import coil.request.ImageRequest
 import com.example.mobileproject.R
 import com.example.mobileproject.data.model.moment.MomentCommentDto
 import com.example.mobileproject.data.model.moment.MomentDto
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
 import com.example.mobileproject.presentation.ui.components.core.AppSectionHeader
 import com.example.mobileproject.presentation.ui.icons.LucideCamera
+import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideHeart
 import com.example.mobileproject.presentation.ui.icons.LucideReply
 import com.example.mobileproject.presentation.ui.icons.LucideSend
@@ -139,6 +142,14 @@ fun LocketMemoriesScreen(
                 }
 
                 item {
+                    PartnerInfoCard(
+                        partnerProfile = uiState.partnerProfile,
+                        isLoading = uiState.isPartnerInfoLoading && uiState.isPartnerInfoExpanded,
+                        onClick = { viewModel.onPartnerInfoClick() },
+                    )
+                }
+
+                item {
                     if (latestMoment == null) {
                         EmptyMomentCard(onOpenCapture = onOpenCapture)
                     } else {
@@ -171,6 +182,14 @@ fun LocketMemoriesScreen(
         }
     }
 
+    if (uiState.isPartnerInfoExpanded) {
+        PartnerInfoOverlay(
+            partnerProfile = uiState.partnerProfile,
+            isLoading = uiState.isPartnerInfoLoading,
+            onDismiss = { viewModel.onPartnerInfoClick() },
+        )
+    }
+
     if (uiState.isCommentsVisible) {
         CommentsBottomSheet(
             comments = uiState.comments,
@@ -186,6 +205,152 @@ fun LocketMemoriesScreen(
                 commentDraft = ""
             }
         )
+    }
+}
+
+@Composable
+private fun PartnerInfoCard(
+    partnerProfile: PartnerProfileSummary?,
+    isLoading: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.memories_partner_info),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = if (isLoading) {
+                    stringResource(R.string.memories_partner_loading)
+                } else {
+                    partnerProfile?.fullName?.takeIf { it.isNotBlank() }
+                        ?: partnerProfile?.nickName?.takeIf { it.isNotBlank() }
+                        ?: partnerProfile?.username?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.memories_partner_info_hint)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PartnerInfoOverlay(
+    partnerProfile: PartnerProfileSummary?,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.66f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .clickable(onClick = {}),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.memories_partner_info),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = LucideClose,
+                            contentDescription = null,
+                        )
+                    }
+                }
+
+                if (isLoading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.memories_partner_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    return@Column
+                }
+
+                if (partnerProfile == null || !partnerProfile.paired) {
+                    Text(
+                        text = partnerProfile?.message ?: stringResource(R.string.memories_partner_not_paired),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    return@Column
+                }
+
+                val displayName = partnerProfile.fullName
+                    ?.takeIf { it.isNotBlank() }
+                    ?: partnerProfile.nickName?.takeIf { it.isNotBlank() }
+                    ?: partnerProfile.username?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.memories_partner_unknown)
+
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                partnerProfile.username?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = "@$it",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                partnerProfile.daysTogether?.let {
+                    Text(
+                        text = stringResource(R.string.memories_partner_days_together, it),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                partnerProfile.startAt?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = stringResource(R.string.memories_partner_start_at, it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 

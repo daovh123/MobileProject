@@ -1,6 +1,7 @@
 package com.mobileproject.mobileprojectbackend.auth;
 
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleCodeResponse;
+import com.mobileproject.mobileprojectbackend.auth.dto.CouplePartnerProfileResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestActionResponse;
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestCreateRequest;
 import com.mobileproject.mobileprojectbackend.auth.dto.CoupleRequestDecisionRequest;
@@ -234,6 +235,56 @@ public class CoupleService {
                 startAt,
                 daysTogether,
                 anniversaryTomorrow);
+    }
+
+    public CouplePartnerProfileResponse getPartnerProfile(String authorizationHeader) {
+        AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
+
+        if (!isPaired(user)) {
+            return CouplePartnerProfileResponse.success(
+                    "User is not connected to a partner",
+                    false,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        }
+
+        AuthUser partner = authUserCacheService.findById(user.getPartnerUserId()).orElse(null);
+        if (partner == null) {
+            return CouplePartnerProfileResponse.success(
+                    "Partner profile is currently unavailable",
+                    false,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+        }
+
+        String startAt = null;
+        Long daysTogether = null;
+        CoupleInfo coupleInfo = getOrCreateCoupleInfo(user.getId(), partner.getId());
+        if (coupleInfo != null) {
+            startAt = coupleInfo.getStartAt();
+            DaysTogetherResult result = computeDaysTogether(startAt);
+            if (result != null) {
+                daysTogether = result.daysTogether();
+            }
+        }
+
+        return CouplePartnerProfileResponse.success(
+                "Partner profile fetched successfully",
+                true,
+                partner.getUsername(),
+                partner.getFullName(),
+                partner.getNickName(),
+                partner.getAvatarUrl(),
+                startAt,
+                daysTogether);
     }
 
     private DaysTogetherResult computeDaysTogether(String startAt) {

@@ -60,7 +60,7 @@ class ExploreViewModel @Inject constructor(
 
     private companion object {
         const val DEFAULT_NEARBY_RADIUS_KM = 5.0
-        const val EXPLORE_PAGE_SIZE = 30
+        const val EXPLORE_PAGE_SIZE = 12
     }
 
     private val _uiState = MutableStateFlow(ExploreUiState(isLoading = true))

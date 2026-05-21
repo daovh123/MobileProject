@@ -10,6 +10,7 @@ import com.example.mobileproject.domain.usecase.GetGoalsUseCase
 import com.example.mobileproject.domain.usecase.ToggleTaskUseCase
 import com.example.mobileproject.domain.usecase.ContributeToGoalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,16 +35,14 @@ class GoalViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(GoalUiState())
     val uiState: StateFlow<GoalUiState> = _uiState.asStateFlow()
-
-    init {
-        loadGoals()
-    }
+    private var loadGoalsJob: Job? = null
 
     private fun getCoupleId(): String? = authSessionStore.load()?.coupleId
 
     fun loadGoals() {
         val cid = getCoupleId() ?: return
-        viewModelScope.launch {
+        loadGoalsJob?.cancel()
+        loadGoalsJob = viewModelScope.launch {
             getGoalsUseCase(cid).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> _uiState.update { it.copy(isLoading = true) }

@@ -3,6 +3,7 @@ package com.example.mobileproject.domain.repository
 import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleRequestAction
 import com.example.mobileproject.domain.entity.CoupleStatus
+import com.example.mobileproject.domain.entity.PartnerProfileSummary
 import com.example.mobileproject.domain.entity.ProfileResult
 
 interface OnboardingRepository {
@@ -19,6 +20,8 @@ interface OnboardingRepository {
     suspend fun getProfile(token: String): ProfileResult
 
     suspend fun getCoupleStatus(token: String): CoupleStatus
+
+    suspend fun getPartnerProfileSummary(token: String): PartnerProfileSummary
 
     suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction
 

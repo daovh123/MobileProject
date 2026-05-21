@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,7 @@ import com.example.mobileproject.presentation.ui.components.core.DaysTogetherSti
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
+import com.example.mobileproject.presentation.viewmodel.HomeMapShareViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import kotlinx.coroutines.launch
@@ -96,6 +98,10 @@ fun HomeScreen(
 
     val goalViewModel: GoalViewModel = hiltViewModel()
     val goalState by goalViewModel.uiState.collectAsState()
+
+    val homeMapShareViewModel: HomeMapShareViewModel = hiltViewModel()
+    val homeMapShareState by homeMapShareViewModel.uiState.collectAsState()
+    val isShareLocationEnabled = homeMapShareState.shareLocationEnabled
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -201,14 +207,17 @@ fun HomeScreen(
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
-            coupleState.coupleId?.let { cid -> MapShareForegroundService.start(context, accessToken, cid) }
+            if (isShareLocationEnabled) {
+                coupleState.coupleId?.let { cid -> MapShareForegroundService.start(context, accessToken, cid) }
+            }
         } else {
-            Toast.makeText(context, "Location permission is required to share location with your partner.", Toast.LENGTH_SHORT).show()
+            homeMapShareViewModel.setShareLocationEnabled(false)
+            Toast.makeText(context, context.getString(R.string.home_map_share_permission_required), Toast.LENGTH_SHORT).show()
         }
     }
 
-    LaunchedEffect(coupleState.paired, accessToken) {
-        if (coupleState.paired && accessToken.isNotBlank()) {
+    LaunchedEffect(coupleState.paired, accessToken, isShareLocationEnabled) {
+        if (coupleState.paired && isShareLocationEnabled && accessToken.isNotBlank()) {
             val mv = createMapViewIfNeeded()
             scope.launch {
                 runCatching {
@@ -223,16 +232,29 @@ fun HomeScreen(
                     }
                 }
             }
-            
-            val hasFineLoc = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-            val hasCoarseLoc = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-            if (hasFineLoc || hasCoarseLoc) {
-                coupleState.coupleId?.let { cid -> MapShareForegroundService.start(context, accessToken, cid) }
-            } else {
-                locationPermissionLauncher.launch(
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-                )
-            }
+        }
+    }
+
+    LaunchedEffect(coupleState.paired, coupleState.coupleId, accessToken, isShareLocationEnabled) {
+        if (!coupleState.paired || !isShareLocationEnabled) {
+            MapShareForegroundService.stop(context)
+            return@LaunchedEffect
+        }
+
+        val coupleId = coupleState.coupleId
+        if (accessToken.isBlank() || coupleId.isNullOrBlank()) {
+            MapShareForegroundService.stop(context)
+            return@LaunchedEffect
+        }
+
+        val hasFineLoc = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val hasCoarseLoc = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (hasFineLoc || hasCoarseLoc) {
+            MapShareForegroundService.start(context, accessToken, coupleId)
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
         }
     }
 
@@ -282,7 +304,14 @@ fun HomeScreen(
             onSeeAllFutureGoals = onSeeAllFutureGoals,
             onTaskToggle = { gid, tid -> goalViewModel.toggleTask(gid, tid) },
             mapView = mapView,
-            accessToken = accessToken
+            accessToken = accessToken,
+            shareLocationEnabled = isShareLocationEnabled,
+            onShareLocationEnabledChange = { enabled ->
+                homeMapShareViewModel.setShareLocationEnabled(enabled)
+                if (!enabled) {
+                    MapShareForegroundService.stop(context)
+                }
+            },
         )
 
         // FAB Logic — combined Chat + Add goals
@@ -339,7 +368,9 @@ private fun HomeContent(
     onSeeAllFutureGoals: () -> Unit,
     onTaskToggle: (String, String) -> Unit,
     mapView: MapView?,
-    accessToken: String
+    accessToken: String,
+    shareLocationEnabled: Boolean,
+    onShareLocationEnabledChange: (Boolean) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -383,21 +414,85 @@ private fun HomeContent(
             } else {
                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Where is your partner?",
+                        stringResource(R.string.home_map_partner_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 8.dp),
                     )
                     ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.home_map_share_location_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = stringResource(R.string.home_map_share_location_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Switch(
+                                checked = shareLocationEnabled,
+                                onCheckedChange = onShareLocationEnabledChange,
+                            )
+                        }
+                    }
+                    ElevatedCard(
                         modifier = Modifier.fillMaxWidth().height(250.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                         colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            if (mapView != null) AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+                            if (mapView != null) {
+                                AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_location_24),
+                                        contentDescription = null,
+                                        tint = colorScheme.primary,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = if (shareLocationEnabled) {
+                                            stringResource(R.string.explore_updating)
+                                        } else {
+                                            stringResource(R.string.home_map_share_location_subtitle)
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
                             SmallFloatingActionButton(
-                                onClick = onCenterMe,
+                                onClick = {
+                                    if (mapView != null) {
+                                        onCenterMe()
+                                    }
+                                },
                                 containerColor = colorScheme.surfaceContainerLowest,
                                 contentColor = colorScheme.primary,
                                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
