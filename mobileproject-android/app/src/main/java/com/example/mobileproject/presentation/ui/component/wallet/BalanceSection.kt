@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.component.wallet
+﻿package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,7 +41,7 @@ fun BalanceSection(
         ) {
             Column {
                 Text(
-                    text = "TOTAL BALANCE",
+                    text = "TỔNG SỐ DƯ",
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.90f),
                     fontWeight = FontWeight.Bold,
@@ -65,3 +65,4 @@ fun formatSimpleAmount(amount: Long): String {
     val formatter = DecimalFormat("#,###")
     return formatter.format(amount)
 }
+

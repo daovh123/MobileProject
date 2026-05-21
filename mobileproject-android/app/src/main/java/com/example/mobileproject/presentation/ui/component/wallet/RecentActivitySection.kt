@@ -6,9 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.domain.entity.Transaction
 
@@ -31,13 +33,13 @@ fun RecentActivitySection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Activity",
+                text = stringResource(R.string.wallet_recent_activity_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.onSurface
             )
             TextButton(onClick = onSeeAllClick) {
-                Text(text = "See All", color = colorScheme.primary)
+                Text(text = stringResource(R.string.common_see_all), color = colorScheme.primary)
             }
         }
 
@@ -45,7 +47,7 @@ fun RecentActivitySection(
 
         if (transactions.isEmpty()) {
             Text(
-                text = "No recent activities",
+                text = stringResource(R.string.wallet_recent_activity_empty),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
                 color = colorScheme.onSurfaceVariant

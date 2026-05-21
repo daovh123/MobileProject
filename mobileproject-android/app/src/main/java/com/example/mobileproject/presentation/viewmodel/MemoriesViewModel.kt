@@ -42,6 +42,17 @@ class MemoriesViewModel @Inject constructor(
         this.accessToken = accessToken.trim()
         val session = authSessionStore.load()
         _uiState.update { it.copy(currentUsername = session?.username.orEmpty()) }
+        viewModelScope.launch {
+            runCatching { onboardingRepository.getCoupleStatus(this@MemoriesViewModel.accessToken.orEmpty()) }
+                .onSuccess { status ->
+                    _uiState.update {
+                        it.copy(
+                            relationshipStartAt = status.startAt,
+                            partnerUsername = status.partnerUsername,
+                        )
+                    }
+                }
+        }
         refreshMoments()
     }
 
@@ -294,4 +305,6 @@ data class MemoriesUiState(
     val isPartnerInfoExpanded: Boolean = false,
     val isPartnerInfoLoading: Boolean = false,
     val partnerProfile: PartnerProfileSummary? = null,
+    val relationshipStartAt: String? = null,
+    val partnerUsername: String? = null,
 )

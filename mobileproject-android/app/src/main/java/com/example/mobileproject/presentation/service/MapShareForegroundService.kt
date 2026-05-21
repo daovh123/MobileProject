@@ -316,7 +316,7 @@ class MapShareForegroundService : Service() {
 
     companion object {
         private const val CHANNEL_ID = "map_share"
-        private const val CHANNEL_NAME = "Map Share"
+        private const val CHANNEL_NAME = "Chia sẻ bản đồ"
         private const val NOTIFICATION_ID = 9001
 
         private const val LOCATION_INTERVAL_MS = 3000L

@@ -14,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,7 +40,7 @@ fun ExpenseFormFields(
         // Note Field
         Column {
             Text(
-                text = "Note",
+                text = stringResource(R.string.expense_note_label),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray
@@ -48,7 +50,7 @@ fun ExpenseFormFields(
                 value = note,
                 onValueChange = onNoteChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("What was it for?", color = Color.LightGray) },
+                placeholder = { Text(stringResource(R.string.expense_note_placeholder), color = Color.LightGray) },
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Color.White,
@@ -63,7 +65,7 @@ fun ExpenseFormFields(
         // Date Field
         Column {
             Text(
-                text = "Date",
+                text = stringResource(R.string.expense_date_label),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray
@@ -96,7 +98,7 @@ fun ExpenseFormFields(
                     Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFFFF8A80))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = if (isToday(date)) "Today" else dateFormatter.format(Date(date)),
+                        text = if (isToday(date)) stringResource(R.string.expense_date_today) else dateFormatter.format(Date(date)),
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.DarkGray
                     )

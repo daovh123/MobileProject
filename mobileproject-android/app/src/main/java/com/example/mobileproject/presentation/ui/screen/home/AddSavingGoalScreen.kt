@@ -21,12 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.model.ExpenseCategory
 import com.example.mobileproject.presentation.ui.screen.add_expense.components.CategoryBottomSheet
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
@@ -76,10 +78,10 @@ fun AddSavingGoalScreen(
                 TextButton(onClick = {
                     selectedDateMillis = datePickerState.selectedDateMillis
                     showDatePicker = false
-                }) { Text("OK", color = primaryPink) }
+                }) { Text(stringResource(R.string.common_ok), color = primaryPink) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -97,10 +99,10 @@ fun AddSavingGoalScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Saving Goal", color = primaryPink, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.goal_new_saving_title), color = primaryPink, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = primaryPink)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = primaryPink)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = pinkBackground)
@@ -120,11 +122,11 @@ fun AddSavingGoalScreen(
 
             // Goal Name
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Goal Name", fontWeight = FontWeight.Bold, color = darkText)
+                Text(stringResource(R.string.goal_name_label), fontWeight = FontWeight.Bold, color = darkText)
                 TextField(
                     value = name,
                     onValueChange = { if (it.length <= 50) name = it },
-                    placeholder = { Text("e.g., Buy a car", color = Color.LightGray) },
+                    placeholder = { Text(stringResource(R.string.goal_name_placeholder_saving), color = Color.LightGray) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
@@ -147,7 +149,7 @@ fun AddSavingGoalScreen(
 
             // Target Amount
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Target Amount", fontWeight = FontWeight.Bold, color = darkText)
+                Text(stringResource(R.string.goal_target_amount_label), fontWeight = FontWeight.Bold, color = darkText)
                 TextField(
                     value = targetAmount,
                     onValueChange = { if (it.all { char -> char.isDigit() }) targetAmount = it },
@@ -177,7 +179,7 @@ fun AddSavingGoalScreen(
 
             // Category
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Category", fontWeight = FontWeight.Bold, color = darkText)
+                Text(stringResource(R.string.goal_category_label), fontWeight = FontWeight.Bold, color = darkText)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -206,16 +208,16 @@ fun AddSavingGoalScreen(
                                 .clickable { showCategorySheet = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "More", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.goal_more_label), tint = Color.LightGray, modifier = Modifier.size(32.dp))
                         }
-                        Text("MORE", style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.goal_more_label), style = MaterialTheme.typography.labelSmall, color = Color.Gray, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             // Target Date
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Target Date (Required)", fontWeight = FontWeight.Bold, color = darkText)
+                Text(stringResource(R.string.goal_target_date_required), fontWeight = FontWeight.Bold, color = darkText)
                 Surface(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth().border(
@@ -234,7 +236,7 @@ fun AddSavingGoalScreen(
                         Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = primaryPink)
                         val dateText = selectedDateMillis?.let {
                             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it))
-                        } ?: "Select a date"
+                        } ?: stringResource(R.string.goal_select_date)
                         Text(
                             text = dateText,
                             color = if (selectedDateMillis == null) Color.LightGray else Color.Black,

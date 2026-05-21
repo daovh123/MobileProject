@@ -13,11 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.domain.entity.Transaction
 import com.example.mobileproject.domain.entity.TransactionType
@@ -142,6 +144,11 @@ fun TransactionDetailDialog(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val isExpense = transaction.type == TransactionType.EXPENSE
+    val typeLabel = if (isExpense) {
+        stringResource(R.string.wallet_transaction_type_expense)
+    } else {
+        stringResource(R.string.wallet_transaction_type_income)
+    }
     
     val timeDisplay = try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
@@ -165,7 +172,7 @@ fun TransactionDetailDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Transaction Detail", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                    Text(text = stringResource(R.string.wallet_transaction_detail_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = null, tint = colorScheme.onSurfaceVariant)
                     }
@@ -192,7 +199,7 @@ fun TransactionDetailDialog(
                 )
                 
                 Text(
-                    text = transaction.type.name,
+                    text = typeLabel,
                     style = MaterialTheme.typography.labelLarge,
                     color = colorScheme.onSurfaceVariant
                 )
@@ -201,11 +208,11 @@ fun TransactionDetailDialog(
                 HorizontalDivider(color = colorScheme.surfaceVariant)
                 Spacer(modifier = Modifier.height(24.dp))
 
-                DetailRow("Activity", displayTitle)
-                DetailRow("Note", transaction.note.ifBlank { "No content" })
-                DetailRow("Date", formattedDate)
-                DetailRow("Full Time", timeDisplay)
-                DetailRow("Owner ID", transaction.coupleId.split(":").last()) 
+                DetailRow(stringResource(R.string.wallet_transaction_detail_activity), displayTitle)
+                DetailRow(stringResource(R.string.wallet_transaction_detail_note), transaction.note.ifBlank { stringResource(R.string.wallet_transaction_detail_no_content) })
+                DetailRow(stringResource(R.string.wallet_transaction_detail_date), formattedDate)
+                DetailRow(stringResource(R.string.wallet_transaction_detail_time), timeDisplay)
+                DetailRow(stringResource(R.string.wallet_transaction_detail_owner_id), transaction.coupleId.split(":").last())
 
                 Spacer(modifier = Modifier.height(24.dp))
                 
@@ -215,7 +222,7 @@ fun TransactionDetailDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                     shape = RoundedCornerShape(20.dp)
                 ) {
-                    Text("Close", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_close), fontWeight = FontWeight.Bold)
                 }
             }
         }

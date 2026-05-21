@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.screen.home
+﻿package com.example.mobileproject.presentation.ui.screen.home
 
 import android.Manifest
 import android.content.Intent
@@ -130,13 +130,13 @@ class HomeActivity : ComponentActivity() {
 
         messaging.token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w("ChatFCM", "Failed to fetch FCM token", task.exception)
+                Log.w("ChatFCM", "Không thể lấy FCM token", task.exception)
                 return@addOnCompleteListener
             }
 
             val token = if (task.isSuccessful) task.result?.trim().orEmpty() else ""
             if (token.isBlank()) {
-                Log.w("ChatFCM", "FCM token is blank")
+                Log.w("ChatFCM", "FCM token rỗng")
                 return@addOnCompleteListener
             }
 
@@ -147,7 +147,7 @@ class HomeActivity : ComponentActivity() {
                         request = FcmTokenRequestDto(token = token),
                     )
                 }.onFailure { error ->
-                    Log.w("ChatFCM", "Failed to register token on backend", error)
+                    Log.w("ChatFCM", "Không thể đăng ký token lên máy chủ", error)
                 }
             }
         }
@@ -218,3 +218,4 @@ class HomeActivity : ComponentActivity() {
         }
     }
 }
+

@@ -1,22 +1,25 @@
-package com.example.mobileproject.presentation.ui.navigation
+﻿package com.example.mobileproject.presentation.ui.navigation
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,12 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-/**
- * Material Design 3 transparent navigation bar with animated indicator and labels.
- * No background container — floats over the screen content.
- */
 @Composable
 fun AppNavigationBar(
     currentRoute: String,
@@ -40,23 +40,52 @@ fun AppNavigationBar(
     modifier: Modifier = Modifier,
     items: List<NavigationItem> = NavigationConfig.navigationItems,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
+    if (items.isEmpty()) return
 
-    Row(
+    val colorScheme = MaterialTheme.colorScheme
+    val selectedIndex = items.indexOfFirst { it.route == currentRoute }.let { if (it < 0) 0 else it }
+    val indicatorColor = colorScheme.primary
+
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
+            .navigationBarsPadding(),
+        color = colorScheme.surface,
+        shadowElevation = 8.dp,
     ) {
-        items.forEach { item ->
-            NavigationBarItemContent(
-                item = item,
-                isSelected = currentRoute == item.route,
-                onNavigate = { onNavigate(item.route) },
-                modifier = Modifier.weight(1f),
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 4.dp),
+        ) {
+            val itemWidth = maxWidth / items.size
+            val indicatorOffset = itemWidth * selectedIndex + (itemWidth - 26.dp) / 2
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = indicatorOffset, y = 6.dp)
+                    .width(26.dp)
+                    .height(3.dp)
+                    .background(indicatorColor, RoundedCornerShape(999.dp)),
             )
+
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items.forEachIndexed { index, item ->
+                    NavigationBarItemContent(
+                        item = item,
+                        isSelected = index == selectedIndex,
+                        selectedColor = indicatorColor,
+                        onNavigate = { onNavigate(item.route) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
     }
 }
@@ -65,64 +94,40 @@ fun AppNavigationBar(
 private fun NavigationBarItemContent(
     item: NavigationItem,
     isSelected: Boolean,
+    selectedColor: Color,
     onNavigate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-
-    val iconColor: Color by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
-        label = "NavigationItemIconColor",
+    val iconColor by animateColorAsState(
+        targetValue = if (isSelected) selectedColor else colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
     )
 
-    val backgroundColor: Color by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.primaryContainer.copy(alpha = 0.85f) else Color.Transparent,
-        label = "NavigationItemBackgroundColor",
-    )
-
-    val indicatorWidth by animateDpAsState(
-        targetValue = if (isSelected) 56.dp else 42.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "NavigationItemWidth",
-    )
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = modifier
+            .height(56.dp)
+            .clickable(onClick = onNavigate),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = backgroundColor,
-                tonalElevation = 0.dp,
-                modifier = Modifier
-                    .width(indicatorWidth)
-                    .height(36.dp),
-            ) {
-                IconButton(
-                    onClick = onNavigate,
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = stringResource(item.contentDescriptionRes),
-                        tint = iconColor,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
+        Icon(
+            imageVector = item.icon,
+            contentDescription = stringResource(item.contentDescriptionRes),
+            tint = iconColor,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .size(22.dp),
+        )
 
-            if (isSelected) {
-                Text(
-                    text = stringResource(item.labelRes),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.primary,
-                )
-            }
-        }
+        Text(
+            text = stringResource(item.labelRes),
+            color = iconColor,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }

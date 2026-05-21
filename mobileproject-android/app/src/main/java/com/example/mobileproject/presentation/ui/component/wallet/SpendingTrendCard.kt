@@ -10,8 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SpendingTrend
 
 @Composable
@@ -30,7 +32,7 @@ fun SpendingTrendCard(
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
-                text = "Income & Expense Trend",
+                text = stringResource(R.string.wallet_trend_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.onSurface
@@ -43,7 +45,7 @@ fun SpendingTrendCard(
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "No trend data", color = colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.wallet_trend_empty), color = colorScheme.onSurfaceVariant)
                 }
             } else {
                 Box(
@@ -79,8 +81,8 @@ fun SpendingTrendCard(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Jan", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
-                    Text(text = "Dec", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.wallet_trend_month_start), style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.wallet_trend_month_end), style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
                 }
             }
         }

@@ -202,26 +202,11 @@ fun SettingsScreen(
 
         AppSectionHeader(
             title = stringResource(R.string.settings_notifications_section_title),
-            subtitle = stringResource(R.string.settings_notifications_section_subtitle),
+            subtitle = "Tuỳ chỉnh từng nhóm thông báo",
         )
 
         AppSurfaceCard {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                SettingsToggleItem(
-                    title = stringResource(R.string.settings_push_notifications_title),
-                    subtitle = stringResource(R.string.settings_push_notifications_subtitle),
-                    icon = LucideBell,
-                    checked = pushNotificationsEnabled,
-                    onCheckedChange = settingsViewModel::setPushNotifications,
-                )
-                SettingsToggleItem(
-                    title = stringResource(R.string.settings_email_notifications_title),
-                    subtitle = stringResource(R.string.settings_email_notifications_subtitle),
-                    icon = LucideBell,
-                    checked = emailNotificationsEnabled,
-                    onCheckedChange = settingsViewModel::setEmailNotifications,
-                )
-            }
+            NotificationSettingsSection()
         }
 
         AppSectionHeader(

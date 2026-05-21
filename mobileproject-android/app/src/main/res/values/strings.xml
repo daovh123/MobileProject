@@ -106,8 +106,8 @@
     <string name="home_pair_connected_title">Hai bạn đã ghép đôi thành công</string>
     <string name="home_pair_connected_subtitle">Không gian chung đã sẵn sàng để hai bạn đồng hành.</string>
     <string name="home_pair_connected_badge">TRẠNG THÁI KẾT NỐI</string>
-    <string name="nav_search">Search</string>
-    <string name="nav_offers">Offers</string>
+    <string name="nav_search">Tìm kiếm</string>
+    <string name="nav_offers">Ưu đãi</string>
     <string name="home_pair_partner_name">Đối phương: %1$s</string>
     <string name="home_pair_partner_unknown">Người ấy</string>
     <string name="home_pair_connected_note">Từ giờ các khoản chi, kế hoạch và kỷ niệm có thể đi cùng nhau trong một nơi.</string>
@@ -116,8 +116,8 @@
     <string name="home_pair_code_expiry">Mã ghép đôi của bạn hết hạn lúc: %1$s</string>
     <string name="home_pair_session_expired">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</string>
 
-    <string name="home_days_together_label">DAYS TOGETHER</string>
-    <string name="home_days_anniversary_tomorrow">Happy Anniversary!</string>
+    <string name="home_days_together_label">NGÀY BÊN NHAU</string>
+    <string name="home_days_anniversary_tomorrow">Chúc mừng kỷ niệm!</string>
 
     <string name="home_open_map_button">Bản đồ cặp đôi</string>
     <string name="home_map_partner_title">Vị trí của hai bạn</string>
@@ -242,7 +242,7 @@
     <string name="memories_greeting">Xin chào, %1$s!</string>
     <string name="explore_toggle_favorite">Thêm hoặc bỏ yêu thích</string>
 
-    <string name="chat_title">Chat với partner</string>
+    <string name="chat_title">Trò chuyện cùng đối phương</string>
     <string name="chat_empty">Chưa có tin nhắn nào</string>
     <string name="chat_input_placeholder">Nhập tin nhắn…</string>
     <string name="chat_send">Gửi</string>
@@ -353,6 +353,138 @@
     <string name="memories_locket_close">Đóng</string>
     <string name="memories_locket_widget_title">Locket của bạn</string>
     <string name="memories_locket_widget_empty">Chưa có khoảnh khắc</string>
+
+    <!-- Common -->
+    <string name="common_ok">Đồng ý</string>
+    <string name="common_cancel">Hủy</string>
+    <string name="common_close">Đóng</string>
+    <string name="common_back">Quay lại</string>
+    <string name="common_error">Lỗi</string>
+    <string name="common_see_all">Xem tất cả</string>
+
+    <!-- Wallet -->
+    <string name="wallet_saving_goals_title">Mục tiêu tiết kiệm</string>
+    <string name="wallet_no_saving_goals">Chưa có mục tiêu tiết kiệm nào</string>
+    <string name="wallet_monthly_spending_title">Chi tiêu theo tháng</string>
+    <string name="wallet_monthly_spending_empty">Không có giao dịch trong tháng này</string>
+    <string name="wallet_total_label">TỔNG</string>
+    <string name="wallet_recent_activity_title">Hoạt động gần đây</string>
+    <string name="wallet_recent_activity_empty">Chưa có hoạt động gần đây</string>
+    <string name="wallet_trend_title">Xu hướng thu chi</string>
+    <string name="wallet_trend_empty">Không có dữ liệu xu hướng</string>
+    <string name="wallet_trend_month_start">Thg 1</string>
+    <string name="wallet_trend_month_end">Thg 12</string>
+    <string name="wallet_transaction_detail_title">Chi tiết giao dịch</string>
+    <string name="wallet_transaction_detail_activity">Hoạt động</string>
+    <string name="wallet_transaction_detail_note">Ghi chú</string>
+    <string name="wallet_transaction_detail_date">Ngày</string>
+    <string name="wallet_transaction_detail_time">Giờ</string>
+    <string name="wallet_transaction_detail_owner_id">Mã cặp đôi</string>
+    <string name="wallet_transaction_detail_no_content">Chưa có nội dung</string>
+    <string name="wallet_transaction_type_expense">Chi tiêu</string>
+    <string name="wallet_transaction_type_income">Thu nhập</string>
+
+    <!-- Add expense -->
+    <string name="add_expense_title">Thêm chi tiêu</string>
+    <string name="add_expense_available">Số dư khả dụng: $%1$s</string>
+    <string name="add_expense_attach_title">Đính kèm hóa đơn</string>
+    <string name="add_expense_attach_subtitle">Lưu lại khoảnh khắc cùng sổ chi tiêu</string>
+
+    <!-- Expense form -->
+    <string name="expense_note_label">Ghi chú</string>
+    <string name="expense_note_placeholder">Chi tiêu cho việc gì?</string>
+    <string name="expense_date_label">Ngày</string>
+    <string name="expense_date_today">Hôm nay</string>
+
+    <!-- Categories -->
+    <string name="category_sheet_title">Danh mục</string>
+    <string name="category_search_placeholder">Tìm danh mục</string>
+    <string name="category_group_essentials">Thiết yếu</string>
+    <string name="category_group_lifestyle">Phong cách sống</string>
+    <string name="category_group_financials">Tài chính</string>
+
+    <!-- Top up -->
+    <string name="top_up_title">Nạp tiền</string>
+    <string name="top_up_amount_prompt">Bạn muốn nạp bao nhiêu?</string>
+    <string name="top_up_amount_placeholder">0,00</string>
+    <string name="top_up_destination_label">ĐIỂM NHẬN</string>
+    <string name="top_up_note_label">GHI CHÚ (TÙY CHỌN)</string>
+    <string name="top_up_note_placeholder">Mục đích nạp là gì?</string>
+    <string name="top_up_predicted_balance_label">Số dư dự kiến sau khi nạp: </string>
+    <string name="top_up_action">Nạp ngay</string>
+    <string name="top_up_secure_note">GIAO DỊCH ĐƯỢC MÃ HÓA AN TOÀN</string>
+    <string name="top_up_select_bank">Chọn ngân hàng</string>
+    <string name="top_up_qr_title">Thanh toán QR</string>
+    <string name="top_up_qr_scan_hint">Quét mã QR bằng app ngân hàng để thanh toán</string>
+    <string name="top_up_qr_confirm">Tôi đã thanh toán</string>
+    <string name="top_up_qr_expires">Mã QR hết hạn sau: %1$s</string>
+    <string name="top_up_bank_label">Ngân hàng</string>
+    <string name="top_up_account_label">Số tài khoản</string>
+    <string name="top_up_account_holder">Chủ tài khoản</string>
+    <string name="top_up_amount_label">Số tiền</string>
+    <string name="top_up_content_label">Nội dung</string>
+    <string name="top_up_redirect_connecting">Đang chuyển tiếp tới</string>
+    <string name="top_up_redirect_wait">Vui lòng không tắt ứng dụng...</string>
+    <string name="top_up_redirect_processing">Đang xử lý thanh toán...</string>
+    <string name="top_up_success">Nạp tiền thành công!</string>
+    <string name="top_up_back_to_wallet">Quay lại ví</string>
+    <string name="qr_scanner_title">Quét mã QR</string>
+    <string name="qr_scanner_hint">Đưa mã QR vào khung hình để quét</string>
+    <string name="qr_scanner_manual_input">Nhập mã thủ công</string>
+    <string name="qr_scanner_processing">Đang xử lý...</string>
+    <string name="qr_scanner_success">Quét thành công!</string>
+    <string name="qr_scanner_confirm">Xác nhận thanh toán</string>
+    <string name="wallet_fab_scan_qr">Quét QR thanh toán</string>
+
+    <!-- Home -->
+    <string name="home_fab_chat">Chat</string>
+    <string name="home_fab_add_future_goal">Thêm mục tiêu tương lai</string>
+    <string name="home_fab_add_saving_goal">Thêm mục tiêu tiết kiệm</string>
+    <string name="home_mini_metric_savings">TIẾT KIỆM</string>
+    <string name="home_mini_metric_memories">KỶ NIỆM</string>
+    <string name="home_mini_metric_new_format">%1$d mới</string>
+    <string name="home_future_goals_title">Mục tiêu tương lai</string>
+    <string name="home_saving_goals_title">Mục tiêu tiết kiệm</string>
+    <string name="home_where_partner">Đối phương ở đâu?</string>
+    <string name="home_shared_balance_label">SỐ DƯ CHUNG</string>
+    <string name="home_days_together_format">%1$d ngày bên nhau</string>
+    <string name="home_days_together_subtitle">Hành trình chung vẫn tiếp tục</string>
+    <string name="home_connect_partner">Kết nối với đối phương</string>
+    <string name="home_pair_now">Ghép đôi ngay</string>
+    <string name="home_location_permission_required">Cần quyền vị trí để chia sẻ vị trí với đối phương.</string>
+
+    <!-- Goals -->
+    <string name="goal_new_future_title">Mục tiêu tương lai mới</string>
+    <string name="goal_new_saving_title">Mục tiêu tiết kiệm mới</string>
+    <string name="goal_name_label">Tên mục tiêu</string>
+    <string name="goal_name_placeholder_future">VD: Chuyến du lịch hè</string>
+    <string name="goal_name_placeholder_saving">VD: Mua xe hơi</string>
+    <string name="goal_tasks_label">Các công việc (ít nhất 1)</string>
+    <string name="goal_task_placeholder">VD: Đặt phòng khách sạn</string>
+    <string name="goal_add_task">Thêm công việc</string>
+    <string name="goal_category_label">Danh mục</string>
+    <string name="goal_more_label">THÊM</string>
+    <string name="goal_target_date_required">Ngày mục tiêu (bắt buộc)</string>
+    <string name="goal_select_date">Chọn ngày</string>
+    <string name="goal_target_amount_label">Số tiền mục tiêu</string>
+    <string name="goal_deadline_label">Hạn chót (YYYY-MM-DD)</string>
+    <string name="goal_optional_placeholder">Tùy chọn</string>
+    <string name="goal_confirm">Xác nhận</string>
+    <string name="goal_task_label_format">Công việc %1$d</string>
+
+    <!-- Contribute goal -->
+    <string name="contribute_goal_title">Đóng góp vào mục tiêu</string>
+    <string name="contribute_select_goal">Chọn mục tiêu</string>
+    <string name="contribute_select_goal_placeholder">Chọn một mục tiêu</string>
+    <string name="contribute_payment_method">Phương thức thanh toán</string>
+    <string name="contribute_from_wallet">Từ ví</string>
+    <string name="contribute_direct_pay">Thanh toán trực tiếp</string>
+    <string name="contribute_amount_label">Số tiền</string>
+    <string name="contribute_note_label">Ghi chú (tùy chọn)</string>
+    <string name="contribute_confirm">Xác nhận đóng góp</string>
+
+    <!-- Moments -->
+    <string name="moment_pinned">Đã ghim</string>
 
     <!-- Settings - URLs (replace with real URLs before release) -->
     <string name="url_terms_of_service">https://policies.google.com/terms</string>

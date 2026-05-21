@@ -22,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -158,19 +160,27 @@ fun PlaceCard(
                 }
 
                 Surface(
-                    color = colorScheme.secondaryContainer.copy(alpha = 0.92f),
+                    color = Color.White.copy(alpha = 0.9f),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.22f)),
                 ) {
-                    Text(
-                        text = ratingText,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        color = colorScheme.onSecondaryContainer,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(12.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = ratingText,
+                            color = colorScheme.onSurface,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
 
@@ -295,22 +305,30 @@ fun TrendingPlaceCard(
             )
 
             Surface(
-                color = colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                color = Color.White.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.2f)),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
             ) {
-                Text(
-                    text = ratingText,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(12.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = ratingText,
+                        color = colorScheme.onSurface,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             Column(

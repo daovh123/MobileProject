@@ -20,16 +20,22 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.presentation.notification.ChatInAppNotificationBus
 import com.example.mobileproject.presentation.notification.ChatNotificationGate
+import com.example.mobileproject.presentation.notification.NotificationRefreshBus
 import com.example.mobileproject.presentation.ui.navigation.AppNavigationBar
 import com.example.mobileproject.presentation.ui.navigation.NavigationConfig
 import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
@@ -47,12 +53,18 @@ import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransaction
 import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.FutureGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.QRScannerScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TransferMoneyScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen
 import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
 object HomeRoutes {
     const val HOME: String = "home"
@@ -66,11 +78,24 @@ object HomeRoutes {
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
+    const val TRANSFER_MONEY: String = "transfer_money"
+    const val TOP_UP_QR: String = "top_up_qr/{amount}/{bankId}/{bankName}/{note}"
+    const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{amount}/{bankId}/{bankName}/{note}"
+    const val QR_SCANNER: String = "qr_scanner"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
     const val ADD_SAVING_GOAL: String = "add_saving_goal"
     const val ADD_FUTURE_GOAL: String = "add_future_goal"
     const val FUTURE_GOALS: String = "future_goals"
+    const val NOTIFICATIONS: String = "notifications"
+
+    fun topUpQRRoute(amount: Long, bankId: String, bankName: String, note: String): String {
+        return "top_up_qr/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    }
+
+    fun topUpBankRedirectRoute(amount: Long, bankId: String, bankName: String, note: String): String {
+        return "top_up_bank_redirect/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    }
 }
 
 data class AppNotification(
@@ -89,6 +114,7 @@ fun HomeScaffold(
     onNavControllerReady: (NavHostController) -> Unit,
 ) {
     val navController = rememberNavController()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: HomeRoutes.HOME
@@ -98,44 +124,26 @@ fun HomeScaffold(
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
+    val isTransferMoneyRoute = currentRoute == HomeRoutes.TRANSFER_MONEY
+    val isTopUpQRRoute = currentRoute.startsWith("top_up_qr/")
+    val isTopUpBankRedirectRoute = currentRoute.startsWith("top_up_bank_redirect/")
+    val isQRScannerRoute = currentRoute == HomeRoutes.QR_SCANNER
     val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
     val isAddFutureGoalRoute = currentRoute == HomeRoutes.ADD_FUTURE_GOAL
     val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
     val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
-    
-    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
+    val isNotificationsRoute = currentRoute == HomeRoutes.NOTIFICATIONS
+
+    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || isTransferMoneyRoute ||
+        isTopUpQRRoute || isTopUpBankRedirectRoute || isQRScannerRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
-        isProfileEditRoute || isMemoriesCaptureRoute
-    
+        isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute
+
     val snackbarHostState = remember { SnackbarHostState() }
-    val notifications = remember {
-        mutableStateListOf(
-            AppNotification(
-                id = "msg-1",
-                title = "Tin nhan moi",
-                subtitle = "Ban co 1 tin nhan moi tu doi tac.",
-                timestampLabel = "Vua xong",
-                isUnread = true,
-            ),
-            AppNotification(
-                id = "wallet-1",
-                title = "Chi tieu moi",
-                subtitle = "Vi chung vua ghi nhan mot khoan chi.",
-                timestampLabel = "5 phut truoc",
-                isUnread = true,
-            ),
-            AppNotification(
-                id = "memory-1",
-                title = "Ky niem vua luu",
-                subtitle = "Anh ky niem moi da san sang.",
-                timestampLabel = "Hom nay",
-                isUnread = false,
-            ),
-        )
-    }
+    val notifState by notificationViewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val bgBrush = remember(colorScheme) {
         Brush.verticalGradient(
@@ -149,6 +157,12 @@ fun HomeScaffold(
 
     val openLabel = stringResource(R.string.chat_in_app_open_action)
     val msgFormat = stringResource(R.string.chat_in_app_message_format)
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(notificationViewModel) {
+        notificationViewModel.refresh()
+    }
+
     LaunchedEffect(navController, openLabel, msgFormat) {
         ChatInAppNotificationBus.events.collect { event ->
             val msg = msgFormat.format(
@@ -158,6 +172,24 @@ fun HomeScaffold(
             if (snackbarHostState.showSnackbar(msg, openLabel, withDismissAction = true) == SnackbarResult.ActionPerformed) {
                 navController.navigate(HomeRoutes.CHAT) { launchSingleTop = true }
             }
+        }
+    }
+
+    LaunchedEffect(notificationViewModel) {
+        NotificationRefreshBus.events.collect {
+            notificationViewModel.refresh()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, notificationViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationViewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -185,54 +217,19 @@ fun HomeScaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (!hideTopAndBottomBar) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = when (currentRoute) {
-                                HomeRoutes.PROFILE -> stringResource(R.string.profile_title)
-                                HomeRoutes.MEMORIES -> stringResource(R.string.memories_title)
-                                else -> stringResource(currentItem.labelRes)
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = colorScheme.onSurface,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(HomeRoutes.PROFILE) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                        ) {
-                            Icon(
-                                imageVector = LucideUser,
-                                contentDescription = stringResource(R.string.cd_open_profile),
-                                tint = colorScheme.primary,
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { /* TODO: notifications */ }) {
-                            Icon(
-                                imageVector = LucideBell,
-                                contentDescription = stringResource(R.string.action_notifications),
-                                tint = colorScheme.primary,
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = colorScheme.surface,
-                        scrolledContainerColor = colorScheme.surface,
-                        titleContentColor = colorScheme.onSurface,
-                        navigationIconContentColor = colorScheme.primary,
-                        actionIconContentColor = colorScheme.primary,
-                    ),
+                HomeTopBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    isChatRoute = isChatRoute,
+                    isProfileRoute = currentRoute == HomeRoutes.PROFILE,
+                    isProfileEditRoute = isProfileEditRoute,
+                    isMemoriesRoute = currentRoute == HomeRoutes.MEMORIES,
+                    notifState = notifState,
+                    onMarkAllRead = { notificationViewModel.markAllRead() },
+                    onLoadNextPage = { notificationViewModel.loadNextPage() },
+                    isHomeRoute = currentRoute == HomeRoutes.HOME,
+                    isWalletRoute = currentRoute == HomeRoutes.WALLET,
+                    isExploreRoute = currentRoute == HomeRoutes.EXPLORE,
                 )
             }
         },
@@ -294,6 +291,9 @@ fun HomeScaffold(
                         onSeeAllFutureGoals = { navController.navigate(HomeRoutes.FUTURE_GOALS) },
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
+                        onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
+                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) },
                         onNavigateToChat = {
                             navController.navigate(HomeRoutes.CHAT) {
                                 launchSingleTop = true
@@ -315,14 +315,94 @@ fun HomeScaffold(
                     WalletScreen(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
-                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) }
+                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
+                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) }
                     )
                 }
                 composable(HomeRoutes.ADD_EXPENSE) {
                     AddExpenseScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.TOP_UP) {
-                    TopUpScreen(onNavigateBack = { navController.popBackStack() })
+                    TopUpScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToQR = { amount, bankId, bankName, note ->
+                            navController.navigate(
+                                HomeRoutes.topUpQRRoute(amount, bankId, bankName, note)
+                            )
+                        },
+                        onNavigateToBankRedirect = { amount, bankId, bankName, note ->
+                            navController.navigate(
+                                HomeRoutes.topUpBankRedirectRoute(amount, bankId, bankName, note)
+                            )
+                        }
+                    )
+                }
+                composable(HomeRoutes.TRANSFER_MONEY) {
+                    TransferMoneyScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    route = HomeRoutes.TOP_UP_QR,
+                    arguments = listOf(
+                        navArgument("amount") { type = NavType.LongType },
+                        navArgument("bankId") { type = NavType.StringType },
+                        navArgument("bankName") { type = NavType.StringType },
+                        navArgument("note") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
+                    val bankName = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
+                    )
+                    val note = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    )
+                    TopUpQRScreen(
+                        amount = amount,
+                        bankId = bankId,
+                        bankName = bankName,
+                        note = note,
+                        onNavigateBack = { navController.popBackStack() },
+                        onPaymentSuccess = {
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
+                        }
+                    )
+                }
+                composable(
+                    route = HomeRoutes.TOP_UP_BANK_REDIRECT,
+                    arguments = listOf(
+                        navArgument("amount") { type = NavType.LongType },
+                        navArgument("bankId") { type = NavType.StringType },
+                        navArgument("bankName") { type = NavType.StringType },
+                        navArgument("note") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
+                    val bankName = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
+                    )
+                    val note = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    )
+                    TopUpBankRedirectScreen(
+                        amount = amount,
+                        bankId = bankId,
+                        bankName = bankName,
+                        note = note,
+                        onNavigateBack = { navController.popBackStack() },
+                        onPaymentSuccess = {
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
+                        }
+                    )
+                }
+                composable(HomeRoutes.QR_SCANNER) {
+                    QRScannerScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.RECENT_TRANSACTIONS) {
                     RecentTransactionsScreen(onNavigateBack = { navController.popBackStack() })
@@ -372,6 +452,12 @@ fun HomeScaffold(
                 }
                 composable(HomeRoutes.CHAT) {
                     ChatScreen(accessToken = accessToken)
+                }
+                composable(HomeRoutes.NOTIFICATIONS) {
+                    com.example.mobileproject.presentation.ui.screen.notification.NotificationScreen(
+                        navController = navController,
+                        viewModel = notificationViewModel
+                    )
                 }
             }
 

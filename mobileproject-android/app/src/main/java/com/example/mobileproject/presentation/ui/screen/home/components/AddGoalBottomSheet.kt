@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.GoalTask
 import com.example.mobileproject.domain.model.ExpenseCategory
 import java.util.UUID
@@ -47,7 +49,7 @@ fun AddGoalBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = if (type == "SAVING") "Add Saving Goal" else "Add Future Goal",
+                text = if (type == "SAVING") stringResource(R.string.goal_new_saving_title) else stringResource(R.string.goal_new_future_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF4A3434)
@@ -56,13 +58,13 @@ fun AddGoalBottomSheet(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Goal Name") },
+                label = { Text(stringResource(R.string.goal_name_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
 
             // Category Selection
-            Text("Category", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Text(stringResource(R.string.goal_category_label), style = MaterialTheme.typography.labelLarge, color = Color.Gray)
             SecondaryScrollableTabRow(
                 selectedTabIndex = ExpenseCategory.getAll().indexOfFirst { it.id == category }.coerceAtLeast(0),
                 edgePadding = 0.dp,
@@ -89,13 +91,13 @@ fun AddGoalBottomSheet(
                 OutlinedTextField(
                     value = targetAmount,
                     onValueChange = { if (it.all { char -> char.isDigit() }) targetAmount = it },
-                    label = { Text("Target Amount") },
+                    label = { Text(stringResource(R.string.goal_target_amount_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     prefix = { Text("đ ") }
                 )
             } else {
-                Text("Tasks", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                Text(stringResource(R.string.goal_tasks_label), style = MaterialTheme.typography.labelLarge, color = Color.Gray)
                 tasks.forEachIndexed { index, taskContent ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -106,7 +108,7 @@ fun AddGoalBottomSheet(
                             onValueChange = { newContent ->
                                 tasks = tasks.toMutableList().apply { this[index] = newContent }
                             },
-                            label = { Text("Task ${index + 1}") },
+                            label = { Text(stringResource(R.string.goal_task_label_format, index + 1)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -122,17 +124,17 @@ fun AddGoalBottomSheet(
                 TextButton(onClick = { tasks = tasks + "" }) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Task")
+                    Text(stringResource(R.string.goal_add_task))
                 }
             }
 
             OutlinedTextField(
                 value = deadline,
                 onValueChange = { deadline = it },
-                label = { Text("Deadline (YYYY-MM-DD)") },
+                label = { Text(stringResource(R.string.goal_deadline_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                placeholder = { Text("Optional") }
+                placeholder = { Text(stringResource(R.string.goal_optional_placeholder)) }
             )
 
             Button(
@@ -152,7 +154,7 @@ fun AddGoalBottomSheet(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Confirm", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.goal_confirm), fontWeight = FontWeight.Bold)
             }
             
             Spacer(modifier = Modifier.height(32.dp))

@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.screen.wallet
+﻿package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -38,10 +38,10 @@ fun SavingGoalsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Saving Goals", fontWeight = FontWeight.Bold, color = colorScheme.onSurface) },
+                title = { Text("Mục tiêu tiết kiệm", fontWeight = FontWeight.Bold, color = colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = colorScheme.onSurface)
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.onSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -76,3 +76,4 @@ fun SavingGoalsScreen(
         }
     }
 }
+

@@ -18,24 +18,24 @@ sealed class ExpenseCategory(
     }
 
     // Essentials
-    object FoodDrink : ExpenseCategory("FOOD_DRINK", "Food & Drink", Icons.Default.Restaurant, CategoryType.ESSENTIALS)
-    object Transport : ExpenseCategory("TRANSPORT", "Transport", Icons.Default.DirectionsCar, CategoryType.ESSENTIALS)
-    object Household : ExpenseCategory("HOUSEHOLD", "Household", Icons.Default.Home, CategoryType.ESSENTIALS)
-    object Bills : ExpenseCategory("BILLS", "Bills", Icons.Default.Receipt, CategoryType.ESSENTIALS)
-    object Rent : ExpenseCategory("RENT", "Rent", Icons.Default.Apartment, CategoryType.ESSENTIALS)
-    object Education : ExpenseCategory("EDUCATION", "Education", Icons.Default.School, CategoryType.ESSENTIALS)
+    object FoodDrink : ExpenseCategory("FOOD_DRINK", "Ăn uống", Icons.Default.Restaurant, CategoryType.ESSENTIALS)
+    object Transport : ExpenseCategory("TRANSPORT", "Di chuyển", Icons.Default.DirectionsCar, CategoryType.ESSENTIALS)
+    object Household : ExpenseCategory("HOUSEHOLD", "Gia dụng", Icons.Default.Home, CategoryType.ESSENTIALS)
+    object Bills : ExpenseCategory("BILLS", "Hóa đơn", Icons.Default.Receipt, CategoryType.ESSENTIALS)
+    object Rent : ExpenseCategory("RENT", "Tiền nhà", Icons.Default.Apartment, CategoryType.ESSENTIALS)
+    object Education : ExpenseCategory("EDUCATION", "Giáo dục", Icons.Default.School, CategoryType.ESSENTIALS)
 
     // Couple & Lifestyle
-    object Dating : ExpenseCategory("DATING", "Dating", Icons.Default.Favorite, CategoryType.LIFESTYLE)
-    object Gifts : ExpenseCategory("GIFTS", "Gifts", Icons.Default.CardGiftcard, CategoryType.LIFESTYLE)
-    object Travel : ExpenseCategory("TRAVEL", "Travel", Icons.Default.Flight, CategoryType.LIFESTYLE)
-    object Pet : ExpenseCategory("PET", "Pet", Icons.Default.Pets, CategoryType.LIFESTYLE)
-    object Entertainment : ExpenseCategory("ENTERTAINMENT", "Entertainment", Icons.Default.Movie, CategoryType.LIFESTYLE)
+    object Dating : ExpenseCategory("DATING", "Hẹn hò", Icons.Default.Favorite, CategoryType.LIFESTYLE)
+    object Gifts : ExpenseCategory("GIFTS", "Quà tặng", Icons.Default.CardGiftcard, CategoryType.LIFESTYLE)
+    object Travel : ExpenseCategory("TRAVEL", "Du lịch", Icons.Default.Flight, CategoryType.LIFESTYLE)
+    object Pet : ExpenseCategory("PET", "Thú cưng", Icons.Default.Pets, CategoryType.LIFESTYLE)
+    object Entertainment : ExpenseCategory("ENTERTAINMENT", "Giải trí", Icons.Default.Movie, CategoryType.LIFESTYLE)
 
     // Financials
-    object Emergency : ExpenseCategory("EMERGENCY", "Emergency", Icons.Default.Error, CategoryType.FINANCIALS)
-    object Investment : ExpenseCategory("INVESTMENT", "Investment", Icons.AutoMirrored.Filled.TrendingUp, CategoryType.FINANCIALS)
-    object Others : ExpenseCategory("OTHERS", "Others", Icons.Default.Category, CategoryType.FINANCIALS)
+    object Emergency : ExpenseCategory("EMERGENCY", "Khẩn cấp", Icons.Default.Error, CategoryType.FINANCIALS)
+    object Investment : ExpenseCategory("INVESTMENT", "Đầu tư", Icons.AutoMirrored.Filled.TrendingUp, CategoryType.FINANCIALS)
+    object Others : ExpenseCategory("OTHERS", "Khác", Icons.Default.Category, CategoryType.FINANCIALS)
 
     companion object {
         // Sử dụng function để tránh lỗi null khi khởi tạo companion object

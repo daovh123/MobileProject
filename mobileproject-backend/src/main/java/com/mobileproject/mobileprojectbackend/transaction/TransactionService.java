@@ -6,6 +6,8 @@ import com.mobileproject.mobileprojectbackend.goal.GoalContribution;
 import com.mobileproject.mobileprojectbackend.goal.GoalContributionRepository;
 import com.mobileproject.mobileprojectbackend.goal.SavingGoal;
 import com.mobileproject.mobileprojectbackend.goal.SavingGoalRepository;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationService;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationType;
 import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionResponse;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,21 +23,24 @@ public class TransactionService {
     private final SavingGoalRepository savingGoalRepository;
     private final GoalContributionRepository goalContributionRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public TransactionService(TransactionRepository transactionRepository,
                               CoupleInfoRepository coupleInfoRepository,
                               SavingGoalRepository savingGoalRepository,
                               GoalContributionRepository goalContributionRepository,
-                              MongoTemplate mongoTemplate) {
+                              MongoTemplate mongoTemplate,
+                              NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.coupleInfoRepository = coupleInfoRepository;
         this.savingGoalRepository = savingGoalRepository;
         this.goalContributionRepository = goalContributionRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     public TransactionResponse saveTransaction(String coupleId, Long amount, TransactionType type,
-                                                String category, String note) {
+                                               String category, String note) {
         if (coupleId == null || coupleId.isBlank()) {
             return TransactionResponse.failure("Couple ID is required");
         }
@@ -62,6 +67,18 @@ public class TransactionService {
 
         CoupleInfo updatedCouple = coupleInfoRepository.findById(coupleId).orElse(coupleInfo);
 
+        // Send notification to both users
+        String formattedAmount = String.format("%,d đ", amount);
+        if (type == TransactionType.INCOME) {
+            notificationService.createAndPushForCouple(coupleId, NotificationType.PAYMENT,
+                    "Nạp tiền thành công",
+                    "Đã nạp " + formattedAmount + (note != null && !note.isBlank() ? " — " + note : ""));
+        } else {
+            notificationService.createAndPushForCouple(coupleId, NotificationType.TRANSACTION,
+                    "Chi tiêu mới",
+                    "Đã ghi nhận " + formattedAmount + (category != null && !category.isBlank() ? " (" + category + ")" : ""));
+        }
+
         return TransactionResponse.success(
                 savedTransaction.getId(),
                 amount,
@@ -72,7 +89,7 @@ public class TransactionService {
         );
     }
 
-    public TransactionResponse processIncome(String coupleId, Long amount, String targetType, 
+    public TransactionResponse processIncome(String coupleId, Long amount, String targetType,
                                               String goalId, String note) {
         if (coupleId == null || coupleId.isBlank()) {
             return TransactionResponse.failure("Couple ID is required");
@@ -89,6 +106,8 @@ public class TransactionService {
             return TransactionResponse.failure("Couple not found");
         }
 
+        String formattedAmount = String.format("%,d đ", amount);
+
         if ("WALLET".equalsIgnoreCase(targetType)) {
             Transaction transaction = new Transaction(coupleId, amount, TransactionType.INCOME, "INCOME", note);
             Transaction savedTransaction = transactionRepository.save(transaction);
@@ -98,6 +117,10 @@ public class TransactionService {
             mongoTemplate.updateFirst(query, update, CoupleInfo.class);
 
             CoupleInfo updatedCouple = coupleInfoRepository.findById(coupleId).orElse(coupleInfo);
+
+            notificationService.createAndPushForCouple(coupleId, NotificationType.PAYMENT,
+                    "Nạp tiền thành công",
+                    "Đã nạp " + formattedAmount + " vào ví chung" + (note != null && !note.isBlank() ? " — " + note : ""));
 
             return TransactionResponse.success(
                     savedTransaction.getId(),
@@ -126,7 +149,8 @@ public class TransactionService {
             mongoTemplate.updateFirst(goalQuery, goalUpdate, SavingGoal.class);
 
             SavingGoal updatedGoal = savingGoalRepository.findById(goalId).orElse(goal);
-            if (updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount()) {
+            boolean achieved = updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount();
+            if (achieved) {
                 Query statusUpdateQuery = new Query(Criteria.where("id").is(goalId));
                 Update statusUpdate = new Update().set("status", com.mobileproject.mobileprojectbackend.goal.GoalStatus.ACHIEVED);
                 mongoTemplate.updateFirst(statusUpdateQuery, statusUpdate, SavingGoal.class);
@@ -134,6 +158,16 @@ public class TransactionService {
 
             GoalContribution contribution = new GoalContribution(goalId, amount, coupleId, note);
             goalContributionRepository.save(contribution);
+
+            notificationService.createAndPushForCouple(coupleId, NotificationType.PAYMENT,
+                    "Nạp tiền vào mục tiêu",
+                    "Đã nạp " + formattedAmount + " vào \"" + goal.getName() + "\"");
+
+            if (achieved) {
+                notificationService.createAndPushForCouple(coupleId, NotificationType.GOAL_COMPLETED,
+                        "Mục tiêu hoàn thành! 🎉",
+                        "Mục tiêu \"" + goal.getName() + "\" đã đạt được!");
+            }
 
             return TransactionResponse.success(
                     null,

@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.screen.wallet
+﻿package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,10 +36,10 @@ fun FutureGoalsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Future Goals", fontWeight = FontWeight.Bold, color = colorScheme.onSurface) },
+                title = { Text("Mục tiêu tương lai", fontWeight = FontWeight.Bold, color = colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = colorScheme.onSurface)
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = colorScheme.onSurface)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -80,3 +80,4 @@ fun FutureGoalsScreen(
         }
     }
 }
+

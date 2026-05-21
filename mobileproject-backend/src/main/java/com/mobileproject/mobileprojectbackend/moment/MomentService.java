@@ -1,10 +1,14 @@
 package com.mobileproject.mobileprojectbackend.moment;
 
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
+import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
 import com.mobileproject.mobileprojectbackend.moment.comment.MomentCommentRepository;
 import com.mobileproject.mobileprojectbackend.moment.dto.MomentReactionSummary;
 import com.mobileproject.mobileprojectbackend.moment.dto.MomentView;
 import com.mobileproject.mobileprojectbackend.moment.reaction.MomentReaction;
 import com.mobileproject.mobileprojectbackend.moment.reaction.MomentReactionRepository;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationService;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationType;
 import com.mobileproject.mobileprojectbackend.storage.FirebaseStorageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,16 +25,22 @@ public class MomentService {
     private final MomentReactionRepository momentReactionRepository;
     private final MomentCommentRepository momentCommentRepository;
     private final FirebaseStorageService firebaseStorageService;
+    private final NotificationService notificationService;
+    private final CoupleInfoRepository coupleInfoRepository;
 
     public MomentService(
             MomentRepository momentRepository,
             MomentReactionRepository momentReactionRepository,
             MomentCommentRepository momentCommentRepository,
-            FirebaseStorageService firebaseStorageService) {
+            FirebaseStorageService firebaseStorageService,
+            NotificationService notificationService,
+            CoupleInfoRepository coupleInfoRepository) {
         this.momentRepository = momentRepository;
         this.momentReactionRepository = momentReactionRepository;
         this.momentCommentRepository = momentCommentRepository;
         this.firebaseStorageService = firebaseStorageService;
+        this.notificationService = notificationService;
+        this.coupleInfoRepository = coupleInfoRepository;
     }
 
     public MomentView saveMoment(String coupleId, String title, String base64Image, String viewerUserId) {
@@ -65,7 +75,20 @@ public class MomentService {
         String imageUrl = firebaseStorageService.uploadMomentImage(coupleId, imageBytes, contentType);
         String safeTitle = title == null ? "" : title.trim();
         Moment moment = new Moment(coupleId, safeTitle, imageUrl);
-        return toView(momentRepository.save(moment), viewerUserId);
+        MomentView savedView = toView(momentRepository.save(moment), viewerUserId);
+
+        // Notify partner about new memory
+        if (viewerUserId != null) {
+            CoupleInfo couple = coupleInfoRepository.findById(coupleId).orElse(null);
+            if (couple != null) {
+                notificationService.createAndPushForPartner(coupleId, viewerUserId,
+                        NotificationType.PARTNER_MEMORY,
+                        "Kỷ niệm mới! 📸",
+                        "Đối phương vừa chia sẻ một kỷ niệm mới" + (safeTitle.isBlank() ? "." : ": " + safeTitle));
+            }
+        }
+
+        return savedView;
     }
 
     public List<MomentView> getMoments(String coupleId, String viewerUserId) {

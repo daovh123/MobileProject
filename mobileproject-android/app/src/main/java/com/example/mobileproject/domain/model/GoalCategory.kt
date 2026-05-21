@@ -1,4 +1,4 @@
-package com.example.mobileproject.domain.model
+﻿package com.example.mobileproject.domain.model
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
@@ -9,11 +9,11 @@ sealed class GoalCategory(
     val displayName: String,
     val icon: ImageVector
 ) {
-    object Travel : GoalCategory("TRAVEL", "Travel", Icons.Default.Flight)
-    object Tech : GoalCategory("TECH", "Tech", Icons.Default.Devices)
-    object Home : GoalCategory("HOME", "Home", Icons.Default.Home)
-    object Savings : GoalCategory("SAVINGS", "Savings", Icons.Default.Savings)
-    object Others : GoalCategory("OTHERS", "Others", Icons.Default.Star)
+    object Travel : GoalCategory("TRAVEL", "Du lịch", Icons.Default.Flight)
+    object Tech : GoalCategory("TECH", "Công nghệ", Icons.Default.Devices)
+    object Home : GoalCategory("HOME", "Nhà cửa", Icons.Default.Home)
+    object Savings : GoalCategory("TIẾT KIỆM", "Tiết kiệm", Icons.Default.Savings)
+    object Others : GoalCategory("OTHERS", "Khác", Icons.Default.Star)
 
     companion object {
         fun getAll(): List<GoalCategory> = listOf(
@@ -23,3 +23,4 @@ sealed class GoalCategory(
         fun fromId(id: String): GoalCategory = getAll().find { it.id == id } ?: Others
     }
 }
+

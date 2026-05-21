@@ -129,6 +129,48 @@ public class FcmPushService {
         }
     }
 
+    public void sendGeneralPush(String receiverUserId, String type, String title, String body) {
+        if (receiverUserId == null || receiverUserId.isBlank()) return;
+
+        String normalizedUserId = receiverUserId.trim();
+        UserFcmToken userToken = userFcmTokenRepository.findById(normalizedUserId).orElse(null);
+        if (userToken == null || userToken.getToken() == null || userToken.getToken().isBlank()) return;
+
+        FirebaseMessaging firebaseMessaging = firebaseMessagingOrNull();
+        if (firebaseMessaging == null) return;
+
+        String safeType = type == null ? "general" : type.trim();
+        String safeTitle = title == null ? "" : title.trim();
+        String safeBody = body == null ? "" : body.trim();
+
+        Message message = Message.builder()
+                .setToken(userToken.getToken().trim())
+                .putData("type", safeType)
+                .putData("title", safeTitle)
+                .putData("body", safeBody)
+                .setNotification(
+                        com.google.firebase.messaging.Notification.builder()
+                                .setTitle(safeTitle)
+                                .setBody(safeBody)
+                                .build()
+                )
+                .build();
+
+        try {
+            String responseId = firebaseMessaging.send(message);
+            LOGGER.debug("Sent FCM general push to user={} type={} responseId={}", normalizedUserId, safeType, responseId);
+        } catch (FirebaseMessagingException exception) {
+            if (isInvalidToken(exception)) {
+                userFcmTokenRepository.deleteById(normalizedUserId);
+                LOGGER.info("Removed invalid FCM token for user={}", normalizedUserId);
+                return;
+            }
+            LOGGER.warn("Failed to send FCM general push to user={}: {}", normalizedUserId, exception.getMessage());
+        } catch (Exception exception) {
+            LOGGER.warn("Unexpected error while sending FCM general push to user={}", normalizedUserId, exception);
+        }
+    }
+
     private FirebaseMessaging firebaseMessagingOrNull() {
         try {
             ensureInitialized();

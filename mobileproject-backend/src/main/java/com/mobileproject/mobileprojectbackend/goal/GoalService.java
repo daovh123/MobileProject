@@ -6,6 +6,8 @@ import com.mobileproject.mobileprojectbackend.goal.dto.TaskDto;
 import com.mobileproject.mobileprojectbackend.goal.dto.ToggleTaskResponse;
 import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
 import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationService;
+import com.mobileproject.mobileprojectbackend.notifications.NotificationType;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -27,17 +29,20 @@ public class GoalService {
     private final GoalContributionRepository goalContributionRepository;
     private final CoupleInfoRepository coupleInfoRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public GoalService(SavingGoalRepository savingGoalRepository,
                        FutureGoalRepository futureGoalRepository,
                        GoalContributionRepository goalContributionRepository,
                        CoupleInfoRepository coupleInfoRepository,
-                       MongoTemplate mongoTemplate) {
+                       MongoTemplate mongoTemplate,
+                       NotificationService notificationService) {
         this.savingGoalRepository = savingGoalRepository;
         this.futureGoalRepository = futureGoalRepository;
         this.goalContributionRepository = goalContributionRepository;
         this.coupleInfoRepository = coupleInfoRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     public GoalResponse createGoal(String coupleId, String name, String category,
@@ -61,6 +66,11 @@ public class GoalService {
             }
             SavingGoal goal = new SavingGoal(coupleId, name, category, targetAmount, deadline);
             SavingGoal savedGoal = savingGoalRepository.save(goal);
+
+            notificationService.createAndPushForCouple(coupleId, NotificationType.GOAL_CREATED,
+                    "Mục tiêu mới được tạo",
+                    "Mục tiêu tiết kiệm \"" + name + "\" vừa được thêm!");
+
             return GoalResponse.success(
                     savedGoal.getId(),
                     savedGoal.getName(),
@@ -85,6 +95,10 @@ public class GoalService {
 
             FutureGoal goal = new FutureGoal(coupleId, name, category, taskEntities, deadline);
             FutureGoal savedGoal = futureGoalRepository.save(goal);
+
+            notificationService.createAndPushForCouple(coupleId, NotificationType.GOAL_CREATED,
+                    "Mục tiêu mới được tạo",
+                    "Mục tiêu tương lai \"" + name + "\" vừa được thêm!");
 
             List<TaskDto> savedTaskDtos = savedGoal.getTasks().stream()
                     .map(task -> new TaskDto(task.getTaskId(), task.getContent(), task.isCompleted()))
@@ -144,7 +158,8 @@ public class GoalService {
         mongoTemplate.updateFirst(goalQuery, goalUpdate, SavingGoal.class);
 
         SavingGoal updatedGoal = savingGoalRepository.findById(goalId).orElse(goal);
-        if (updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount()) {
+        boolean achieved = updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount();
+        if (achieved) {
             Query statusUpdateQuery = new Query(Criteria.where("id").is(goalId));
             Update statusUpdate = new Update().set("status", GoalStatus.ACHIEVED);
             mongoTemplate.updateFirst(statusUpdateQuery, statusUpdate, SavingGoal.class);
@@ -155,6 +170,17 @@ public class GoalService {
         GoalContribution savedContribution = goalContributionRepository.save(contribution);
 
         CoupleInfo updatedCouple = coupleInfoRepository.findById(goal.getCoupleId()).orElse(coupleInfo);
+
+        String formattedAmount = String.format("%,d đ", amount);
+        notificationService.createAndPushForCouple(goal.getCoupleId(), NotificationType.GOAL_UPDATED,
+                "Đã đóng góp vào mục tiêu",
+                "Thêm " + formattedAmount + " vào \"" + goal.getName() + "\"");
+
+        if (achieved) {
+            notificationService.createAndPushForCouple(goal.getCoupleId(), NotificationType.GOAL_COMPLETED,
+                    "Mục tiêu hoàn thành! 🎉",
+                    "Mục tiêu \"" + goal.getName() + "\" đã đạt được!");
+        }
 
         return ContributeResponse.success(
                 savedContribution.getId(),
@@ -187,7 +213,8 @@ public class GoalService {
         mongoTemplate.updateFirst(goalQuery, goalUpdate, SavingGoal.class);
 
         SavingGoal updatedGoal = savingGoalRepository.findById(goalId).orElse(goal);
-        if (updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount()) {
+        boolean achieved = updatedGoal.getCurrentAmount() >= updatedGoal.getTargetAmount();
+        if (achieved) {
             Query statusUpdateQuery = new Query(Criteria.where("id").is(goalId));
             Update statusUpdate = new Update().set("status", GoalStatus.ACHIEVED);
             mongoTemplate.updateFirst(statusUpdateQuery, statusUpdate, SavingGoal.class);
@@ -196,6 +223,17 @@ public class GoalService {
 
         GoalContribution contribution = new GoalContribution(goalId, amount, contributorId, note);
         goalContributionRepository.save(contribution);
+
+        String formattedAmount = String.format("%,d đ", amount);
+        notificationService.createAndPushForCouple(goal.getCoupleId(), NotificationType.GOAL_UPDATED,
+                "Đã đóng góp vào mục tiêu",
+                "Thêm " + formattedAmount + " vào \"" + goal.getName() + "\"");
+
+        if (achieved) {
+            notificationService.createAndPushForCouple(goal.getCoupleId(), NotificationType.GOAL_COMPLETED,
+                    "Mục tiêu hoàn thành! 🎉",
+                    "Mục tiêu \"" + goal.getName() + "\" đã đạt được!");
+        }
 
         return ContributeResponse.success(
                 contribution.getId(),
@@ -253,6 +291,13 @@ public class GoalService {
 
         goal.toggleTaskCompletion(taskId);
         FutureGoal savedGoal = futureGoalRepository.save(goal);
+
+        // Notify if goal completed
+        if (savedGoal.getProgress() >= 100.0) {
+            notificationService.createAndPushForCouple(savedGoal.getCoupleId(), NotificationType.GOAL_COMPLETED,
+                    "Mục tiêu hoàn thành! 🎉",
+                    "Mục tiêu \"" + savedGoal.getName() + "\" đã hoàn thành!");
+        }
 
         return ToggleTaskResponse.success(goalId, taskId, savedGoal.getProgress());
     }
