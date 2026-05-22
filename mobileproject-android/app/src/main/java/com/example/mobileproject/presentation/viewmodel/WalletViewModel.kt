@@ -63,7 +63,7 @@ class WalletViewModel @Inject constructor(
                 combine(walletFlow, categoryFlow) { walletResult, categoryResult ->
                     _uiState.update { state ->
                         val allTrans = if (transactionsResource is com.example.mobileproject.core.result.Resource.Success) {
-                            transactionsResource.data
+                            transactionsResource.data.sortedByDescending { it.createdAt }
                         } else emptyList()
 
                         // Sắp xếp các category theo chi tiêu từ lớn đến bé

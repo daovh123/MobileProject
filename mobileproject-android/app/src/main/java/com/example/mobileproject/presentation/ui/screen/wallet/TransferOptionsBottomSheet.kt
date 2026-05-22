@@ -42,13 +42,13 @@ fun TransferOptionsBottomSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "Chuyen tien",
+                text = "Chuyển tiền",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "Chon cach chuyen tien phu hop.",
+                text = "Chọn cách chuyển tiền phù hợp.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -64,7 +64,7 @@ fun TransferOptionsBottomSheet(
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                     )
-                    Text("Chuyen khoan thu cong", fontWeight = FontWeight.Bold)
+                    Text("Chuyển khoản thủ công", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -78,7 +78,7 @@ fun TransferOptionsBottomSheet(
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                     )
-                    Text("Quet QR", fontWeight = FontWeight.Bold)
+                    Text("Quét QR", fontWeight = FontWeight.Bold)
                 }
             }
 

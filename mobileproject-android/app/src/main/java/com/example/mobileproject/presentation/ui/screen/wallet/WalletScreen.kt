@@ -3,7 +3,19 @@ package com.example.mobileproject.presentation.ui.screen.wallet
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -13,8 +25,25 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -23,6 +52,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.component.wallet.BalanceSection
 import com.example.mobileproject.presentation.ui.component.wallet.MonthlySpendingCard
@@ -32,7 +64,6 @@ import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import java.text.DateFormatSymbols
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
@@ -41,13 +72,14 @@ fun WalletScreen(
     onNavigateToTransferMoney: () -> Unit,
     onNavigateToQRScanner: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel(),
-    savingGoalViewModel: SavingGoalViewModel = hiltViewModel()
+    savingGoalViewModel: SavingGoalViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val savingGoalState by savingGoalViewModel.uiState.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
-    
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var isMonthPickerVisible by remember { mutableStateOf(false) }
     var isFabExpanded by remember { mutableStateOf(false) }
     var isContributeSheetVisible by remember { mutableStateOf(false) }
@@ -58,11 +90,18 @@ fun WalletScreen(
         savingGoalViewModel.loadGoals()
     }
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadData()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = colorScheme.surfaceContainerLow,
-            floatingActionButton = { }
-        ) { paddingValues ->
+        Scaffold(containerColor = colorScheme.surfaceContainerLow, floatingActionButton = {}) { paddingValues ->
             if (uiState.isLoading && uiState.wallet == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = colorScheme.primary)
@@ -72,27 +111,21 @@ fun WalletScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp),
                 ) {
-                    item {
-                        BalanceSection(
-                            balance = uiState.wallet?.balance ?: 0L
-                        )
-                    }
-
+                    item { BalanceSection(balance = uiState.wallet?.balance ?: 0L) }
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         MonthlySpendingCard(
                             spendingList = uiState.categoryBreakdown,
                             selectedMonth = selectedMonth,
-                            onMonthClick = { isMonthPickerVisible = true }
+                            onMonthClick = { isMonthPickerVisible = true },
                         )
                     }
-
                     item {
                         RecentActivitySection(
                             transactions = uiState.allTransactions,
-                            onSeeAllClick = onSeeAllTransactions
+                            onSeeAllClick = onSeeAllTransactions,
                         )
                     }
                 }
@@ -104,7 +137,7 @@ fun WalletScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(colorScheme.scrim.copy(alpha = 0.5f))
-                    .clickable { isMonthPickerVisible = false }
+                    .clickable { isMonthPickerVisible = false },
             )
             Card(
                 modifier = Modifier
@@ -113,14 +146,14 @@ fun WalletScreen(
                     .heightIn(max = 450.dp)
                     .padding(16.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest)
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Chọn tháng",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurface
+                        color = colorScheme.onSurface,
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = colorScheme.surfaceVariant)
                     val months = DateFormatSymbols().months
@@ -138,14 +171,14 @@ fun WalletScreen(
                                     .padding(vertical = 12.dp, horizontal = 8.dp)
                                     .background(
                                         if (isSelected) colorScheme.surfaceVariant else Color.Transparent,
-                                        RoundedCornerShape(8.dp)
+                                        RoundedCornerShape(8.dp),
                                     ),
-                                contentAlignment = Alignment.CenterStart
+                                contentAlignment = Alignment.CenterStart,
                             ) {
                                 Text(
                                     text = month,
                                     color = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 )
                             }
                         }
@@ -159,7 +192,7 @@ fun WalletScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(colorScheme.scrim.copy(alpha = 0.4f))
-                    .clickable { isFabExpanded = false }
+                    .clickable { isFabExpanded = false },
             )
 
             Column(
@@ -167,137 +200,127 @@ fun WalletScreen(
                     .align(Alignment.BottomEnd)
                     .padding(bottom = 100.dp, end = 24.dp),
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Transfer option
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         color = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.clickable { 
+                        modifier = Modifier.clickable {
                             isFabExpanded = false
                             isTransferOptionsVisible = true
-                        }
+                        },
                     ) {
                         Text(
-                            text = "Chuyen tien",
+                            text = "Chuyển tiền",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     FloatingActionButton(
-                        onClick = { 
+                        onClick = {
                             isFabExpanded = false
                             isTransferOptionsVisible = true
                         },
                         containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.AccountBalance, contentDescription = null)
-                    }
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(imageVector = Icons.Default.AccountBalance, contentDescription = null) }
                 }
 
-                // Contribute to goal option
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         color = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.clickable { 
+                        modifier = Modifier.clickable {
                             isFabExpanded = false
-                            isContributeSheetVisible = true 
-                        }
+                            isContributeSheetVisible = true
+                        },
                     ) {
                         Text(
                             text = "Đóng góp vào mục tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     FloatingActionButton(
-                        onClick = { 
+                        onClick = {
                             isFabExpanded = false
-                            isContributeSheetVisible = true 
+                            isContributeSheetVisible = true
                         },
                         containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Savings, contentDescription = null)
-                    }
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(imageVector = Icons.Default.Savings, contentDescription = null) }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         color = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.clickable { 
+                        modifier = Modifier.clickable {
                             isFabExpanded = false
-                            onNavigateToAddExpense() 
-                        }
+                            onNavigateToAddExpense()
+                        },
                     ) {
                         Text(
                             text = "Thêm chi tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     FloatingActionButton(
-                        onClick = { 
+                        onClick = {
                             isFabExpanded = false
-                            onNavigateToAddExpense() 
+                            onNavigateToAddExpense()
                         },
                         containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(painter = painterResource(R.drawable.ic_wallet_24), contentDescription = null)
-                    }
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(painter = painterResource(R.drawable.ic_wallet_24), contentDescription = null) }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         color = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.clickable { 
+                        modifier = Modifier.clickable {
                             isFabExpanded = false
-                            onNavigateToTopUp() 
-                        }
+                            onNavigateToTopUp()
+                        },
                     ) {
                         Text(
                             text = "Nạp tiền",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     FloatingActionButton(
-                        onClick = { 
+                        onClick = {
                             isFabExpanded = false
-                            onNavigateToTopUp() 
+                            onNavigateToTopUp()
                         },
                         containerColor = colorScheme.surfaceContainerLowest,
                         contentColor = colorScheme.primary,
                         shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Bolt, contentDescription = null)
-                    }
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(imageVector = Icons.Default.Bolt, contentDescription = null) }
                 }
             }
         }
 
-        val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f)
+        val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f, label = "wallet-fab-rotation")
         FloatingActionButton(
             onClick = { isFabExpanded = !isFabExpanded },
             containerColor = if (isFabExpanded) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.primary,
@@ -306,14 +329,12 @@ fun WalletScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
-                .size(64.dp)
+                .size(64.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(32.dp)
-                    .rotate(rotation)
+                modifier = Modifier.size(32.dp).rotate(rotation),
             )
         }
 
@@ -327,10 +348,10 @@ fun WalletScreen(
                         goalId = goalId,
                         amount = amount,
                         note = note,
-                        contributorId = if (isDirect) "me" else null
+                        contributorId = if (isDirect) "me" else null,
                     )
                     isContributeSheetVisible = false
-                }
+                },
             )
         }
 

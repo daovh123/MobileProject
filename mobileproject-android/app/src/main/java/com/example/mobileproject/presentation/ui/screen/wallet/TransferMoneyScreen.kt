@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,6 +23,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,13 +32,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,9 +50,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
+import com.example.mobileproject.presentation.viewmodel.TransferMoneyViewModel
 import com.example.mobileproject.presentation.viewmodel.VietnamBank
 import com.example.mobileproject.utils.formatSimpleAmount
 
@@ -55,27 +62,37 @@ import com.example.mobileproject.utils.formatSimpleAmount
 @Composable
 fun TransferMoneyScreen(
     onNavigateBack: () -> Unit,
+    viewModel: TransferMoneyViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val banks = remember { TopUpViewModel.vietnamBanks }
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var accountNumber by remember { mutableStateOf("") }
     var selectedBank by remember { mutableStateOf<VietnamBank?>(null) }
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var bankMenuExpanded by remember { mutableStateOf(false) }
-    var isConfirmed by remember { mutableStateOf(false) }
 
     val amountValue = amount.toLongOrNull() ?: 0L
-    val canConfirm = accountNumber.length >= 6 && selectedBank != null && amountValue > 0L
+    val canConfirm = accountNumber.length >= 6 && selectedBank != null && amountValue > 0L && !uiState.isSubmitting
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         containerColor = colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Chuyen tien",
+                        text = "Chuyển tiền",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -84,17 +101,15 @@ fun TransferMoneyScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = "Quay lại",
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.background,
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
             )
         },
     ) { paddingValues ->
-        if (isConfirmed) {
+        if (uiState.isSuccess) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -111,7 +126,7 @@ fun TransferMoneyScreen(
                 )
                 Spacer(modifier = Modifier.height(18.dp))
                 Text(
-                    text = "Da xac nhan chuyen tien",
+                    text = "Đã tạo giao dịch chuyển tiền",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
@@ -128,166 +143,175 @@ fun TransferMoneyScreen(
                             .padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        TransferSummaryRow("So tai khoan", accountNumber)
+                        selectedBank?.let { bank ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                BankLogo(bank = bank, size = 30.dp)
+                                Text(
+                                    text = bank.name,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colorScheme.onSurface,
+                                )
+                            }
+                            HorizontalDivider()
+                        }
+                        TransferSummaryRow("Số tài khoản", accountNumber)
                         HorizontalDivider()
-                        TransferSummaryRow("Ngan hang", selectedBank?.name.orEmpty())
-                        HorizontalDivider()
-                        TransferSummaryRow("So tien", formatSimpleAmount(amountValue))
+                        TransferSummaryRow("Số tiền", formatSimpleAmount(amountValue))
                         if (note.isNotBlank()) {
                             HorizontalDivider()
-                            TransferSummaryRow("Noi dung", note)
+                            TransferSummaryRow("Nội dung", note)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Quay lai")
+                Button(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
+                    Text("Quay lại")
                 }
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+            return@Scaffold
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = colorScheme.primaryContainer.copy(alpha = 0.55f),
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = colorScheme.primaryContainer.copy(alpha = 0.55f),
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = null,
-                            tint = colorScheme.primary,
-                        )
-                        Column {
-                            Text(
-                                text = "Chuyen khoan thu cong",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "Nhap tai khoan, chon ngan hang, nhap tien va xac nhan.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                OutlinedTextField(
-                    value = accountNumber,
-                    onValueChange = { input ->
-                        if (input.all(Char::isDigit)) {
-                            accountNumber = input
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("So tai khoan") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = selectedBank?.name.orEmpty(),
-                        onValueChange = {},
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        readOnly = true,
-                        label = { Text("Ngan hang") },
-                        trailingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        tint = colorScheme.primary,
                     )
-                    DropdownMenu(
-                        expanded = bankMenuExpanded,
-                        onDismissRequest = { bankMenuExpanded = false },
-                        modifier = Modifier.fillMaxWidth(0.92f),
-                    ) {
-                        banks.forEach { bank ->
-                            DropdownMenuItem(
-                                text = { Text(bank.name) },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountBalance,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    selectedBank = bank
-                                    bankMenuExpanded = false
-                                },
-                            )
-                        }
+                    Column {
+                        Text(
+                            text = "Chuyển khoản thủ công",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "Nhập tài khoản, chọn ngân hàng, nhập tiền và xác nhận.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant,
+                        )
                     }
-                    Surface(
-                        modifier = Modifier
-                            .matchParentSize(),
-                        color = Color.Transparent,
-                        onClick = { bankMenuExpanded = true },
-                    ) {}
                 }
+            }
 
+            OutlinedTextField(
+                value = accountNumber,
+                onValueChange = { input -> if (input.all(Char::isDigit)) accountNumber = input },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Số tài khoản") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+
+            Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = amount,
-                    onValueChange = { input ->
-                        if (input.all(Char::isDigit)) {
-                            amount = input
-                        }
-                    },
+                    value = selectedBank?.name.orEmpty(),
+                    onValueChange = {},
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("So tien") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = {
-                        if (amountValue > 0L) {
-                            Text(formatSimpleAmount(amountValue))
+                    readOnly = true,
+                    label = { Text("Ngân hàng") },
+                    leadingIcon = {
+                        if (selectedBank != null) {
+                            BankLogo(bank = selectedBank, size = 24.dp)
+                        } else {
+                            Icon(Icons.Default.AccountBalance, contentDescription = null)
                         }
                     },
+                    trailingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
                 )
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Noi dung") },
-                    placeholder = { Text("Nhap noi dung chuyen tien") },
-                    minLines = 2,
-                )
-
-                TextButton(
-                    onClick = {
-                        if (note.isBlank()) {
-                            note = "Chuyen tien"
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.End),
+                DropdownMenu(
+                    expanded = bankMenuExpanded,
+                    onDismissRequest = { bankMenuExpanded = false },
+                    modifier = Modifier.fillMaxWidth(0.92f),
                 ) {
-                    Text("Dung noi dung mac dinh")
+                    banks.forEach { bank ->
+                        DropdownMenuItem(
+                            text = { Text(bank.name) },
+                            leadingIcon = { BankLogo(bank = bank, size = 22.dp) },
+                            onClick = {
+                                selectedBank = bank
+                                bankMenuExpanded = false
+                            },
+                        )
+                    }
                 }
+                Surface(
+                    modifier = Modifier.matchParentSize(),
+                    color = Color.Transparent,
+                    onClick = { bankMenuExpanded = true },
+                ) {}
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { input -> if (input.all(Char::isDigit)) amount = input },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Số tiền") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    if (amountValue > 0L) {
+                        Text(formatSimpleAmount(amountValue))
+                    }
+                },
+            )
 
-                Button(
-                    onClick = { isConfirmed = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    enabled = canConfirm,
-                ) {
-                    Text("Xac nhan")
-                }
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Nội dung") },
+                placeholder = { Text("Nhập nội dung chuyển tiền") },
+                minLines = 2,
+            )
+
+            TextButton(
+                onClick = { if (note.isBlank()) note = "Chuyển khoản nội bộ" },
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text("Dùng nội dung mặc định")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    val bank = selectedBank ?: return@Button
+                    viewModel.submitTransfer(
+                        amount = amountValue,
+                        bankName = bank.name,
+                        accountNumber = accountNumber,
+                        note = note.takeIf { it.isNotBlank() },
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                enabled = canConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+            ) {
+                Text(if (uiState.isSubmitting) "Đang xử lý..." else "Xác nhận")
             }
         }
     }

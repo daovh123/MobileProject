@@ -56,8 +56,6 @@ import com.example.mobileproject.presentation.ui.screen.home.components.Contribu
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.ui.screen.wallet.TransferOptionsBottomSheet
 import com.example.mobileproject.presentation.ui.theme.AppTheme
-import com.example.mobileproject.presentation.ui.components.core.BalanceCardStickers
-import com.example.mobileproject.presentation.ui.components.core.DaysTogetherStickers
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
@@ -77,6 +75,11 @@ import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 private const val DEFAULT_ZOOM: Double = 17.0
 
@@ -117,6 +120,8 @@ fun HomeScreen(
 
     var myMarker by remember { mutableStateOf<Marker?>(null) }
     var partnerMarker by remember { mutableStateOf<Marker?>(null) }
+    var myLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
+    var partnerLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var hasCenteredOnce by remember { mutableStateOf(false) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -152,6 +157,7 @@ fun HomeScreen(
                 }
             }
             myMarker?.position = point
+            myLocationPoint = point
         } else {
             if (partnerMarker == null) {
                 partnerMarker = Marker(mv).apply {
@@ -161,6 +167,7 @@ fun HomeScreen(
                 }
             }
             partnerMarker?.position = point
+            partnerLocationPoint = point
         }
         mv.invalidate()
     }
@@ -172,7 +179,25 @@ fun HomeScreen(
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(DEFAULT_ZOOM)
+            onResume()
         }.also { mapView = it }
+    }
+
+    fun releaseMapView() {
+        mapView?.let { mv ->
+            runCatching { mv.onPause() }
+            runCatching { mv.onDetach() }
+        }
+        mapView = null
+        myMarker = null
+        partnerMarker = null
+        hasCenteredOnce = false
+    }
+
+    LaunchedEffect(coupleState.paired, isShareLocationEnabled) {
+        if (coupleState.paired && isShareLocationEnabled) {
+            createMapViewIfNeeded()
+        }
     }
 
     DisposableEffect(coupleState.paired) {
@@ -247,6 +272,9 @@ fun HomeScreen(
     LaunchedEffect(coupleState.paired, coupleState.coupleId, accessToken, isShareLocationEnabled) {
         if (!coupleState.paired || !isShareLocationEnabled) {
             MapShareForegroundService.stop(context)
+            if (!isShareLocationEnabled) {
+                releaseMapView()
+            }
             return@LaunchedEffect
         }
 
@@ -296,6 +324,18 @@ fun HomeScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val savingGoals = remember(sortedGoals) { sortedGoals.filterIsInstance<SavingGoal>() }
+    val distanceKm = remember(myLocationPoint, partnerLocationPoint, isShareLocationEnabled) {
+        if (!isShareLocationEnabled || myLocationPoint == null || partnerLocationPoint == null) {
+            null
+        } else {
+            haversineDistanceKm(
+                lat1 = myLocationPoint!!.latitude,
+                lon1 = myLocationPoint!!.longitude,
+                lat2 = partnerLocationPoint!!.latitude,
+                lon2 = partnerLocationPoint!!.longitude,
+            )
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
@@ -314,16 +354,21 @@ fun HomeScreen(
                 }
             },
             onCenterMe = { myMarker?.position?.let { mapView?.controller?.animateTo(it) } },
+            onCenterPartner = { partnerMarker?.position?.let { mapView?.controller?.animateTo(it) } },
             onSeeAllGoals = onSeeAllGoals,
             onSeeAllFutureGoals = onSeeAllFutureGoals,
             onTaskToggle = { gid, tid -> goalViewModel.toggleTask(gid, tid) },
             mapView = mapView,
             accessToken = accessToken,
             shareLocationEnabled = isShareLocationEnabled,
+            distanceKm = distanceKm,
             onShareLocationEnabledChange = { enabled ->
                 homeMapShareViewModel.setShareLocationEnabled(enabled)
-                if (!enabled) {
+                if (enabled) {
+                    createMapViewIfNeeded()
+                } else {
                     MapShareForegroundService.stop(context)
+                    releaseMapView()
                 }
             },
         )
@@ -440,12 +485,14 @@ private fun HomeContent(
     onContributeClick: () -> Unit,
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
+    onCenterPartner: () -> Unit,
     onSeeAllGoals: () -> Unit,
     onSeeAllFutureGoals: () -> Unit,
     onTaskToggle: (String, String) -> Unit,
     mapView: MapView?,
     accessToken: String,
     shareLocationEnabled: Boolean,
+    distanceKm: Double?,
     onShareLocationEnabledChange: (Boolean) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -552,7 +599,7 @@ private fun HomeContent(
                             colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                if (mapView != null) {
+                                if (shareLocationEnabled && mapView != null) {
                                     AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
                                 } else {
                                     Column(
@@ -581,18 +628,58 @@ private fun HomeContent(
                                         )
                                     }
                                 }
-                                SmallFloatingActionButton(
-                                    onClick = {
-                                        if (mapView != null) {
-                                            onCenterMe()
+                                if (shareLocationEnabled) {
+                                    if (distanceKm != null) {
+                                        Surface(
+                                            color = colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
+                                            shape = RoundedCornerShape(12.dp),
+                                            shadowElevation = 2.dp,
+                                            modifier = Modifier
+                                                .align(Alignment.TopStart)
+                                                .padding(12.dp),
+                                        ) {
+                                            Text(
+                                                text = "Khoang cach: ${"%.2f".format(distanceKm)} km",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = colorScheme.onSurface,
+                                                fontWeight = FontWeight.SemiBold,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            )
                                         }
-                                    },
-                                    containerColor = colorScheme.surfaceContainerLowest,
-                                    contentColor = colorScheme.primary,
-                                    modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
-                                    shape = CircleShape,
-                                ) {
-                                    Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalAlignment = Alignment.End,
+                                    ) {
+                                        SmallFloatingActionButton(
+                                            onClick = {
+                                                if (mapView != null) {
+                                                    onCenterPartner()
+                                                }
+                                            },
+                                            containerColor = colorScheme.surfaceContainerLowest,
+                                            contentColor = colorScheme.primary,
+                                            shape = CircleShape,
+                                        ) {
+                                            Icon(Icons.Default.Person, contentDescription = null)
+                                        }
+                                        SmallFloatingActionButton(
+                                            onClick = {
+                                                if (mapView != null) {
+                                                    onCenterMe()
+                                                }
+                                            },
+                                            containerColor = colorScheme.surfaceContainerLowest,
+                                            contentColor = colorScheme.primary,
+                                            shape = CircleShape,
+                                        ) {
+                                            Icon(painterResource(R.drawable.ic_location_24), contentDescription = null)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -726,7 +813,6 @@ fun SharedBalanceCard(
                     )
                 }
             }
-            BalanceCardStickers()
         }
     }
 }
@@ -822,7 +908,6 @@ fun DaysTogetherModernCard(daysTogether: Long) {
                     color = colorScheme.onSurfaceVariant,
                 )
             }
-            DaysTogetherStickers()
         }
     }
 }
@@ -880,4 +965,14 @@ private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
         val todayCal = GregorianCalendar(utc).apply { timeInMillis = System.currentTimeMillis(); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
         (TimeUnit.MILLISECONDS.toDays(todayCal.timeInMillis - startCal.timeInMillis) + 1).coerceAtLeast(1)
     } catch (e: Exception) { null }
+}
+
+private fun haversineDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val earthRadiusKm = 6371.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = sin(dLat / 2).pow(2.0) +
+        cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2.0)
+    val c = 2 * asin(sqrt(a))
+    return earthRadiusKm * c
 }

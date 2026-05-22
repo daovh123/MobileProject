@@ -1,23 +1,43 @@
 package com.example.mobileproject.presentation.ui.screen.home.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,8 +52,9 @@ fun ContributeGoalBottomSheet(
     selectedGoal: SavingGoal?,
     availableGoals: List<SavingGoal>,
     onDismiss: () -> Unit,
-    onConfirm: (goalId: String, amount: Long, note: String?, isDirect: Boolean) -> Unit
+    onConfirm: (goalId: String, amount: Long, note: String?, isDirect: Boolean) -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     var goal by remember { mutableStateOf(selectedGoal ?: availableGoals.firstOrNull()) }
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
@@ -42,147 +63,162 @@ fun ContributeGoalBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = colorScheme.surface,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-        dragHandle = null
+        dragHandle = null,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.contribute_goal_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2D2D2D)
+                    color = colorScheme.onSurface,
                 )
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.background(Color(0xFFFFF0F0), CircleShape)
+                    modifier = Modifier.background(colorScheme.surfaceContainer, CircleShape),
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close), tint = Color.Gray)
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.common_close),
+                        tint = colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Goal Selector (if not pre-selected or to change)
-            Text(stringResource(R.string.contribute_select_goal), fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(
+                stringResource(R.string.contribute_select_goal),
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurfaceVariant,
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Surface(
                 onClick = { if (availableGoals.size > 1) showGoalPicker = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFFF0F0).copy(alpha = 0.5f)
+                color = colorScheme.surfaceContainer,
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Default.Payments, contentDescription = null, tint = Color(0xFFFF8A80))
+                    Icon(Icons.Default.Payments, contentDescription = null, tint = colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = goal?.name ?: stringResource(R.string.contribute_select_goal_placeholder),
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     if (availableGoals.size > 1) {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Contribution Type
-            Text(stringResource(R.string.contribute_payment_method), fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(
+                stringResource(R.string.contribute_payment_method),
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurfaceVariant,
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 PaymentMethodCard(
                     title = stringResource(R.string.contribute_from_wallet),
                     icon = Icons.Default.AccountBalanceWallet,
                     isSelected = !isDirect,
                     modifier = Modifier.weight(1f),
-                    onClick = { isDirect = false }
+                    onClick = { isDirect = false },
                 )
                 PaymentMethodCard(
                     title = stringResource(R.string.contribute_direct_pay),
                     icon = Icons.Default.Payments,
                     isSelected = isDirect,
                     modifier = Modifier.weight(1f),
-                    onClick = { isDirect = true }
+                    onClick = { isDirect = true },
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Amount Input
-            Text(stringResource(R.string.contribute_amount_label), fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(
+                stringResource(R.string.contribute_amount_label),
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurfaceVariant,
+            )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.all { char -> char.isDigit() }) amount = it },
-                prefix = { Text("$ ", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) },
+                prefix = { Text("$ ", color = colorScheme.primary, fontWeight = FontWeight.Bold) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color(0xFFFFF0F0).copy(alpha = 0.3f),
-                    focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFFFF8A80)
+                    unfocusedContainerColor = colorScheme.surfaceContainerLow,
+                    focusedContainerColor = colorScheme.surfaceContainerLowest,
+                    unfocusedBorderColor = colorScheme.outlineVariant,
+                    focusedBorderColor = colorScheme.primary,
                 ),
-                textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-
-            // Note
-            Text(stringResource(R.string.contribute_note_label), fontWeight = FontWeight.Bold, color = Color.Gray)
+            Text(
+                stringResource(R.string.contribute_note_label),
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurfaceVariant,
+            )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
-                placeholder = { Text("Trích quỹ lương, Thưởng thêm...") },
+                placeholder = { Text("Trich quy luong, thuong them...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color(0xFFFFF0F0).copy(alpha = 0.3f),
-                    focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFFFF8A80)
-                )
+                    unfocusedContainerColor = colorScheme.surfaceContainerLow,
+                    focusedContainerColor = colorScheme.surfaceContainerLowest,
+                    unfocusedBorderColor = colorScheme.outlineVariant,
+                    focusedBorderColor = colorScheme.primary,
+                ),
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            // Submit Button
             Button(
-                onClick = { 
+                onClick = {
                     goal?.let { g ->
                         if (amount.isNotBlank()) {
                             onConfirm(g.id, amount.toLong(), note.ifBlank { null }, isDirect)
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A80)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                 shape = RoundedCornerShape(28.dp),
-                enabled = goal != null && amount.isNotBlank()
+                enabled = goal != null && amount.isNotBlank(),
             ) {
-                Text(stringResource(R.string.contribute_confirm), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    stringResource(R.string.contribute_confirm),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
         }
 
@@ -190,7 +226,7 @@ fun ContributeGoalBottomSheet(
             GoalPickerSheet(
                 goals = availableGoals,
                 onGoalSelected = { goal = it; showGoalPicker = false },
-                onDismiss = { showGoalPicker = false }
+                onDismiss = { showGoalPicker = false },
             )
         }
     }
@@ -199,33 +235,34 @@ fun ContributeGoalBottomSheet(
 @Composable
 fun PaymentMethodCard(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) Color(0xFFFF8A80) else Color(0xFFFFF0F0),
-        modifier = modifier
+        color = if (isSelected) colorScheme.primary else colorScheme.surfaceContainer,
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isSelected) Color.White else Color.Gray,
-                modifier = Modifier.size(24.dp)
+                tint = if (isSelected) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (isSelected) Color.White else Color.Gray,
-                fontWeight = FontWeight.Bold
+                color = if (isSelected) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -236,22 +273,35 @@ fun PaymentMethodCard(
 fun GoalPickerSheet(
     goals: List<SavingGoal>,
     onGoalSelected: (SavingGoal) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.White) {
+    val colorScheme = MaterialTheme.colorScheme
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = colorScheme.surface,
+    ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(stringResource(R.string.contribute_select_goal_placeholder), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.contribute_select_goal_placeholder),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
             Spacer(modifier = Modifier.height(16.dp))
             goals.forEach { goal ->
                 Surface(
                     onClick = { onGoalSelected(goal) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFF0F0)
+                    color = colorScheme.surfaceContainer,
                 ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(goal.name, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(formatSimpleAmount(goal.currentAmount), color = Color.Gray)
+                        Text(formatSimpleAmount(goal.currentAmount), color = colorScheme.onSurfaceVariant)
                     }
                 }
             }
