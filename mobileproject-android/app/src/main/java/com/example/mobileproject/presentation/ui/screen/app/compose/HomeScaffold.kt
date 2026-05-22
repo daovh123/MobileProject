@@ -365,16 +365,8 @@ fun HomeScaffold(
                         note = note,
                         onNavigateBack = { navController.popBackStack() },
                         onPaymentSuccess = {
-                            val popped = navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
-                            if (!popped) {
-                                navController.navigate(HomeRoutes.WALLET) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
                         }
                     )
                 }
@@ -402,29 +394,13 @@ fun HomeScaffold(
                         note = note,
                         onNavigateBack = { navController.popBackStack() },
                         onPaymentSuccess = {
-                            val popped = navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
-                            if (!popped) {
-                                navController.navigate(HomeRoutes.WALLET) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
+                            // Pop back to wallet screen
+                            navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
                         }
                     )
                 }
                 composable(HomeRoutes.QR_SCANNER) {
-                    QRScannerScreen(
-                        onNavigateBack = { navController.popBackStack() },
-                        onManualInput = {
-                            navController.popBackStack()
-                            navController.navigate(HomeRoutes.TRANSFER_MONEY) {
-                                launchSingleTop = true
-                            }
-                        },
-                    )
+                    QRScannerScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.RECENT_TRANSACTIONS) {
                     RecentTransactionsScreen(onNavigateBack = { navController.popBackStack() })

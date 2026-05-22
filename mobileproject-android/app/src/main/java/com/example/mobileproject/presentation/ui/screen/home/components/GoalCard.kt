@@ -12,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.mobileproject.domain.entity.FutureGoal
 import com.example.mobileproject.domain.entity.Goal
 import com.example.mobileproject.domain.entity.SavingGoal
@@ -25,11 +27,10 @@ fun GoalCard(
     goal: Goal,
     onTaskToggle: (String, String) -> Unit = { _, _ -> }
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -42,21 +43,21 @@ fun GoalCard(
                     text = goal.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurface,
+                    color = Color(0xFF4A3434),
                     modifier = Modifier.weight(1f)
                 )
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 Surface(
-                    color = colorScheme.surfaceContainer,
+                    color = Color(0xFFFFF0F0),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = goal.category.uppercase(),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = colorScheme.primary,
+                        color = Color(0xFFFF8A80),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -72,7 +73,6 @@ fun GoalCard(
 
 @Composable
 private fun SavingGoalContent(goal: SavingGoal) {
-    val colorScheme = MaterialTheme.colorScheme
     val progress = if (goal.targetAmount > 0) goal.currentAmount.toFloat() / goal.targetAmount else 0f
     val percentage = (progress * 100).toInt()
     val remaining = (goal.targetAmount - goal.currentAmount).coerceAtLeast(0)
@@ -81,7 +81,7 @@ private fun SavingGoalContent(goal: SavingGoal) {
     Text(
         text = "${formatSimpleAmount(goal.currentAmount)} / ${formatSimpleAmount(goal.targetAmount)}",
         style = MaterialTheme.typography.bodyMedium,
-        color = colorScheme.onSurfaceVariant
+        color = Color.Gray
     )
     
     Spacer(modifier = Modifier.height(16.dp))
@@ -91,8 +91,8 @@ private fun SavingGoalContent(goal: SavingGoal) {
         modifier = Modifier
             .fillMaxWidth()
             .height(12.dp),
-        color = colorScheme.primary,
-        trackColor = colorScheme.surfaceContainer,
+        color = Color(0xFFFF8A80),
+        trackColor = Color(0xFFFFF0F0),
         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
     )
     
@@ -101,13 +101,12 @@ private fun SavingGoalContent(goal: SavingGoal) {
     Text(
         text = "You're $percentage% done! Just ${formatSimpleAmount(remaining)} more to go.",
         style = MaterialTheme.typography.bodySmall,
-        color = colorScheme.onSurfaceVariant
+        color = Color.Gray
     )
 }
 
 @Composable
 private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -> Unit) {
-    val colorScheme = MaterialTheme.colorScheme
     val percentage = goal.progress.toInt()
     val completedTasks = goal.tasks.count { it.isCompleted }
     val totalTasks = goal.tasks.size
@@ -116,7 +115,7 @@ private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -
     Text(
         text = "$completedTasks / $totalTasks tasks completed",
         style = MaterialTheme.typography.bodyMedium,
-        color = colorScheme.onSurfaceVariant
+        color = Color.Gray
     )
     
     Spacer(modifier = Modifier.height(16.dp))
@@ -126,8 +125,8 @@ private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -
         modifier = Modifier
             .fillMaxWidth()
             .height(12.dp),
-        color = colorScheme.secondary,
-        trackColor = colorScheme.secondaryContainer,
+        color = Color(0xFF81C784),
+        trackColor = Color(0xFFE8F5E9),
         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
     )
 
@@ -136,7 +135,7 @@ private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -
     Text(
         text = "You're $percentage% done!",
         style = MaterialTheme.typography.bodySmall,
-        color = colorScheme.onSurfaceVariant
+        color = Color.Gray
     )
 
     if (goal.tasks.isNotEmpty()) {
@@ -153,14 +152,14 @@ private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -
                     Icon(
                         imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                         contentDescription = null,
-                        tint = if (task.isCompleted) colorScheme.secondary else colorScheme.onSurfaceVariant,
+                        tint = if (task.isCompleted) Color(0xFF81C784) else Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = task.content,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (task.isCompleted) colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else colorScheme.onSurface,
+                        color = if (task.isCompleted) Color.Gray.copy(alpha = 0.6f) else Color(0xFF4A3434),
                         textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
@@ -169,7 +168,7 @@ private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -
                 Text(
                     text = "+ ${goal.tasks.size - 3} more tasks",
                     style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant,
+                    color = Color.Gray,
                     modifier = Modifier.padding(start = 36.dp)
                 )
             }
