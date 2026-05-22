@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,7 +37,12 @@ class AuthViewModel @Inject constructor(
             runCatching { loginUseCase(usernameOrEmail.trim(), password) }
                 .onSuccess { _uiState.value = AuthUiState(authSession = it) }
                 .onFailure {
-                    _uiState.value = AuthUiState(errorMessage = it.message ?: "Dang nhap that bai")
+                    val message = when (it) {
+                        is SocketTimeoutException -> "Ket noi may chu qua lau. Vui long thu lai."
+                        is UnknownHostException -> "Khong tim thay may chu. Kiem tra API_BASE_URL."
+                        else -> it.message ?: "Dang nhap that bai"
+                    }
+                    _uiState.value = AuthUiState(errorMessage = message)
                 }
         }
     }

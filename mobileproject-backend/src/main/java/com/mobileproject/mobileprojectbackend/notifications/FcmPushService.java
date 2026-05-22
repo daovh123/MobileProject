@@ -44,13 +44,17 @@ public class FcmPushService {
             if (hasClasspathCredentials()) {
                 LOGGER.info(
                         "Firebase credentials path is empty; will use classpath resource firebase-service-account.json");
+                try {
+                    ensureInitialized();
+                } catch (Exception ex) {
+                    LOGGER.warn("Firebase Admin eager init failed: {}", ex.getMessage());
+                }
             } else {
                 LOGGER.warn("Firebase credentials path is empty. Set FIREBASE_CREDENTIALS_PATH to enable FCM push.");
             }
             return;
         }
 
-        // Xử lý logic check tồn tại file cho cả classpath và file system
         if (path.startsWith("classpath:")) {
             String classpathResource = path.substring("classpath:".length()).trim();
             if (!hasClasspathResource(classpathResource)) {
@@ -58,12 +62,16 @@ public class FcmPushService {
             } else {
                 LOGGER.info("Firebase credentials found in {}", path);
             }
+        } else if (!Files.exists(Path.of(path))) {
+            LOGGER.warn("Firebase credentials file not found at {}", path);
         } else {
-            if (!Files.exists(Path.of(path))) {
-                LOGGER.warn("Firebase credentials file not found at {}", path);
-            } else {
-                LOGGER.info("Firebase credentials found at {}", path);
-            }
+            LOGGER.info("Firebase credentials found at {}", path);
+        }
+
+        try {
+            ensureInitialized();
+        } catch (Exception ex) {
+            LOGGER.warn("Firebase Admin eager init failed: {}", ex.getMessage());
         }
     }
 

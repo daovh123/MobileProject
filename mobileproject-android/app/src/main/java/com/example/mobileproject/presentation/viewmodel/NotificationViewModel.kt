@@ -30,6 +30,9 @@ class NotificationViewModel @Inject constructor(
     private val authSessionStore: AuthSessionStore,
     val notifPrefs: NotificationPreferencesStore,
 ) : ViewModel() {
+    companion object {
+        private const val MIN_REFRESH_INTERVAL_MS = 2_500L
+    }
 
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
@@ -50,10 +53,7 @@ class NotificationViewModel @Inject constructor(
     val notifMemory: StateFlow<Boolean> = notifPrefs.notifMemory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    init {
-        loadUnreadCount()
-        loadNotifications(reset = true)
-    }
+    private var lastRefreshAtMs: Long = 0L
 
     fun loadUnreadCount() {
         val token = authSessionStore.load()?.token ?: return
@@ -108,6 +108,10 @@ class NotificationViewModel @Inject constructor(
     }
 
     fun refresh() {
+        val now = System.currentTimeMillis()
+        if (_uiState.value.isLoading) return
+        if (now - lastRefreshAtMs < MIN_REFRESH_INTERVAL_MS) return
+        lastRefreshAtMs = now
         loadUnreadCount()
         loadNotifications(reset = true)
     }

@@ -31,15 +31,26 @@ class MemoriesViewModel @Inject constructor(
     private val authSessionStore: AuthSessionStore,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
+    companion object {
+        private const val MIN_REFRESH_INTERVAL_MS = 2_500L
+    }
 
     private val _uiState = MutableStateFlow(MemoriesUiState())
     val uiState: StateFlow<MemoriesUiState> = _uiState.asStateFlow()
 
     private var accessToken: String? = null
+    private var lastLoadedToken: String? = null
+    private var lastRefreshAtMs: Long = 0L
 
     fun load(accessToken: String) {
         if (accessToken.isBlank()) return
-        this.accessToken = accessToken.trim()
+        val normalizedToken = accessToken.trim()
+        this.accessToken = normalizedToken
+        if (lastLoadedToken == normalizedToken && _uiState.value.moments.isNotEmpty()) {
+            refreshMoments(showLoading = false)
+            return
+        }
+        lastLoadedToken = normalizedToken
         val session = authSessionStore.load()
         _uiState.update { it.copy(currentUsername = session?.username.orEmpty()) }
         viewModelScope.launch {
@@ -53,11 +64,16 @@ class MemoriesViewModel @Inject constructor(
                     }
                 }
         }
-        refreshMoments()
+        refreshMoments(showLoading = _uiState.value.moments.isEmpty())
     }
 
     fun refreshMoments(showLoading: Boolean = true) {
         val token = accessToken ?: return
+        val now = System.currentTimeMillis()
+        if (!showLoading && now - lastRefreshAtMs < MIN_REFRESH_INTERVAL_MS) {
+            return
+        }
+        lastRefreshAtMs = now
         viewModelScope.launch {
             if (showLoading) {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }

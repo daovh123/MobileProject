@@ -23,6 +23,9 @@ class WalletViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val authSessionStore: AuthSessionStore
 ) : ViewModel() {
+    companion object {
+        private const val MIN_RELOAD_INTERVAL_MS = 2_000L
+    }
 
     private val _uiState = MutableStateFlow(WalletUiState())
     val uiState: StateFlow<WalletUiState> = _uiState.asStateFlow()
@@ -34,8 +37,12 @@ class WalletViewModel @Inject constructor(
     val selectedYear: StateFlow<Int> = _selectedYear.asStateFlow()
 
     private var loadDataJob: Job? = null
+    private var lastLoadAtMs: Long = 0L
 
-    fun loadData() {
+    fun loadData(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && (now - lastLoadAtMs) < MIN_RELOAD_INTERVAL_MS) return
+        lastLoadAtMs = now
         fetchData(_selectedMonth.value, _selectedYear.value)
     }
 

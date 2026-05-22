@@ -1,6 +1,5 @@
 package com.example.mobileproject.presentation.ui.screen.app.compose
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -199,17 +198,16 @@ fun HomeScaffold(
     }
 
     val context = LocalContext.current
-    BackHandler {
+    val shouldInterceptBack = hideTopAndBottomBar || currentRoute != HomeRoutes.HOME
+    BackHandler(enabled = shouldInterceptBack) {
         if (hideTopAndBottomBar) {
             navController.popBackStack()
-        } else if (currentRoute != HomeRoutes.HOME) {
+        } else {
             navController.navigate(HomeRoutes.HOME) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
-        } else {
-            (context as? Activity)?.finish()
         }
     }
 

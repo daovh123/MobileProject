@@ -1,6 +1,5 @@
 package com.example.mobileproject.presentation.ui.screen.memories
 
-import android.util.Base64
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -110,7 +109,7 @@ fun LocketMemoriesScreen(
     DisposableEffect(lifecycleOwner, accessToken) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.load(accessToken)
+                viewModel.refreshMoments(showLoading = false)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -442,8 +441,6 @@ private fun MomentHeroCard(
     onOpenComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val imageData = remember(moment.imageUrl) { decodeDataUrl(moment.imageUrl) }
-    val imageModel = imageData ?: moment.imageUrl
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -452,18 +449,11 @@ private fun MomentHeroCard(
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(320.dp)) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imageModel)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .networkCachePolicy(CachePolicy.ENABLED)
-                        .apply {
-                            moment.id?.let {
-                                memoryCacheKey("moment_$it")
-                                diskCacheKey("moment_$it")
-                            }
-                        }
-                        .build(),
+                    model = buildMomentImageRequest(
+                        context = LocalContext.current,
+                        rawModel = moment.imageUrl,
+                        cacheKey = moment.id?.let { "moment_$it" },
+                    ),
                     contentDescription = moment.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -515,8 +505,6 @@ private fun MomentListCard(
     onOpenComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val imageData = remember(moment.imageUrl) { decodeDataUrl(moment.imageUrl) }
-    val imageModel = imageData ?: moment.imageUrl
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -524,18 +512,11 @@ private fun MomentListCard(
     ) {
         Column {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageModel)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .networkCachePolicy(CachePolicy.ENABLED)
-                    .apply {
-                        moment.id?.let {
-                            memoryCacheKey("moment_$it")
-                            diskCacheKey("moment_$it")
-                        }
-                    }
-                    .build(),
+                model = buildMomentImageRequest(
+                    context = LocalContext.current,
+                    rawModel = moment.imageUrl,
+                    cacheKey = moment.id?.let { "moment_$it" },
+                ),
                 contentDescription = moment.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -965,16 +946,12 @@ private fun MomentPhoto(
     model: String,
     contentDescription: String?,
 ) {
-    val imageData = remember(model) { decodeDataUrl(model) }
-    val imageModel = imageData ?: model
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageModel)
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
-            .build(),
+        model = buildMomentImageRequest(
+            context = LocalContext.current,
+            rawModel = model,
+            cacheKey = model.takeIf { it.isNotBlank() }?.hashCode()?.toString(),
+        ),
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = Modifier.fillMaxSize(),
@@ -1088,20 +1065,24 @@ private fun formatReminderDate(date: LocalDate): String {
     return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")))
 }
 
-private fun decodeDataUrl(dataUrl: String): ByteArray? {
-    if (!dataUrl.startsWith("data:")) {
-        return null
-    }
-    val commaIndex = dataUrl.indexOf(',')
-    if (commaIndex == -1 || commaIndex == dataUrl.lastIndex) {
-        return null
-    }
-    val base64 = dataUrl.substring(commaIndex + 1)
-    return try {
-        Base64.decode(base64, Base64.DEFAULT)
-    } catch (ex: IllegalArgumentException) {
-        null
-    }
+private fun buildMomentImageRequest(
+    context: android.content.Context,
+    rawModel: String,
+    cacheKey: String?,
+): ImageRequest {
+    return ImageRequest.Builder(context)
+        .data(rawModel)
+        .crossfade(false)
+        .memoryCachePolicy(CachePolicy.ENABLED)
+        .diskCachePolicy(CachePolicy.ENABLED)
+        .networkCachePolicy(CachePolicy.ENABLED)
+        .apply {
+            cacheKey?.let {
+                memoryCacheKey(it)
+                diskCacheKey(it)
+            }
+        }
+        .build()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

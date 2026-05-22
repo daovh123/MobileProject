@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -26,6 +27,7 @@ object NetworkModule {
 
     private const val PLACE_CACHE_MAX_AGE_SECONDS = 120
     private const val PLACE_HTTP_CACHE_SIZE_BYTES = 20L * 1024L * 1024L
+    private const val NETWORK_TIMEOUT_SECONDS = 30L
 
     @Provides
     @Singleton
@@ -38,6 +40,10 @@ object NetworkModule {
         val cache = Cache(cacheDirectory, PLACE_HTTP_CACHE_SIZE_BYTES)
 
         return OkHttpClient.Builder()
+            .connectTimeout(NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request()
                 try {
