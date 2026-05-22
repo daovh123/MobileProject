@@ -13,6 +13,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -46,6 +48,34 @@ public class NotificationService {
         notificationRepository.save(notification);
         fcmPushService.sendGeneralPush(userId, type.name().toLowerCase(), title, body);
         LOGGER.debug("Notification created for user={} type={}", userId, type);
+    }
+
+    /**
+     * Creates and pushes a notification only once per local day for the same (user, type, title).
+     */
+    public void createAndPushIfAbsentToday(
+            String userId,
+            NotificationType type,
+            String title,
+            String body,
+            LocalDate date,
+            ZoneId zoneId) {
+        if (userId == null || userId.isBlank() || type == null || title == null || date == null || zoneId == null) {
+            return;
+        }
+
+        Query query = new Query(
+                Criteria.where("userId").is(userId)
+                        .and("type").is(type)
+                        .and("title").is(title)
+                        .and("createdAt").gte(date.atStartOfDay(zoneId).toInstant())
+                        .lt(date.plusDays(1).atStartOfDay(zoneId).toInstant())
+        );
+
+        boolean alreadyExists = mongoTemplate.exists(query, AppNotification.class);
+        if (!alreadyExists) {
+            createAndPush(userId, type, title, body);
+        }
     }
 
     /**

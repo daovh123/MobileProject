@@ -7,5 +7,6 @@ public enum NotificationType {
     GOAL_UPDATED,
     GOAL_COMPLETED,
     CHAT_MESSAGE,
-    PARTNER_MEMORY
+    PARTNER_MEMORY,
+    SPECIAL_DAY
 }

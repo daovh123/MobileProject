@@ -1,6 +1,7 @@
 package com.example.mobileproject.presentation.ui.screen.app.compose
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,14 +41,19 @@ import com.example.mobileproject.presentation.ui.navigation.AppNavigationBar
 import com.example.mobileproject.presentation.ui.navigation.NavigationConfig
 import com.example.mobileproject.presentation.ui.screen.add_expense.AddExpenseScreen
 import com.example.mobileproject.presentation.ui.screen.chat.ChatScreen
+import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
 import com.example.mobileproject.presentation.ui.screen.home.AddFutureGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.AddSavingGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.CaptureMomentScreen
-import com.example.mobileproject.presentation.ui.screen.memories.LocketMemoriesScreen
+import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
+import com.example.mobileproject.presentation.ui.screen.settings.SettingsAppearanceScreen
+import com.example.mobileproject.presentation.ui.screen.settings.SettingsHelpScreen
+import com.example.mobileproject.presentation.ui.screen.settings.SettingsNotificationsScreen
+import com.example.mobileproject.presentation.ui.screen.settings.SettingsPrivacyScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.RecentTransactionsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.SavingGoalsScreen
@@ -73,6 +79,10 @@ object HomeRoutes {
     const val MEMORIES: String = "memories"
     const val MEMORIES_CAPTURE: String = "memories_capture"
     const val SETTINGS: String = "settings"
+    const val SETTINGS_PRIVACY: String = "settings_privacy"
+    const val SETTINGS_NOTIFICATIONS: String = "settings_notifications"
+    const val SETTINGS_APPEARANCE: String = "settings_appearance"
+    const val SETTINGS_HELP: String = "settings_help"
     const val PROFILE: String = "profile"
     const val PROFILE_EDIT: String = "profile_edit"
     const val CHAT: String = "chat"
@@ -135,12 +145,18 @@ fun HomeScaffold(
     val isFutureGoalsRoute = currentRoute == HomeRoutes.FUTURE_GOALS
     val isMemoriesCaptureRoute = currentRoute == HomeRoutes.MEMORIES_CAPTURE
     val isNotificationsRoute = currentRoute == HomeRoutes.NOTIFICATIONS
+    val isSettingsPrivacyRoute = currentRoute == HomeRoutes.SETTINGS_PRIVACY
+    val isSettingsNotificationsRoute = currentRoute == HomeRoutes.SETTINGS_NOTIFICATIONS
+    val isSettingsAppearanceRoute = currentRoute == HomeRoutes.SETTINGS_APPEARANCE
+    val isSettingsHelpRoute = currentRoute == HomeRoutes.SETTINGS_HELP
 
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || isTransferMoneyRoute ||
         isTopUpQRRoute || isTopUpBankRedirectRoute || isQRScannerRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
-        isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute
+        isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute ||
+        isSettingsPrivacyRoute || isSettingsNotificationsRoute ||
+        isSettingsAppearanceRoute || isSettingsHelpRoute
 
     val snackbarHostState = remember { SnackbarHostState() }
     val notifState by notificationViewModel.uiState.collectAsState()
@@ -447,7 +463,7 @@ fun HomeScaffold(
                     ExploreRoute(accessToken = accessToken)
                 }
                 composable(HomeRoutes.MEMORIES) {
-                    LocketMemoriesScreen(
+                    MemoriesScreen(
                         accessToken = accessToken,
                         onOpenCapture = { navController.navigate(HomeRoutes.MEMORIES_CAPTURE) },
                     )
@@ -459,7 +475,28 @@ fun HomeScaffold(
                     )
                 }
                 composable(HomeRoutes.SETTINGS) {
-                    SettingsScreen(accessToken = accessToken)
+                    SettingsScreen(
+                        accessToken = accessToken,
+                        onOpenPrivacy = { navController.navigate(HomeRoutes.SETTINGS_PRIVACY) },
+                        onOpenNotifications = { navController.navigate(HomeRoutes.SETTINGS_NOTIFICATIONS) },
+                        onOpenAppearance = { navController.navigate(HomeRoutes.SETTINGS_APPEARANCE) },
+                        onOpenHelp = { navController.navigate(HomeRoutes.SETTINGS_HELP) },
+                    )
+                }
+                composable(HomeRoutes.SETTINGS_PRIVACY) {
+                    SettingsPrivacyScreen(
+                        accessToken = accessToken,
+                        onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
+                    )
+                }
+                composable(HomeRoutes.SETTINGS_NOTIFICATIONS) {
+                    SettingsNotificationsScreen()
+                }
+                composable(HomeRoutes.SETTINGS_APPEARANCE) {
+                    SettingsAppearanceScreen()
+                }
+                composable(HomeRoutes.SETTINGS_HELP) {
+                    SettingsHelpScreen()
                 }
                 composable(HomeRoutes.PROFILE) {
                     ProfileScreen(
@@ -469,8 +506,11 @@ fun HomeScaffold(
                         onEditProfile = {
                             navController.navigate(HomeRoutes.PROFILE_EDIT)
                         },
-                        onOpenSettings = {
-                            navController.navigate(HomeRoutes.SETTINGS)
+                        onInvitePartner = {
+                            context.startActivity(
+                                Intent(context, CoupleConnectActivity::class.java)
+                                    .putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken),
+                            )
                         },
                     )
                 }
