@@ -62,7 +62,11 @@
     <string name="profile_settings_hint">Tùy chỉnh giao diện và thông báo.</string>
     <string name="profile_logout_hint">Đăng xuất khỏi tài khoản đang dùng.</string>
     <string name="profile_value_empty">Chưa cập nhật</string>
+    <string name="profile_email_not_updated">Chưa cập nhật email</string>
     <string name="profile_username_fallback">Bạn</string>
+    <string name="profile_edit_personal_info">Chỉnh sửa thông tin cá nhân</string>
+    <string name="profile_invite_partner">Mời đối tác mới</string>
+    <string name="profile_version_format">Phiên bản %1$s</string>
     <string name="profile_change_frame">Đổi khung</string>
     <string name="profile_choose_avatar_frame">Chọn khung avatar</string>
     <string name="profile_avatar_frame_none">Không dùng</string>
@@ -73,6 +77,12 @@
     <string name="profile_couple_pending">Đang chờ phản hồi</string>
     <string name="profile_couple_incoming">Có lời mời kết bạn</string>
     <string name="profile_couple_none">Chưa kết bạn</string>
+    <string name="profile_anniversary_loading">Đang tải thông tin kỷ niệm...</string>
+    <string name="profile_anniversary_title_with_partner">Kỷ niệm của %1$s</string>
+    <string name="profile_anniversary_title_shared">Kỷ niệm chung</string>
+    <string name="profile_privacy_rights_count">2 quyền</string>
+    <string name="profile_notifications_count">7 mục</string>
+    <string name="profile_help_center_title">Trung tâm trợ giúp</string>
     <string name="couple_connect_title">Kết nối với người thương</string>
     <string name="couple_connect_subtitle">Bắt đầu hành trình tài chính chung bằng cách ghép tài khoản an toàn.</string>
     <string name="couple_option_1">TÙY CHỌN 1</string>
@@ -296,6 +306,16 @@
     <string name="settings_push_notifications_subtitle">Nhận thông báo khi có tin nhắn và hoạt động mới.</string>
     <string name="settings_email_notifications_title">Thông báo email</string>
     <string name="settings_email_notifications_subtitle">Nhận bản tóm tắt hoạt động qua email.</string>
+    <string name="settings_notification_chat_title">Tin nhắn</string>
+    <string name="settings_notification_chat_subtitle">Thông báo khi partner gửi tin nhắn mới</string>
+    <string name="settings_notification_topup_title">Nạp tiền</string>
+    <string name="settings_notification_topup_subtitle">Thông báo khi có giao dịch nạp tiền</string>
+    <string name="settings_notification_expense_title">Chi tiêu</string>
+    <string name="settings_notification_expense_subtitle">Thông báo khi có giao dịch chi tiêu mới</string>
+    <string name="settings_notification_goal_title">Mục tiêu</string>
+    <string name="settings_notification_goal_subtitle">Thông báo khi tạo và hoàn thành mục tiêu</string>
+    <string name="settings_notification_memory_title">Kỷ niệm</string>
+    <string name="settings_notification_memory_subtitle">Thông báo khi có kỷ niệm mới</string>
 
     <!-- Settings - Privacy -->
     <string name="settings_privacy_section_title">Quyền riêng tư</string>
@@ -447,6 +467,8 @@
     <string name="home_saving_goals_title">Mục tiêu tiết kiệm</string>
     <string name="home_where_partner">Đối phương ở đâu?</string>
     <string name="home_shared_balance_label">SỐ DƯ CHUNG</string>
+    <string name="home_action_transfer">Chuyển tiền</string>
+    <string name="home_action_contribute">Đóng góp</string>
     <string name="home_days_together_format">%1$d ngày bên nhau</string>
     <string name="home_days_together_subtitle">Hành trình chung vẫn tiếp tục</string>
     <string name="home_connect_partner">Kết nối với đối phương</string>

@@ -1,9 +1,9 @@
 package com.example.mobileproject.presentation.ui.screen.profile
 
+import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,34 +20,34 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,19 +57,28 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
-import com.example.mobileproject.domain.entity.AvatarFrame
 import com.example.mobileproject.domain.entity.CoupleStatus
 import com.example.mobileproject.domain.entity.PartnerProfileSummary
-import com.example.mobileproject.presentation.ui.icons.LucideCamera
+import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
+import com.example.mobileproject.presentation.ui.icons.LucideEdit
+import com.example.mobileproject.presentation.ui.icons.LucideHeart
+import com.example.mobileproject.presentation.ui.icons.LucideInfo
+import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideLogOut
-import com.example.mobileproject.presentation.ui.icons.LucideMail
-import com.example.mobileproject.presentation.ui.icons.LucideSettings
-import com.example.mobileproject.presentation.ui.icons.LucideUser
+import com.example.mobileproject.presentation.ui.icons.LucidePalette
+import com.example.mobileproject.presentation.ui.icons.LucideShield
+import com.example.mobileproject.presentation.ui.theme.ThemeMode
+import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
+import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
+import com.example.mobileproject.presentation.viewmodel.UserSettingsViewModel
 
 @Composable
 fun ProfileScreen(
@@ -76,38 +86,41 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
     onEditProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onInvitePartner: () -> Unit,
 ) {
+    val context = LocalContext.current
     val viewModel: ProfileViewModel = hiltViewModel()
+    val themeViewModel: ThemeModeViewModel = hiltViewModel()
+    val userSettingsViewModel: UserSettingsViewModel = hiltViewModel()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val themeMode by themeViewModel.themeMode.collectAsState()
+    val pushNotificationsEnabled by userSettingsViewModel.pushNotifications.collectAsState()
+    val emailNotificationsEnabled by userSettingsViewModel.emailNotifications.collectAsState()
+    val showActivityStatus by userSettingsViewModel.showActivityStatus.collectAsState()
+    val searchableByEmail by userSettingsViewModel.searchableByEmail.collectAsState()
+    val notifChat by notificationViewModel.notifChat.collectAsState()
+    val notifPayment by notificationViewModel.notifPayment.collectAsState()
+    val notifTransaction by notificationViewModel.notifTransaction.collectAsState()
+    val notifGoal by notificationViewModel.notifGoal.collectAsState()
+    val notifMemory by notificationViewModel.notifMemory.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(accessToken) {
         viewModel.loadProfile(accessToken)
-        viewModel.loadAvatarFrames(accessToken)
     }
 
     LaunchedEffect(uiState.errorMessage) {
-        val errorMessage = uiState.errorMessage
-        if (!errorMessage.isNullOrBlank()) {
-            snackbarHostState.showSnackbar(errorMessage)
+        uiState.errorMessage?.takeIf { it.isNotBlank() }?.let {
+            snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
     }
 
     LaunchedEffect(uiState.saveSuccessMessage) {
-        val successMessage = uiState.saveSuccessMessage
-        if (!successMessage.isNullOrBlank()) {
-            snackbarHostState.showSnackbar(successMessage)
+        uiState.saveSuccessMessage?.takeIf { it.isNotBlank() }?.let {
+            snackbarHostState.showSnackbar(it)
             viewModel.consumeSaveSuccess()
-        }
-    }
-
-    LaunchedEffect(uiState.avatarUploadError) {
-        val avatarError = uiState.avatarUploadError
-        if (!avatarError.isNullOrBlank()) {
-            snackbarHostState.showSnackbar(avatarError)
-            viewModel.clearAvatarError()
         }
     }
 
@@ -134,551 +147,580 @@ fun ProfileScreen(
             return@Scaffold
         }
 
+        val isPaired = uiState.coupleStatus?.paired == true
+        val username = uiState.savedProfile?.username.orEmpty()
+        val displayName = uiState.fullName.ifBlank {
+            uiState.nickName.ifBlank { username.ifBlank { stringResource(R.string.profile_username_fallback) } }
+        }
+        val themeLabel = when (themeMode) {
+            ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system)
+            ThemeMode.LIGHT -> stringResource(R.string.settings_theme_light)
+            ThemeMode.DARK -> stringResource(R.string.settings_theme_dark)
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.profile_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            HeaderCard(
-                username = uiState.savedProfile?.username.orEmpty(),
+            ProfileHeroCard(
+                displayName = displayName,
+                email = uiState.email.ifBlank { stringResource(R.string.profile_email_not_updated) },
                 avatarBitmap = uiState.avatarBitmap,
-                avatarFrameId = uiState.avatarFrameId,
-                isUploadingAvatar = uiState.isUploadingAvatar,
-                showFrameSelector = uiState.showFrameSelector,
-                availableFrames = uiState.availableFrames,
-                isLoadingFrames = uiState.isLoadingFrames,
-                onPickImage = { imageBytes, contentType ->
-                    viewModel.uploadAvatar(accessToken, imageBytes, contentType)
-                },
-                onShowFrameSelector = {
-                    viewModel.showFrameSelector()
-                },
-                onHideFrameSelector = { viewModel.hideFrameSelector() },
-                onSelectFrame = { frameId -> viewModel.selectFrame(accessToken, frameId) },
-            )
-
-            ProfileInfoCard(
-                fullName = uiState.fullName,
-                nickName = uiState.nickName,
-                birthDate = uiState.birthDate,
-                gender = uiState.gender,
-                email = uiState.email,
                 onEditProfile = onEditProfile,
             )
 
-            CoupleStatusCard(
-                isLoading = uiState.isLoadingCouple,
+            AnniversaryCard(
                 status = uiState.coupleStatus,
                 partnerProfile = uiState.partnerProfile,
+                isLoading = uiState.isLoadingCouple,
+                coupleError = uiState.coupleError,
             )
 
-            ProfileActionsCard(
-                onOpenSettings = onOpenSettings,
-                onLogout = onLogout,
+            ProfileMenuCard(
+                themeLabel = themeLabel,
+                themeMode = themeMode,
+                onThemeChange = themeViewModel::setThemeMode,
+                showActivityStatus = showActivityStatus,
+                onShowActivityStatusChange = userSettingsViewModel::setShowActivityStatus,
+                searchableByEmail = searchableByEmail,
+                onSearchableByEmailChange = userSettingsViewModel::setSearchableByEmail,
+                pushNotificationsEnabled = pushNotificationsEnabled,
+                onPushNotificationsChange = userSettingsViewModel::setPushNotifications,
+                emailNotificationsEnabled = emailNotificationsEnabled,
+                onEmailNotificationsChange = userSettingsViewModel::setEmailNotifications,
+                notifChat = notifChat,
+                onNotifChatChange = notificationViewModel::setNotifChat,
+                notifPayment = notifPayment,
+                onNotifPaymentChange = notificationViewModel::setNotifPayment,
+                notifTransaction = notifTransaction,
+                onNotifTransactionChange = notificationViewModel::setNotifTransaction,
+                notifGoal = notifGoal,
+                onNotifGoalChange = notificationViewModel::setNotifGoal,
+                notifMemory = notifMemory,
+                onNotifMemoryChange = notificationViewModel::setNotifMemory,
+                onOpenTerms = {
+                    val termsUrl = context.getString(R.string.url_terms_of_service)
+                    if (termsUrl.isNotBlank()) {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, termsUrl.toUri()))
+                    }
+                },
+                onOpenPrivacyPolicy = {
+                    val privacyUrl = context.getString(R.string.url_privacy_policy)
+                    if (privacyUrl.isNotBlank()) {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, privacyUrl.toUri()))
+                    }
+                },
+                onOpenOpenSource = {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.settings_open_source_title),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                },
             )
 
-            OutlinedButton(
-                onClick = onNavigateBack,
+            Button(
+                onClick = onLogout,
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                contentPadding = PaddingValues(vertical = 14.dp),
             ) {
-                Text(text = stringResource(R.string.profile_back))
+                Icon(
+                    imageVector = LucideLogOut,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.profile_logout),
+                    style = MaterialTheme.typography.titleSmall,
+                )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (!isPaired) {
+                Button(
+                    onClick = onInvitePartner,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                ) {
+                    Icon(
+                        imageVector = LucideLink,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.profile_invite_partner),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HeaderCard(
-    username: String,
+private fun ProfileHeroCard(
+    displayName: String,
+    email: String,
     avatarBitmap: Bitmap?,
-    avatarFrameId: String?,
-    isUploadingAvatar: Boolean,
-    showFrameSelector: Boolean,
-    availableFrames: List<AvatarFrame>,
-    isLoadingFrames: Boolean,
-    onPickImage: (ByteArray, String) -> Unit,
-    onShowFrameSelector: () -> Unit,
-    onHideFrameSelector: () -> Unit,
-    onSelectFrame: (String?) -> Unit,
+    onEditProfile: () -> Unit,
 ) {
-    val displayUsername = username.ifBlank { stringResource(R.string.profile_username_fallback) }
-    val avatarText = displayUsername.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
-    val context = LocalContext.current
-
-    val selectedFrame = availableFrames.firstOrNull { it.id == avatarFrameId }
-    val frameColor = selectedFrame?.let {
-        runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrNull()
-    }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-    ) { uri: Uri? ->
-        uri ?: return@rememberLauncherForActivityResult
-        val contentResolver = context.contentResolver
-        val mimeType = contentResolver.getType(uri) ?: "image/jpeg"
-        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
-        onPickImage(bytes, mimeType)
-    }
-
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    if (showFrameSelector) {
-        ModalBottomSheet(
-            onDismissRequest = onHideFrameSelector,
-            sheetState = sheetState,
-        ) {
-            FrameSelectorContent(
-                frames = availableFrames,
-                selectedFrameId = avatarFrameId,
-                isLoading = isLoadingFrames,
-                onSelectFrame = onSelectFrame,
-            )
-        }
-    }
+    val avatarText = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Avatar with camera-icon overlay
-            Box(contentAlignment = Alignment.BottomEnd) {
-                // Outer frame border + avatar
-                Box(
-                    modifier = Modifier
-                        .size(110.dp)
-                        .then(
-                            if (frameColor != null) {
-                                Modifier.border(4.dp, frameColor, CircleShape)
-                            } else {
-                                Modifier
-                            }
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (isUploadingAvatar) {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(40.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 3.dp,
-                            )
-                        }
-                    } else if (avatarBitmap != null) {
-                        Image(
-                            bitmap = avatarBitmap.asImageBitmap(),
-                            contentDescription = stringResource(R.string.profile_avatar_cd),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape),
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = avatarText,
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                }
-
-                // Camera edit overlay button
-                IconButton(
-                    onClick = { imagePickerLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
-                ) {
-                    Icon(
-                        imageVector = LucideCamera,
-                        contentDescription = stringResource(R.string.profile_camera_cd),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            Box(
+                modifier = Modifier
+                    .size(106.dp)
+                    .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (avatarBitmap != null) {
+                    Image(
+                        bitmap = avatarBitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.profile_avatar_cd),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape),
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = avatarText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = displayUsername,
+                text = displayName,
                 style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "@$displayUsername",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-            TextButton(onClick = onShowFrameSelector) {
-                Text(text = stringResource(R.string.profile_change_frame))
-            }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FrameSelectorContent(
-    frames: List<AvatarFrame>,
-    selectedFrameId: String?,
-    isLoading: Boolean,
-    onSelectFrame: (String?) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.profile_choose_avatar_frame),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 12.dp),
-        )
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(24.dp))
-        } else {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // "No Frame" option
-                item {
-                    FrameItem(
-                        label = stringResource(R.string.profile_avatar_frame_none),
-                        borderColor = MaterialTheme.colorScheme.outline,
-                        isSelected = selectedFrameId == null,
-                        showNoFrame = true,
-                        onClick = { onSelectFrame(null) },
-                    )
-                }
-                items(frames, key = { it.id }) { frame ->
-                    val color = runCatching {
-                        Color(android.graphics.Color.parseColor(frame.color))
-                    }.getOrElse { MaterialTheme.colorScheme.primary }
-                    FrameItem(
-                        label = frame.name,
-                        borderColor = color,
-                        isSelected = selectedFrameId == frame.id,
-                        showNoFrame = false,
-                        onClick = { onSelectFrame(frame.id) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FrameItem(
-    label: String,
-    borderColor: Color,
-    isSelected: Boolean,
-    showNoFrame: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(72.dp)
-            .clickable(onClick = onClick),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .border(
-                    width = if (isSelected) 3.dp else 2.dp,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else borderColor,
-                    shape = CircleShape,
-                )
-                .background(
-                    color = borderColor.copy(alpha = 0.15f),
-                    shape = CircleShape,
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onEditProfile),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f),
                 ),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (isSelected) {
-                Text(
-                    text = "✓",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            } else if (showNoFrame) {
-                Text(
-                    text = "⊘",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.profile_edit_personal_info),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = email,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Icon(
+                            imageVector = LucideEdit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 @Composable
-private fun ProfileInfoCard(
-    fullName: String,
-    nickName: String,
-    birthDate: String,
-    gender: String,
-    email: String,
-    onEditProfile: () -> Unit,
+private fun AnniversaryCard(
+    status: CoupleStatus?,
+    partnerProfile: PartnerProfileSummary?,
+    isLoading: Boolean,
+    coupleError: String?,
 ) {
-    val emptyValue = stringResource(R.string.profile_value_empty)
-    val genderText = when (gender) {
-        "MALE" -> stringResource(R.string.profile_gender_male)
-        "FEMALE" -> stringResource(R.string.profile_gender_female)
-        "OTHER" -> stringResource(R.string.profile_gender_other)
-        else -> emptyValue
+    val partnerName = partnerProfile?.fullName?.takeIf { it.isNotBlank() }
+        ?: partnerProfile?.nickName?.takeIf { it.isNotBlank() }
+        ?: partnerProfile?.username?.takeIf { it.isNotBlank() }
+        ?: status?.partnerUsername
+        ?: stringResource(R.string.home_pair_partner_unknown)
+    val subtitle = when {
+        isLoading -> stringResource(R.string.profile_anniversary_loading)
+        status?.paired == true -> {
+            val days = status.daysTogether ?: partnerProfile?.daysTogether ?: 0
+            stringResource(R.string.home_days_together_format, days)
+        }
+        !coupleError.isNullOrBlank() -> coupleError
+        !status?.outgoingRequestId.isNullOrBlank() -> stringResource(R.string.profile_couple_pending)
+        !status?.incomingRequestId.isNullOrBlank() -> stringResource(R.string.profile_couple_incoming)
+        else -> stringResource(R.string.profile_couple_none)
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = stringResource(R.string.profile_info_section_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.profile_info_section_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            ProfileInfoRow(
-                title = stringResource(R.string.profile_fullname),
-                value = fullName.ifBlank { emptyValue },
-                icon = LucideUser,
-            )
-            ProfileInfoRow(
-                title = stringResource(R.string.profile_nickname),
-                value = nickName.ifBlank { emptyValue },
-                icon = LucideUser,
-            )
-            ProfileInfoRow(
-                title = stringResource(R.string.profile_birthdate),
-                value = birthDate.ifBlank { emptyValue },
-                icon = LucideUser,
-            )
-            ProfileInfoRow(
-                title = stringResource(R.string.profile_gender),
-                value = genderText,
-                icon = LucideUser,
-            )
-            ProfileInfoRow(
-                title = stringResource(R.string.profile_email),
-                value = email.ifBlank { emptyValue },
-                icon = LucideMail,
-            )
-
-            TextButton(onClick = onEditProfile, modifier = Modifier.fillMaxWidth()) {
-                Text(text = stringResource(R.string.profile_edit_title))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = LucideHeart,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (status?.paired == true) {
+                        stringResource(R.string.profile_anniversary_title_with_partner, partnerName)
+                    } else {
+                        stringResource(R.string.profile_anniversary_title_shared)
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = LucideChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
-private fun ProfileInfoRow(
-    title: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-) {
-    ListItem(
-        headlineContent = { Text(text = title) },
-        supportingContent = { Text(text = value) },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
-}
-
-@Composable
-private fun ProfileActionsCard(
-    onOpenSettings: () -> Unit,
-    onLogout: () -> Unit,
+private fun ProfileMenuCard(
+    themeLabel: String,
+    themeMode: ThemeMode,
+    onThemeChange: (ThemeMode) -> Unit,
+    showActivityStatus: Boolean,
+    onShowActivityStatusChange: (Boolean) -> Unit,
+    searchableByEmail: Boolean,
+    onSearchableByEmailChange: (Boolean) -> Unit,
+    pushNotificationsEnabled: Boolean,
+    onPushNotificationsChange: (Boolean) -> Unit,
+    emailNotificationsEnabled: Boolean,
+    onEmailNotificationsChange: (Boolean) -> Unit,
+    notifChat: Boolean,
+    onNotifChatChange: (Boolean) -> Unit,
+    notifPayment: Boolean,
+    onNotifPaymentChange: (Boolean) -> Unit,
+    notifTransaction: Boolean,
+    onNotifTransactionChange: (Boolean) -> Unit,
+    notifGoal: Boolean,
+    onNotifGoalChange: (Boolean) -> Unit,
+    notifMemory: Boolean,
+    onNotifMemoryChange: (Boolean) -> Unit,
+    onOpenTerms: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
+    onOpenOpenSource: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp),
         ) {
-            ProfileActionItem(
-                title = stringResource(R.string.profile_settings_title),
-                subtitle = stringResource(R.string.profile_settings_hint),
-                icon = LucideSettings,
-                onClick = onOpenSettings,
-                showChevron = true,
-            )
-            ProfileActionItem(
-                title = stringResource(R.string.profile_logout),
-                subtitle = stringResource(R.string.profile_logout_hint),
-                icon = LucideLogOut,
-                onClick = onLogout,
-                showChevron = false,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProfileActionItem(
-    title: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    showChevron: Boolean,
-) {
-    ListItem(
-        headlineContent = { Text(text = title) },
-        supportingContent = { Text(text = subtitle) },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        },
-        trailingContent = {
-            if (showChevron) {
-                Icon(
-                    imageVector = LucideChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            ProfileMenuDropdownItem(
+                title = stringResource(R.string.settings_privacy_section_title),
+                icon = LucideShield,
+                trailingText = stringResource(R.string.profile_privacy_rights_count),
+            ) {
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_show_activity_title),
+                    subtitle = stringResource(R.string.settings_show_activity_subtitle),
+                    checked = showActivityStatus,
+                    onCheckedChange = onShowActivityStatusChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_searchable_by_email_title),
+                    subtitle = stringResource(R.string.settings_searchable_by_email_subtitle),
+                    checked = searchableByEmail,
+                    onCheckedChange = onSearchableByEmailChange,
                 )
             }
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
+            ProfileMenuDropdownItem(
+                title = stringResource(R.string.settings_notifications_section_title),
+                icon = LucideBell,
+                trailingText = stringResource(R.string.profile_notifications_count),
+            ) {
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_push_notifications_title),
+                    subtitle = stringResource(R.string.settings_push_notifications_subtitle),
+                    checked = pushNotificationsEnabled,
+                    onCheckedChange = onPushNotificationsChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_email_notifications_title),
+                    subtitle = stringResource(R.string.settings_email_notifications_subtitle),
+                    checked = emailNotificationsEnabled,
+                    onCheckedChange = onEmailNotificationsChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_notification_chat_title),
+                    subtitle = stringResource(R.string.settings_notification_chat_subtitle),
+                    checked = notifChat,
+                    onCheckedChange = onNotifChatChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_notification_topup_title),
+                    subtitle = stringResource(R.string.settings_notification_topup_subtitle),
+                    checked = notifPayment,
+                    onCheckedChange = onNotifPaymentChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_notification_expense_title),
+                    subtitle = stringResource(R.string.settings_notification_expense_subtitle),
+                    checked = notifTransaction,
+                    onCheckedChange = onNotifTransactionChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_notification_goal_title),
+                    subtitle = stringResource(R.string.settings_notification_goal_subtitle),
+                    checked = notifGoal,
+                    onCheckedChange = onNotifGoalChange,
+                )
+                SwitchInfoRow(
+                    title = stringResource(R.string.settings_notification_memory_title),
+                    subtitle = stringResource(R.string.settings_notification_memory_subtitle),
+                    checked = notifMemory,
+                    onCheckedChange = onNotifMemoryChange,
+                )
+            }
+            ProfileMenuDropdownItem(
+                title = stringResource(R.string.settings_appearance_section_title),
+                icon = LucidePalette,
+                trailingText = themeLabel,
+            ) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val options = listOf(
+                        ThemeMode.SYSTEM to R.string.settings_theme_system,
+                        ThemeMode.LIGHT to R.string.settings_theme_light,
+                        ThemeMode.DARK to R.string.settings_theme_dark,
+                    )
+                    options.forEachIndexed { index, option ->
+                        val mode = option.first
+                        val labelRes = option.second
+                        SegmentedButton(
+                            selected = themeMode == mode,
+                            onClick = { onThemeChange(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                        ) {
+                            Text(text = stringResource(labelRes))
+                        }
+                    }
+                }
+            }
+            ProfileMenuDropdownItem(
+                title = stringResource(R.string.profile_help_center_title),
+                icon = LucideInfo,
+                trailingText = BuildConfig.VERSION_NAME,
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = onOpenTerms,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                ) {
+                    Text(text = stringResource(R.string.settings_terms_of_service_title))
+                }
+                Button(
+                    onClick = onOpenPrivacyPolicy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                ) {
+                    Text(text = stringResource(R.string.settings_privacy_policy_title))
+                }
+                Button(
+                    onClick = onOpenOpenSource,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                ) {
+                    Text(text = stringResource(R.string.settings_open_source_title))
+                }
+            }
+        }
+    }
 }
 
 @Composable
-private fun CoupleStatusCard(
-    isLoading: Boolean,
-    status: CoupleStatus?,
-    partnerProfile: PartnerProfileSummary?,
+private fun ProfileMenuDropdownItem(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    trailingText: String? = null,
+    content: @Composable () -> Unit,
 ) {
-    val partnerDisplayName = partnerProfile?.fullName
-        ?.takeIf { it.isNotBlank() }
-        ?: partnerProfile?.nickName?.takeIf { it.isNotBlank() }
-        ?: partnerProfile?.username?.takeIf { it.isNotBlank() }
-        ?: status?.partnerUsername
-    val statusText = when {
-        isLoading -> stringResource(R.string.explore_updating)
-        status == null -> stringResource(R.string.profile_couple_none)
-        status.paired -> {
-            val partner = partnerDisplayName ?: stringResource(R.string.home_pair_partner_unknown)
-            val days = status.daysTogether ?: 0
-            "$partner • ${stringResource(R.string.profile_couple_days_together, days.toInt())}"
-        }
-        !status.outgoingRequestId.isNullOrBlank() -> stringResource(R.string.profile_couple_pending)
-        !status.incomingRequestId.isNullOrBlank() -> stringResource(R.string.profile_couple_incoming)
-        else -> stringResource(R.string.profile_couple_none)
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    var expanded by remember(title) { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
+        ListItem(
+            headlineContent = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            leadingContent = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            },
+            trailingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (!trailingText.isNullOrBlank()) {
+                        Text(
+                            text = trailingText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Icon(
+                        imageVector = LucideChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        )
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwitchInfoRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.profile_couple_status),
-                style = MaterialTheme.typography.titleMedium,
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodyMedium,
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (status?.paired == true && partnerProfile != null) {
-                partnerProfile.username?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = "@$it",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                partnerProfile.startAt?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
