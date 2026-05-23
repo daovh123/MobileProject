@@ -1,6 +1,7 @@
 package com.example.mobileproject.presentation.ui.screen.explore
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -950,7 +951,26 @@ private fun PlaceDetailBottomSheet(
             val mapsUrl = resolveGoogleMapsUrl(place, currentLocationLat, currentLocationLng)
             Button(
                 onClick = {
-                    if (mapsUrl == null) {
+                    if (place.lat == null || place.lng == null) {
+                        if (mapsUrl == null) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.explore_detail_no_map_data),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            return@Button
+                        }
+                        openGoogleMaps(context, mapsUrl)
+                        return@Button
+                    }
+
+                    val didOpenNavigation = openGoogleMapsByCoordinates(
+                        context = context,
+                        placeName = place.name,
+                        lat = place.lat,
+                        lng = place.lng,
+                    )
+                    if (!didOpenNavigation && mapsUrl == null) {
                         Toast.makeText(
                             context,
                             context.getString(R.string.explore_detail_no_map_data),
@@ -958,9 +978,11 @@ private fun PlaceDetailBottomSheet(
                         ).show()
                         return@Button
                     }
-                    openGoogleMaps(context, mapsUrl)
+                    if (!didOpenNavigation && mapsUrl != null) {
+                        openGoogleMaps(context, mapsUrl)
+                    }
                 },
-                enabled = mapsUrl != null,
+                enabled = (place.lat != null && place.lng != null) || mapsUrl != null,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
             ) {
@@ -1267,7 +1289,6 @@ private fun resolveGoogleMapsUrl(place: Place, currentLat: Double?, currentLng: 
 
 private fun openGoogleMaps(context: Context, url: String) {
     val uri = Uri.parse(url)
-    val packageManager = context.packageManager
 
     val mapsAppIntent = Intent(Intent.ACTION_VIEW, uri).apply {
         setPackage("com.google.android.apps.maps")
@@ -1275,15 +1296,52 @@ private fun openGoogleMaps(context: Context, url: String) {
 
     val fallbackIntent = Intent(Intent.ACTION_VIEW, uri)
 
-    when {
-        mapsAppIntent.resolveActivity(packageManager) != null -> context.startActivity(mapsAppIntent)
-        fallbackIntent.resolveActivity(packageManager) != null -> context.startActivity(fallbackIntent)
-        else -> Toast.makeText(
-            context,
-            context.getString(R.string.explore_detail_no_map_app),
-            Toast.LENGTH_SHORT,
-        ).show()
+    if (tryStartActivity(context, mapsAppIntent)) return
+    if (tryStartActivity(context, fallbackIntent)) return
+
+    Toast.makeText(
+        context,
+        context.getString(R.string.explore_detail_no_map_app),
+        Toast.LENGTH_SHORT,
+    ).show()
+}
+
+private fun tryStartActivity(context: Context, intent: Intent): Boolean {
+    return try {
+        context.startActivity(intent)
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    } catch (_: SecurityException) {
+        false
     }
+}
+
+private fun openGoogleMapsByCoordinates(
+    context: Context,
+    placeName: String?,
+    lat: Double,
+    lng: Double,
+): Boolean {
+    val encodedLabel = Uri.encode(placeName?.trim().orEmpty())
+    val query = if (encodedLabel.isBlank()) "$lat,$lng" else "$lat,$lng($encodedLabel)"
+
+    val navigationIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("google.navigation:q=$query"),
+    ).apply {
+        setPackage("com.google.android.apps.maps")
+    }
+
+    if (tryStartActivity(context, navigationIntent)) return true
+
+    val geoIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("geo:0,0?q=$query"),
+    )
+    if (tryStartActivity(context, geoIntent)) return true
+
+    return false
 }
 
 private suspend fun observePagingLoadMore(
