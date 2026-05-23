@@ -168,6 +168,7 @@ fun AppFormTextField(
     placeholder: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     leading: (@Composable () -> Unit)? = null,
+    supporting: (@Composable () -> Unit)? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
@@ -182,6 +183,7 @@ fun AppFormTextField(
         placeholder = placeholder,
         leadingIcon = leading,
         trailingIcon = trailing,
+        supportingText = supporting,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         shape = MaterialTheme.shapes.medium,

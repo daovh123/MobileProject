@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
@@ -80,6 +82,7 @@ import coil.compose.AsyncImage
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
+import com.example.mobileproject.presentation.notification.ChatQuickReplySender
 import com.example.mobileproject.presentation.ui.components.core.AppEmptyState
 import com.example.mobileproject.presentation.ui.components.core.AppFormTextField
 import com.example.mobileproject.presentation.ui.components.core.AppPrimaryButton
@@ -89,6 +92,8 @@ import com.example.mobileproject.presentation.ui.components.core.AppStateMessage
 import com.example.mobileproject.presentation.ui.components.core.AppSurfaceCard
 import com.example.mobileproject.presentation.ui.components.place.PlaceCard
 import com.example.mobileproject.presentation.ui.components.place.TrendingPlaceCard
+import com.example.mobileproject.presentation.viewmodel.ExploreBudgetSource
+import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatMessageFormatter
 import com.example.mobileproject.presentation.viewmodel.ExplorePlaceType
 import com.example.mobileproject.presentation.viewmodel.ExploreViewModel
 import com.example.mobileproject.presentation.viewmodel.FavoriteViewModel
@@ -103,6 +108,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.util.Locale
+import com.example.mobileproject.utils.formatSimpleAmount
 
 private const val LOAD_MORE_THRESHOLD: Int = 6
 private const val EXPLORE_LOG_TAG: String = "ExploreScreen"
@@ -160,6 +166,7 @@ fun ExploreScreen(
     historyViewModel: HistoryViewModel,
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val uiState by exploreViewModel.uiState.collectAsState()
     val favoriteState by favoriteViewModel.uiState.collectAsState()
 
@@ -271,6 +278,13 @@ fun ExploreScreen(
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
             favoriteViewModel.loadFavorites(accessToken)
+            historyViewModel.loadHistory(accessToken)
+        }
+    }
+
+    LaunchedEffect(historyViewModel) {
+        historyViewModel.uiState.collectLatest { historyState ->
+            exploreViewModel.onHistoryUpdated(historyState.history)
         }
     }
 
@@ -323,6 +337,7 @@ fun ExploreScreen(
             onRecordView = {
                 if (accessToken.isNotBlank()) {
                     historyViewModel.recordView(accessToken, selectedPlace!!.id)
+                    exploreViewModel.onPlaceViewed(selectedPlace!!)
                     favoriteViewModel.checkFavorite(accessToken, selectedPlace!!.id)
                 }
             },
@@ -410,6 +425,95 @@ fun ExploreScreen(
                             )
                         }
                     }
+                }
+            }
+
+            item {
+                ExploreBudgetPlannerCard(
+                    budgetSource = uiState.budgetSource,
+                    walletBalance = uiState.walletBalance,
+                    walletLoading = uiState.walletLoading,
+                    manualBudgetInput = uiState.manualBudgetInput,
+                    peopleCountInput = uiState.peopleCountInput,
+                    desiredStopsInput = uiState.desiredStopsInput,
+                    isPlanLoading = uiState.isPlanLoading,
+                    planErrorMessage = uiState.planErrorMessage,
+                    lowBalanceMessage = uiState.explorePlan?.summary?.balanceMessage,
+                    onBudgetSourceChanged = exploreViewModel::onBudgetSourceChanged,
+                    onManualBudgetChanged = exploreViewModel::onManualBudgetChanged,
+                    onPeopleCountChanged = exploreViewModel::onPeopleCountChanged,
+                    onDesiredStopsChanged = exploreViewModel::onDesiredStopsChanged,
+                    onBuildPlan = exploreViewModel::buildExplorePlan,
+                )
+            }
+
+            if (uiState.planItems.isNotEmpty()) {
+                item {
+                    AppSectionHeader(
+                        title = stringResource(R.string.explore_budget_results_title),
+                        subtitle = uiState.explorePlan?.summary?.let { summary ->
+                            stringResource(
+                                R.string.explore_budget_results_subtitle,
+                                formatSimpleAmount(summary.estimatedTotalCost),
+                                formatSimpleAmount(summary.totalBudget),
+                            )
+                        },
+                    )
+                }
+                items(uiState.planItems, key = { "budget_${it.stopOrder}_${it.place.id}" }) { item ->
+                    ExploreBudgetPlanItemCard(
+                        stopOrder = item.stopOrder,
+                        title = valueOrUpdating(item.place.name, context),
+                        subtitle = item.reason,
+                        estimatedCost = item.estimatedCost,
+                        experienceType = item.experienceType,
+                        onClick = {
+                            selectedPlace = item.place
+                            showPlaceDetail = true
+                        },
+                        onSendToChat = {
+                            if (accessToken.isBlank()) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.home_pair_session_expired),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                coroutineScope.launch {
+                                    val sent = ChatQuickReplySender.send(
+                                        accessToken = accessToken,
+                                        text = ExplorePlanChatMessageFormatter.build(item),
+                                    )
+                                    if (sent) {
+                                        exploreViewModel.onPlanSharedToChat(item.place)
+                                    }
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(
+                                            if (sent) {
+                                                R.string.explore_budget_send_to_chat_success
+                                            } else {
+                                                R.string.explore_budget_send_to_chat_failed
+                                            },
+                                        ),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
+                        },
+                        onOpenMaps = {
+                            val mapsUrl = resolveGoogleMapsUrl(item.place, currentLocationLat, currentLocationLng)
+                            if (mapsUrl == null) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.explore_detail_no_map_data),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                openGoogleMaps(context, mapsUrl)
+                            }
+                        },
+                    )
                 }
             }
 
@@ -571,6 +675,231 @@ fun ExploreScreen(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun ExploreBudgetPlannerCard(
+    budgetSource: ExploreBudgetSource,
+    walletBalance: Long?,
+    walletLoading: Boolean,
+    manualBudgetInput: String,
+    peopleCountInput: String,
+    desiredStopsInput: String,
+    isPlanLoading: Boolean,
+    planErrorMessage: String?,
+    lowBalanceMessage: String?,
+    onBudgetSourceChanged: (ExploreBudgetSource) -> Unit,
+    onManualBudgetChanged: (String) -> Unit,
+    onPeopleCountChanged: (String) -> Unit,
+    onDesiredStopsChanged: (String) -> Unit,
+    onBuildPlan: () -> Unit,
+) {
+    AppSurfaceCard {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AppSectionHeader(
+                title = stringResource(R.string.explore_budget_title),
+                subtitle = stringResource(R.string.explore_budget_subtitle),
+            )
+
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    FilterChip(
+                        selected = budgetSource == ExploreBudgetSource.WALLET,
+                        onClick = { onBudgetSourceChanged(ExploreBudgetSource.WALLET) },
+                        enabled = walletBalance != null || walletLoading,
+                        label = { Text(stringResource(R.string.explore_budget_wallet)) },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = budgetSource == ExploreBudgetSource.MANUAL,
+                        onClick = { onBudgetSourceChanged(ExploreBudgetSource.MANUAL) },
+                        label = { Text(stringResource(R.string.explore_budget_manual)) },
+                        colors = FilterChipDefaults.filterChipColors(),
+                    )
+                }
+            }
+
+            if (walletLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else if (walletBalance != null) {
+                Text(
+                    text = stringResource(R.string.explore_budget_wallet_balance, formatSimpleAmount(walletBalance)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            AppFormTextField(
+                value = manualBudgetInput,
+                onValueChange = onManualBudgetChanged,
+                label = stringResource(R.string.explore_budget_input_label),
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(text = stringResource(R.string.explore_budget_input_placeholder))
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next,
+                ),
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                AppFormTextField(
+                    value = peopleCountInput,
+                    onValueChange = onPeopleCountChanged,
+                    label = stringResource(R.string.explore_budget_people_label),
+                    modifier = Modifier.weight(1f),
+                    supporting = {
+                        Text(text = stringResource(R.string.explore_budget_people_support))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next,
+                    ),
+                )
+                AppFormTextField(
+                    value = desiredStopsInput,
+                    onValueChange = onDesiredStopsChanged,
+                    label = stringResource(R.string.explore_budget_stops_label),
+                    modifier = Modifier.weight(1f),
+                    supporting = {
+                        Text(text = stringResource(R.string.explore_budget_stops_support))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+            }
+
+            if (!lowBalanceMessage.isNullOrBlank()) {
+                AppStateMessage(
+                    title = stringResource(R.string.explore_budget_low_balance_title),
+                    message = lowBalanceMessage,
+                )
+            } else if (!planErrorMessage.isNullOrBlank()) {
+                AppStateMessage(
+                    title = stringResource(R.string.explore_retry),
+                    message = planErrorMessage,
+                )
+            }
+
+            AppPrimaryButton(
+                text = stringResource(R.string.explore_budget_action),
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isPlanLoading,
+                onClick = onBuildPlan,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExploreBudgetPlanItemCard(
+    stopOrder: Int,
+    title: String,
+    subtitle: String,
+    estimatedCost: Long,
+    experienceType: String,
+    onClick: () -> Unit,
+    onSendToChat: () -> Unit,
+    onOpenMaps: () -> Unit,
+) {
+    AppSurfaceCard {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .padding(top = 10.dp),
+                contentPadding = PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Text(
+                            text = stopOrder.toString(),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = stringResource(R.string.explore_budget_cost_format, formatSimpleAmount(estimatedCost)),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = experienceType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onOpenMaps) {
+                    Text(text = stringResource(R.string.explore_budget_open_map_action))
+                }
+                TextButton(onClick = onSendToChat) {
+                    Text(text = stringResource(R.string.explore_budget_send_to_chat_action))
                 }
             }
         }
@@ -1188,51 +1517,66 @@ private fun valueOrUpdating(value: String?, context: Context): String {
     return normalizedValue(value) ?: context.getString(R.string.explore_updating)
 }
 
-/**
- * Parse priceRange như "20k - 35k", "20.000 - 35.000", "20000-35000"
- * → "20.000 - 35.000 đồng"
- */
 private fun formatPriceRange(raw: String?): String? {
     val input = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    val normalized = input
+        .replace("VNĐ", "VND", ignoreCase = true)
+        .replace("đ", " VND", ignoreCase = true)
+        .replace("dong", " VND", ignoreCase = true)
+        .replace("nguời", "nguoi", ignoreCase = true)
+        .replace("người", "nguoi", ignoreCase = true)
 
-    // Tách bằng dấu "-" (bỏ qua khoảng trắng)
-    val parts = input.split(Regex("-")).map { it.trim() }
-
-    fun parseAmount(token: String): Long? {
-        val clean = token.replace(Regex("[,. ]"), "").lowercase()
-        return when {
-            clean.endsWith("k") -> clean.dropLast(1).toLongOrNull()?.times(1_000)
-            clean.endsWith("tr") || clean.endsWith("m") -> clean.dropLast(if (clean.endsWith("tr")) 2 else 1).toLongOrNull()?.times(1_000_000)
-            else -> clean.toLongOrNull()
+    val values = Regex("""(\d+(?:[\.,]\d+)?)\s*(tr|m|k|nghin|ngan|vnd)?""", RegexOption.IGNORE_CASE)
+        .findAll(normalized)
+        .mapNotNull { match ->
+            val number = match.groupValues[1]
+            val unit = match.groupValues[2].lowercase(Locale.ROOT)
+            parsePriceAmount(number, unit)
         }
+        .toList()
+
+    if (values.isEmpty()) {
+        return input
     }
 
-    fun formatAmount(amount: Long): String {
-        // Format với dấu chấm ngăn cách hàng nghìn
-        val str = amount.toString()
-        val sb = StringBuilder()
-        str.forEachIndexed { i, c ->
-            if (i > 0 && (str.length - i) % 3 == 0) sb.append('.')
-            sb.append(c)
-        }
-        return sb.toString()
+    val perPersonCount = Regex("""(\d+)\s*nguoi""", RegexOption.IGNORE_CASE)
+        .find(normalized)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it > 1 }
+
+    val normalizedValues = if (perPersonCount != null && values.size == 1) {
+        listOf(values.first() / perPersonCount)
+    } else {
+        values
     }
 
-    if (parts.size == 2) {
-        val from = parseAmount(parts[0])
-        val to = parseAmount(parts[1])
-        if (from != null && to != null) {
-            return "${formatAmount(from)} - ${formatAmount(to)} đồng"
-        }
-    } else if (parts.size == 1) {
-        val amount = parseAmount(parts[0])
-        if (amount != null) {
-            return "${formatAmount(amount)} đồng"
-        }
+    return when (normalizedValues.size) {
+        1 -> "${formatSimpleAmount(normalizedValues.first())} đồng"
+        else -> "${formatSimpleAmount(normalizedValues.min())} - ${formatSimpleAmount(normalizedValues.max())} đồng"
     }
+}
 
-    // Fallback: trả về nguyên bản nếu không parse được
-    return input
+private fun parsePriceAmount(number: String, unit: String): Long? {
+    val compact = number.trim().replace(" ", "")
+    val normalizedUnit = unit.trim().lowercase(Locale.ROOT)
+    return runCatching {
+        when {
+            normalizedUnit == "k" || normalizedUnit == "nghin" || normalizedUnit == "ngan" -> {
+                compact.replace(",", ".").toDouble().times(1_000).toLong()
+            }
+            normalizedUnit == "tr" || normalizedUnit == "m" -> {
+                compact.replace(",", ".").toDouble().times(1_000_000).toLong()
+            }
+            normalizedUnit == "vnd" -> compact.replace(Regex("[.,]"), "").toLong()
+            compact.contains('.') || compact.contains(',') -> compact.replace(Regex("[.,]"), "").toLong()
+            else -> {
+                val parsed = compact.toLong()
+                if (parsed < 1_000L) parsed * 1_000L else parsed
+            }
+        }
+    }.getOrNull()
 }
 
 private fun ratingOrUpdating(rating: Double?, reviewCount: Int?, context: Context): String {

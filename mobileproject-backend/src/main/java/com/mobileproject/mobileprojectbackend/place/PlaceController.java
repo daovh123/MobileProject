@@ -1,16 +1,20 @@
 package com.mobileproject.mobileprojectbackend.place;
 
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceDto;
+import com.mobileproject.mobileprojectbackend.place.dto.ExplorePlanRequest;
+import com.mobileproject.mobileprojectbackend.place.dto.ExplorePlanResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceFilterOptionsResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceFeatureSummaryResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceImageBackfillResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceImportResponse;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchRequest;
 import com.mobileproject.mobileprojectbackend.place.dto.PlaceSearchResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,14 +28,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlaceController {
 
     private final PlaceService placeService;
+    private final ExplorePlanService explorePlanService;
     private final PlaceImportService placeImportService;
     private final PlaceImageBackfillService placeImageBackfillService;
 
     public PlaceController(
             PlaceService placeService,
+            ExplorePlanService explorePlanService,
             PlaceImportService placeImportService,
             PlaceImageBackfillService placeImageBackfillService) {
         this.placeService = placeService;
+        this.explorePlanService = explorePlanService;
         this.placeImportService = placeImportService;
         this.placeImageBackfillService = placeImageBackfillService;
     }
@@ -125,5 +132,10 @@ public class PlaceController {
     @GetMapping("/{placeId}")
     public ResponseEntity<PlaceDto> getDetail(@PathVariable String placeId) {
         return ResponseEntity.ok(placeService.findById(placeId));
+    }
+
+    @PostMapping("/explore-plan")
+    public ResponseEntity<ExplorePlanResponse> buildExplorePlan(@Valid @RequestBody ExplorePlanRequest request) {
+        return ResponseEntity.ok(explorePlanService.buildPlan(request));
     }
 }

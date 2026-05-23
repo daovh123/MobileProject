@@ -11,6 +11,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,16 +58,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Restaurant
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.ChatMessage
@@ -77,6 +95,8 @@ import com.example.mobileproject.presentation.ui.icons.LucideReply
 import com.example.mobileproject.presentation.ui.icons.LucideSend
 import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.viewmodel.ChatViewModel
+import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardParser
+import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardData
 import com.example.mobileproject.presentation.viewmodel.PendingMessage
 import com.example.mobileproject.presentation.viewmodel.SendStatus
 import java.time.Instant
@@ -84,12 +104,29 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+private val placeImageFallbackPool: List<String> = listOf(
+    "https://picsum.photos/seed/cafe-hoa-xa-1/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-2/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-3/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-4/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-5/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-6/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-7/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-8/1200/800",
+    "https://picsum.photos/seed/cafe-hoa-xa-9/1200/800",
+)
+
+private fun fallbackImageFor(seed: String): String {
+    val index = (seed.hashCode() and Int.MAX_VALUE) % placeImageFallbackPool.size
+    return placeImageFallbackPool[index]
+}
+
 private fun decodeBase64Avatar(dataUrl: String?): Bitmap? {
     if (dataUrl.isNullOrBlank()) return null
     return runCatching {
         val base64 = dataUrl.substringAfter(",", missingDelimiterValue = "")
         val bytes = if (base64.isBlank()) Base64.decode(dataUrl.trim(), Base64.DEFAULT)
-                    else Base64.decode(base64, Base64.DEFAULT)
+        else Base64.decode(base64, Base64.DEFAULT)
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }.getOrNull()
 }
@@ -555,7 +592,6 @@ private fun ChatBubble(
     val quotedMessage = remember(message.replyToId, allMessages) {
         message.replyToId?.let { id -> allMessages.find { it.id == id } }
     }
-
     val isAi = !mine && message.senderUsername?.equals("MiniAI", ignoreCase = true) == true
 
     // Use partnerBitmap (decoded once at screen level) as primary.
@@ -618,11 +654,9 @@ private fun ChatBubble(
                             modifier = Modifier.padding(bottom = 6.dp),
                         )
                     }
-                    Text(
-                        text = message.text,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        lineHeight = 20.sp,
+                    MessageTextWithLinks(
+                        messageText = message.text,
+                        textColor = textColor,
                     )
                     if (showTimestamp && timeText.isNotBlank()) {
                         Row(
@@ -659,6 +693,345 @@ private fun ChatBubble(
     }
 }
 
+@Composable
+private fun MessageTextWithLinks(
+    messageText: String,
+    textColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    val uriHandler = LocalUriHandler.current
+    val colorScheme = MaterialTheme.colorScheme
+    val plannerCard = remember(messageText) { ExplorePlanChatCardParser.parse(messageText) }
+    val annotated = remember(messageText, textColor, colorScheme.primary) {
+        buildAnnotatedMessage(
+            messageText = messageText,
+            textColor = textColor,
+            linkColor = colorScheme.primary,
+        )
+    }
+
+    if (plannerCard != null) {
+        ExplorePlanChatCard(
+            card = plannerCard,
+            onOpenMaps = {
+                plannerCard.googleMapsUrl?.let(uriHandler::openUri)
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
+    ClickableText(
+        text = annotated,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = textColor,
+            lineHeight = 20.sp,
+        ),
+        modifier = modifier,
+        onClick = { offset ->
+            annotated.getStringAnnotations(tag = MAP_URL_TAG, start = offset, end = offset)
+                .firstOrNull()
+                ?.item
+                ?.let(uriHandler::openUri)
+        },
+    )
+}
+
+@Composable
+private fun ExplorePlanChatCard(
+    card: ExplorePlanChatCardData,
+    onOpenMaps: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val cardBodyColor = Color(0xFFFFF5F8)
+    val cardBodyText = Color(0xFF4B2B34)
+    val cardBodyMuted = Color(0xFF7C5964)
+    val ctaColor = Color(0xFF8F153F)
+    val fallbackImageUrl = remember(card.title) { fallbackImageFor(card.title) }
+    val primaryImageUrl = card.imageUrl?.takeIf { it.isNotBlank() }
+    var imageModel by remember(card.title, primaryImageUrl) {
+        mutableStateOf(primaryImageUrl ?: fallbackImageUrl)
+    }
+    val imageRequest = remember(imageModel, context) {
+        val widthPx = with(density) { 360.dp.roundToPx() }
+        val heightPx = with(density) { 196.dp.roundToPx() }
+        ImageRequest.Builder(context)
+            .data(imageModel)
+            .size(widthPx, heightPx)
+            .crossfade(false)
+            .build()
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBodyColor),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.45f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(196.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    ctaColor.copy(alpha = 0.92f),
+                                    colorScheme.tertiary.copy(alpha = 0.88f),
+                                ),
+                            ),
+                        ),
+                )
+                Icon(
+                    imageVector = Icons.Rounded.Restaurant,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.88f),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(42.dp),
+                )
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = card.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onError = {
+                        if (imageModel != fallbackImageUrl) {
+                            imageModel = fallbackImageUrl
+                        }
+                    },
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    colorScheme.scrim.copy(alpha = 0.8f),
+                                ),
+                            ),
+                        ),
+                )
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.chat_plan_card_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.88f),
+                    )
+                    Text(
+                        text = card.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        card.stopOrder?.let {
+                            PlannerInfoPill(
+                                text = "Điểm dừng $it",
+                                containerColor = Color.White.copy(alpha = 0.18f),
+                                contentColor = Color.White,
+                            )
+                        }
+                        card.experienceType?.let {
+                            PlannerInfoPill(
+                                text = it,
+                                containerColor = Color.White.copy(alpha = 0.18f),
+                                contentColor = Color.White,
+                            )
+                        }
+                        card.estimatedCostLabel?.let {
+                            PlannerInfoPill(
+                                text = it,
+                                containerColor = Color.White.copy(alpha = 0.18f),
+                                contentColor = Color.White,
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                card.reason?.let {
+                    PlannerCardDetail(
+                        label = "Vì sao",
+                        value = it,
+                        textColor = cardBodyText,
+                        labelColor = cardBodyMuted,
+                    )
+                }
+                card.address?.let {
+                    PlannerCardDetail(
+                        label = "Địa chỉ",
+                        value = it,
+                        textColor = cardBodyText,
+                        labelColor = cardBodyMuted,
+                    )
+                }
+                if (!card.googleMapsUrl.isNullOrBlank()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onOpenMaps),
+                        shape = RoundedCornerShape(16.dp),
+                        color = ctaColor,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Place,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.chat_plan_card_open_maps),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlannerInfoPill(
+    text: String,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = containerColor,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+        )
+    }
+}
+
+@Composable
+private fun PlannerCardDetail(
+    label: String,
+    value: String,
+    textColor: androidx.compose.ui.graphics.Color,
+    labelColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFFFEEF2),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = labelColor,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor,
+            )
+        }
+    }
+}
+
+private fun buildAnnotatedMessage(
+    messageText: String,
+    textColor: androidx.compose.ui.graphics.Color,
+    linkColor: androidx.compose.ui.graphics.Color,
+): AnnotatedString {
+    val matches = MAP_URL_REGEX.findAll(messageText).toList()
+    if (matches.isEmpty()) {
+        return AnnotatedString(
+            messageText,
+            spanStyle = SpanStyle(color = textColor),
+        )
+    }
+
+    return buildAnnotatedString {
+        var lastIndex = 0
+        matches.forEach { match ->
+            if (match.range.first > lastIndex) {
+                append(messageText.substring(lastIndex, match.range.first))
+            }
+
+            val url = match.value
+            pushStringAnnotation(tag = MAP_URL_TAG, annotation = url)
+            withStyle(
+                SpanStyle(
+                    color = linkColor,
+                    textDecoration = TextDecoration.Underline,
+                ),
+            ) {
+                append(url)
+            }
+            pop()
+            lastIndex = match.range.last + 1
+        }
+
+        if (lastIndex < messageText.length) {
+            append(messageText.substring(lastIndex))
+        }
+    }
+}
+
+private fun compactMessagePreview(messageText: String): String {
+    val plannerCard = ExplorePlanChatCardParser.parse(messageText) ?: return messageText
+    return buildString {
+        append(plannerCard.title)
+        plannerCard.stopOrder?.let {
+            append(" • #")
+            append(it)
+        }
+        plannerCard.experienceType?.let {
+            append(" • ")
+            append(it)
+        }
+    }
+}
+
+private const val MAP_URL_TAG = "MAP_URL"
+private val MAP_URL_REGEX = Regex("""https?://[^\s]+""")
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Avatar
 // ─────────────────────────────────────────────────────────────────────────────
@@ -683,6 +1056,7 @@ private fun AvatarImage(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
+
             !initial.isNullOrBlank() -> Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -696,6 +1070,7 @@ private fun AvatarImage(
                     color = colorScheme.onPrimaryContainer,
                 )
             }
+
             else -> Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -748,7 +1123,7 @@ private fun QuotedMessagePreview(
                 color = accentColor,
             )
             Text(
-                text = quoted.text,
+                text = compactMessagePreview(quoted.text),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isOnMine) colorScheme.onPrimary.copy(alpha = 0.75f) else colorScheme.onSurfaceVariant,
                 maxLines = 2,
@@ -775,7 +1150,11 @@ private fun ReplyQuoteBar(
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(colorScheme.surfaceContainerHigh)
-            .border(width = 3.dp, color = colorScheme.primary, shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+            .border(
+                width = 3.dp,
+                color = colorScheme.primary,
+                shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+            )
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -794,7 +1173,7 @@ private fun ReplyQuoteBar(
                 color = colorScheme.primary,
             )
             Text(
-                text = message.text,
+                text = compactMessagePreview(message.text),
                 style = MaterialTheme.typography.bodySmall,
                 color = colorScheme.onSurface.copy(alpha = 0.7f),
                 maxLines = 1,
@@ -982,7 +1361,12 @@ private fun shouldSuggestMiniAi(query: String): Boolean {
     return q.isEmpty() || "miniai".startsWith(q)
 }
 
-private fun completeMention(value: TextFieldValue, tokenStart: Int, tokenEnd: Int, mentionText: String): TextFieldValue {
+private fun completeMention(
+    value: TextFieldValue,
+    tokenStart: Int,
+    tokenEnd: Int,
+    mentionText: String
+): TextFieldValue {
     val text = value.text
     val safeStart = tokenStart.coerceIn(0, text.length)
     val safeEnd = tokenEnd.coerceIn(safeStart, text.length)

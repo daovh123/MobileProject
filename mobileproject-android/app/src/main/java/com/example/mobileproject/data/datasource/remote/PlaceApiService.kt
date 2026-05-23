@@ -1,10 +1,14 @@
 package com.example.mobileproject.data.datasource.remote
 
+import com.example.mobileproject.data.model.place.ExplorePlanRequestDto
+import com.example.mobileproject.data.model.place.ExplorePlanResponseDto
 import com.example.mobileproject.data.model.place.PlaceDto
 import com.example.mobileproject.data.model.place.PlaceFilterOptionsDto
 import com.example.mobileproject.data.model.place.PlaceSearchResponseDto
 import com.example.mobileproject.data.model.place.VietnamProvinceDto
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface PlaceApiService {
@@ -35,6 +39,11 @@ interface PlaceApiService {
         @Query("nearLng") nearLng: Double?,
         @Query("radiusKm") radiusKm: Double?,
     ): PlaceDto
+
+    @POST("api/places/explore-plan")
+    suspend fun getExplorePlan(
+        @Body request: ExplorePlanRequestDto,
+    ): ExplorePlanResponseDto
 
     @GET("api/places/filter-options")
     suspend fun getFilterOptions(): PlaceFilterOptionsDto

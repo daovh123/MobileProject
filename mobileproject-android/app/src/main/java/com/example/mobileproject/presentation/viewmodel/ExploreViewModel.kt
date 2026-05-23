@@ -4,14 +4,20 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mobileproject.BuildConfig
+import com.example.mobileproject.data.datasource.local.AuthSessionStore
+import com.example.mobileproject.domain.entity.ExplorePlan
+import com.example.mobileproject.domain.entity.ExplorePlanItem
 import com.example.mobileproject.domain.entity.Place
+import com.example.mobileproject.domain.usecase.GetExplorePlanUseCase
 import com.example.mobileproject.domain.usecase.GetPlaceFilterOptionsUseCase
 import com.example.mobileproject.domain.usecase.GetRandomPlaceUseCase
 import com.example.mobileproject.domain.usecase.GetVietnamProvincesUseCase
 import com.example.mobileproject.domain.usecase.SearchPlacesUseCase
+import com.example.mobileproject.domain.usecase.wallet.GetWalletUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +30,11 @@ enum class ExplorePlaceType(val value: String) {
     ALL("all"),
     FOOD("food"),
     DRINK("drink"),
+}
+
+enum class ExploreBudgetSource {
+    WALLET,
+    MANUAL,
 }
 
 data class ExploreUiState(
@@ -47,6 +58,18 @@ data class ExploreUiState(
     val isPaging: Boolean = false,
     val isLoading: Boolean = false,
     val isRandomLoading: Boolean = false,
+    val budgetSource: ExploreBudgetSource = ExploreBudgetSource.WALLET,
+    val walletBalance: Long? = null,
+    val walletLoading: Boolean = false,
+    val manualBudgetInput: String = "",
+    val peopleCountInput: String = "2",
+    val desiredStopsInput: String = "2",
+    val recentHistoryPlaces: List<Place> = emptyList(),
+    val recentSharedPlanPlaces: List<Place> = emptyList(),
+    val explorePlan: ExplorePlan? = null,
+    val planItems: List<ExplorePlanItem> = emptyList(),
+    val isPlanLoading: Boolean = false,
+    val planErrorMessage: String? = null,
     val errorMessage: String? = null,
 )
 
@@ -56,11 +79,18 @@ class ExploreViewModel @Inject constructor(
     private val getRandomPlaceUseCase: GetRandomPlaceUseCase,
     private val getVietnamProvincesUseCase: GetVietnamProvincesUseCase,
     private val getPlaceFilterOptionsUseCase: GetPlaceFilterOptionsUseCase,
+    private val getExplorePlanUseCase: GetExplorePlanUseCase,
+    private val getWalletUseCase: GetWalletUseCase,
+    private val authSessionStore: AuthSessionStore,
 ) : ViewModel() {
 
     private companion object {
         const val DEFAULT_NEARBY_RADIUS_KM = 5.0
         const val EXPLORE_PAGE_SIZE = 12
+        const val DEFAULT_EXPLORE_BUDGET = 30_000L
+        const val MIN_EXPLORE_COUNT = 1
+        const val MAX_EXPLORE_PEOPLE_COUNT = 20
+        const val MAX_EXPLORE_STOPS = 5
     }
 
     private val _uiState = MutableStateFlow(ExploreUiState(isLoading = true))
@@ -72,6 +102,7 @@ class ExploreViewModel @Inject constructor(
     init {
         debugLog("init")
         loadAreaOptions()
+        loadWalletBalance()
         loadTrending()
         refreshPlaces()
     }
@@ -129,6 +160,161 @@ class ExploreViewModel @Inject constructor(
 
     fun onRadiusChanged(radiusKmInput: String) {
         _uiState.value = _uiState.value.copy(radiusKmInput = radiusKmInput)
+    }
+
+    fun onBudgetSourceChanged(source: ExploreBudgetSource) {
+        _uiState.value = _uiState.value.copy(budgetSource = source, planErrorMessage = null)
+    }
+
+    fun onManualBudgetChanged(value: String) {
+        _uiState.value = _uiState.value.copy(
+            manualBudgetInput = value.filter { it.isDigit() },
+            planErrorMessage = null,
+        )
+    }
+
+    fun onPeopleCountChanged(value: String) {
+        val sanitized = value.filter { it.isDigit() }
+        val normalized = sanitized
+            .take(MAX_EXPLORE_PEOPLE_COUNT.toString().length)
+            .toIntOrNull()
+            ?.coerceAtMost(MAX_EXPLORE_PEOPLE_COUNT)
+            ?.toString()
+            ?: sanitized.take(MAX_EXPLORE_PEOPLE_COUNT.toString().length)
+        _uiState.value = _uiState.value.copy(
+            peopleCountInput = normalized,
+            planErrorMessage = null,
+        )
+    }
+
+    fun onDesiredStopsChanged(value: String) {
+        val sanitized = value.filter { it.isDigit() }
+        val normalized = sanitized
+            .take(MAX_EXPLORE_STOPS.toString().length)
+            .toIntOrNull()
+            ?.coerceAtMost(MAX_EXPLORE_STOPS)
+            ?.toString()
+            ?: sanitized.take(MAX_EXPLORE_STOPS.toString().length)
+        _uiState.value = _uiState.value.copy(
+            desiredStopsInput = normalized,
+            planErrorMessage = null,
+        )
+    }
+
+    fun onHistoryUpdated(history: List<Place>) {
+        _uiState.value = _uiState.value.copy(
+            recentHistoryPlaces = history.distinctBy { it.id },
+        )
+    }
+
+    fun onPlanSharedToChat(place: Place) {
+        val updatedSharedPlaces = buildList {
+            add(place)
+            addAll(_uiState.value.recentSharedPlanPlaces)
+        }.distinctBy { it.id }.take(10)
+        _uiState.value = _uiState.value.copy(recentSharedPlanPlaces = updatedSharedPlaces)
+    }
+
+    fun onPlaceViewed(place: Place) {
+        val updatedHistory = buildList {
+            add(place)
+            addAll(_uiState.value.recentHistoryPlaces)
+        }.distinctBy { it.id }
+        _uiState.value = _uiState.value.copy(recentHistoryPlaces = updatedHistory)
+    }
+
+    fun buildExplorePlan() {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            val effectiveBudget = resolveEffectiveBudget(currentState)
+            val peopleCount = currentState.peopleCountInput.toIntOrNull() ?: 2
+            val desiredStops = currentState.desiredStopsInput.toIntOrNull() ?: 2
+            val recentPlaces = (currentState.recentSharedPlanPlaces + currentState.recentHistoryPlaces)
+                .distinctBy { it.id }
+            val excludedPlaceIds = recentPlaces.map { it.id }.toSet()
+
+            if (effectiveBudget <= 0L) {
+                _uiState.value = currentState.copy(
+                    planErrorMessage = "Can nhap budget hop le de len lich trinh",
+                )
+                return@launch
+            }
+
+            if (peopleCount !in MIN_EXPLORE_COUNT..MAX_EXPLORE_PEOPLE_COUNT) {
+                _uiState.value = currentState.copy(
+                    planErrorMessage = "So nguoi chi ho tro tu $MIN_EXPLORE_COUNT den $MAX_EXPLORE_PEOPLE_COUNT.",
+                )
+                return@launch
+            }
+
+            if (desiredStops !in MIN_EXPLORE_COUNT..MAX_EXPLORE_STOPS) {
+                _uiState.value = currentState.copy(
+                    planErrorMessage = "So quan chi ho tro tu $MIN_EXPLORE_COUNT den $MAX_EXPLORE_STOPS.",
+                )
+                return@launch
+            }
+
+            _uiState.value = currentState.copy(
+                isPlanLoading = true,
+                planErrorMessage = null,
+            )
+
+            val normalizedQuery = currentState.query.trim().takeIf { it.isNotBlank() }
+            val normalizedProvince = currentState.selectedProvince.trim().takeIf { it.isNotBlank() }
+            val minRating = currentState.selectedMinRating?.toDouble()
+            val parsedRadius = currentState.radiusKmInput.trim().toDoubleOrNull()?.takeIf { it > 0 }
+            val nearLat = if (currentState.nearMeOnly) currentState.currentLat else null
+            val nearLng = if (currentState.nearMeOnly) currentState.currentLng else null
+            val radiusKm = if (currentState.nearMeOnly) parsedRadius ?: DEFAULT_NEARBY_RADIUS_KM else null
+
+            runCatching {
+                getExplorePlanUseCase(
+                    budget = effectiveBudget,
+                    peopleCount = peopleCount,
+                    desiredStops = desiredStops,
+                    query = normalizedQuery,
+                    province = normalizedProvince,
+                    district = null,
+                    type = currentState.selectedType.value,
+                    minRating = minRating,
+                    nearLat = nearLat,
+                    nearLng = nearLng,
+                    radiusKm = radiusKm,
+                    excludePlaceIds = excludedPlaceIds.toList(),
+                    viewedPlaceIds = currentState.recentHistoryPlaces.map { it.id }.distinct(),
+                    gonePlaceIds = currentState.recentHistoryPlaces.map { it.id }.distinct(),
+                    sentPlaceIds = currentState.recentSharedPlanPlaces.map { it.id }.distinct(),
+                    recentKeywords = buildRecentKeywords(recentPlaces),
+                )
+            }.onSuccess { plan ->
+                val filteredItems = plan.items
+                    .filterNot { excludedPlaceIds.contains(it.place.id) }
+                    .mapIndexed { index, item -> item.copy(stopOrder = index + 1) }
+                val removedCount = plan.items.size - filteredItems.size
+                val filteredPlan = plan.copy(
+                    items = filteredItems,
+                    summary = plan.summary.copy(
+                        estimatedTotalCost = filteredItems.sumOf(ExplorePlanItem::estimatedCost),
+                    ),
+                )
+                _uiState.value = _uiState.value.copy(
+                    isPlanLoading = false,
+                    explorePlan = filteredPlan,
+                    planItems = filteredItems,
+                    planErrorMessage = when {
+                        removedCount <= 0 -> null
+                        filteredItems.isEmpty() -> "Da bo qua $removedCount dia diem da xem/da di. Thu doi bo loc de tim dia diem moi."
+                        else -> "Da bo qua $removedCount dia diem da xem/da di trong lich su."
+                    },
+                )
+            }.onFailure { throwable ->
+                warnLog("buildExplorePlan failure", throwable)
+                _uiState.value = _uiState.value.copy(
+                    isPlanLoading = false,
+                    planErrorMessage = throwable.message ?: "Khong the tao goi y budget",
+                )
+            }
+        }
     }
 
     fun search() {
@@ -225,6 +411,37 @@ class ExploreViewModel @Inject constructor(
 
                     _uiState.value = _uiState.value.copy(
                         availableProvinces = fallbackAreas,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadWalletBalance() {
+        val session = authSessionStore.load()
+        val coupleId = session?.coupleId
+        val token = session?.token
+
+        if (coupleId.isNullOrBlank() || token.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(
+                budgetSource = ExploreBudgetSource.MANUAL,
+                walletLoading = false,
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(walletLoading = true)
+            getWalletUseCase(coupleId, token).collectLatest { result ->
+                _uiState.value = if (result.isSuccess) {
+                    _uiState.value.copy(
+                        walletBalance = result.getOrNull()?.balance,
+                        walletLoading = false,
+                    )
+                } else {
+                    _uiState.value.copy(
+                        budgetSource = ExploreBudgetSource.MANUAL,
+                        walletLoading = false,
                     )
                 }
             }
@@ -398,6 +615,34 @@ class ExploreViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(trendingLoading = false)
             }
         }
+    }
+
+    private fun resolveEffectiveBudget(state: ExploreUiState): Long {
+        val manualBudget = state.manualBudgetInput.toLongOrNull()
+        return when (state.budgetSource) {
+            ExploreBudgetSource.WALLET -> state.walletBalance ?: manualBudget ?: DEFAULT_EXPLORE_BUDGET
+            ExploreBudgetSource.MANUAL -> manualBudget ?: DEFAULT_EXPLORE_BUDGET
+        }
+    }
+
+    private fun buildRecentKeywords(history: List<Place>): List<String> {
+        return history.asSequence()
+            .take(10)
+            .flatMap { place ->
+                sequenceOf(
+                    place.effectiveTag,
+                    place.category,
+                    place.mealType,
+                    place.name,
+                    place.address,
+                    place.district,
+                    place.province,
+                )
+            }
+            .mapNotNull { it?.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
     }
 
     private fun debugLog(message: String) {

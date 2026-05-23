@@ -38,8 +38,11 @@ class PlaceControllerStandaloneTest {
     @Mock
     private PlaceImportService placeImportService;
 
-        @Mock
-        private PlaceImageBackfillService placeImageBackfillService;
+    @Mock
+    private ExplorePlanService explorePlanService;
+
+    @Mock
+    private PlaceImageBackfillService placeImageBackfillService;
 
     @Captor
     private ArgumentCaptor<PlaceSearchRequest> searchRequestCaptor;
@@ -48,7 +51,11 @@ class PlaceControllerStandaloneTest {
 
     @BeforeEach
     void setUp() {
-                PlaceController controller = new PlaceController(placeService, placeImportService, placeImageBackfillService);
+        PlaceController controller = new PlaceController(
+                placeService,
+                explorePlanService,
+                placeImportService,
+                placeImageBackfillService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 

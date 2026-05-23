@@ -1,5 +1,7 @@
 package com.example.mobileproject.data.datasource.remote
 
+import com.example.mobileproject.data.model.place.ExplorePlanRequestDto
+import com.example.mobileproject.data.model.place.ExplorePlanResponseDto
 import com.example.mobileproject.data.model.place.PlaceDto
 import com.example.mobileproject.data.model.place.PlaceFilterOptionsDto
 import com.example.mobileproject.data.model.place.PlaceSearchResponseDto
@@ -56,6 +58,46 @@ class PlaceRemoteDataSource @Inject constructor(
             nearLat = nearLat,
             nearLng = nearLng,
             radiusKm = radiusKm,
+        )
+    }
+
+    suspend fun getExplorePlan(
+        budget: Long,
+        peopleCount: Int,
+        desiredStops: Int,
+        query: String?,
+        province: String?,
+        district: String?,
+        type: String,
+        minRating: Double?,
+        nearLat: Double?,
+        nearLng: Double?,
+        radiusKm: Double?,
+        excludePlaceIds: List<String>,
+        viewedPlaceIds: List<String>,
+        gonePlaceIds: List<String>,
+        sentPlaceIds: List<String>,
+        recentKeywords: List<String>,
+    ): ExplorePlanResponseDto {
+        return placeApiService.getExplorePlan(
+            ExplorePlanRequestDto(
+                budget = budget,
+                peopleCount = peopleCount,
+                desiredStops = desiredStops,
+                query = query,
+                province = province,
+                district = district,
+                type = type,
+                minRating = minRating,
+                nearLat = nearLat,
+                nearLng = nearLng,
+                radiusKm = radiusKm,
+                excludePlaceIds = excludePlaceIds,
+                viewedPlaceIds = viewedPlaceIds,
+                gonePlaceIds = gonePlaceIds,
+                sentPlaceIds = sentPlaceIds,
+                recentKeywords = recentKeywords,
+            ),
         )
     }
 

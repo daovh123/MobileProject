@@ -48,6 +48,78 @@ data class PlaceDto(
     val lng: Double?,
 )
 
+data class ExplorePlanRequestDto(
+    @SerializedName("budget")
+    val budget: Long,
+    @SerializedName("peopleCount")
+    val peopleCount: Int,
+    @SerializedName("desiredStops")
+    val desiredStops: Int,
+    @SerializedName("q")
+    val query: String?,
+    @SerializedName("province")
+    val province: String?,
+    @SerializedName("district")
+    val district: String?,
+    @SerializedName("type")
+    val type: String,
+    @SerializedName("minRating")
+    val minRating: Double?,
+    @SerializedName("nearLat")
+    val nearLat: Double?,
+    @SerializedName("nearLng")
+    val nearLng: Double?,
+    @SerializedName("radiusKm")
+    val radiusKm: Double?,
+    @SerializedName("excludePlaceIds")
+    val excludePlaceIds: List<String> = emptyList(),
+    @SerializedName("viewedPlaceIds")
+    val viewedPlaceIds: List<String> = emptyList(),
+    @SerializedName("gonePlaceIds")
+    val gonePlaceIds: List<String> = emptyList(),
+    @SerializedName("sentPlaceIds")
+    val sentPlaceIds: List<String> = emptyList(),
+    @SerializedName("recentKeywords")
+    val recentKeywords: List<String> = emptyList(),
+)
+
+data class ExplorePlanResponseDto(
+    @SerializedName("summary")
+    val summary: ExplorePlanSummaryDto,
+    @SerializedName("items")
+    val items: List<ExplorePlanItemDto> = emptyList(),
+)
+
+data class ExplorePlanSummaryDto(
+    @SerializedName("totalBudget")
+    val totalBudget: Long = 0L,
+    @SerializedName("peopleCount")
+    val peopleCount: Int = 0,
+    @SerializedName("desiredStops")
+    val desiredStops: Int = 0,
+    @SerializedName("estimatedTotalCost")
+    val estimatedTotalCost: Long = 0L,
+    @SerializedName("lowBalance")
+    val lowBalance: Boolean = false,
+    @SerializedName("balanceMessage")
+    val balanceMessage: String? = null,
+    @SerializedName("suggestedDefaultBudget")
+    val suggestedDefaultBudget: Long = 0L,
+)
+
+data class ExplorePlanItemDto(
+    @SerializedName("stopOrder")
+    val stopOrder: Int,
+    @SerializedName("experienceType")
+    val experienceType: String,
+    @SerializedName("estimatedCost")
+    val estimatedCost: Long,
+    @SerializedName("reason")
+    val reason: String,
+    @SerializedName("place")
+    val place: PlaceDto,
+)
+
 data class PlaceFilterOptionsDto(
     @SerializedName("districts")
     val districts: List<String> = emptyList(),

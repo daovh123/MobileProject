@@ -24,13 +24,11 @@ public class NotificationController {
     private final AuthIdentityService authIdentityService;
     private final UserFcmTokenRepository userFcmTokenRepository;
     private final NotificationService notificationService;
-    private final AppNotificationRepository notificationRepository;
 
     @PostMapping("/fcm-token")
     public ResponseEntity<Void> registerFcmToken(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
-            @RequestBody FcmTokenRequest request
-    ) {
+            @RequestBody FcmTokenRequest request) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
         String token = request == null ? null : request.token();
         if (token == null || token.isBlank()) {
@@ -44,8 +42,7 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<NotificationPageResponse> getNotifications(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
-            @RequestParam(defaultValue = "0") int page
-    ) {
+            @RequestParam(defaultValue = "0") int page) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
         Page<AppNotification> result = notificationService.getNotifications(user.getId(), page);
         List<NotificationDto> dtos = result.getContent().stream()
@@ -55,22 +52,19 @@ public class NotificationController {
                         n.getTitle(),
                         n.getBody(),
                         n.isRead(),
-                        n.getCreatedAt()
-                ))
+                        n.getCreatedAt()))
                 .toList();
         return ResponseEntity.ok(new NotificationPageResponse(
                 dtos,
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getNumber(),
-                result.hasNext()
-        ));
+                result.hasNext()));
     }
 
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader
-    ) {
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
         long count = notificationService.getUnreadCount(user.getId());
         return ResponseEntity.ok(Map.of("count", count));
@@ -78,8 +72,7 @@ public class NotificationController {
 
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllRead(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader
-    ) {
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
         notificationService.markAllRead(user.getId());
         return ResponseEntity.ok().build();
@@ -88,8 +81,7 @@ public class NotificationController {
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markRead(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
-            @PathVariable String id
-    ) {
+            @PathVariable String id) {
         AuthUser user = authIdentityService.requireCurrentUser(authHeader);
         notificationService.markRead(user.getId(), id);
         return ResponseEntity.ok().build();
@@ -97,7 +89,8 @@ public class NotificationController {
 
     // --- Records ---
 
-    public record FcmTokenRequest(String token) {}
+    public record FcmTokenRequest(String token) {
+    }
 
     public record NotificationDto(
             String id,
@@ -105,14 +98,14 @@ public class NotificationController {
             String title,
             String body,
             boolean read,
-            Instant createdAt
-    ) {}
+            Instant createdAt) {
+    }
 
     public record NotificationPageResponse(
             List<NotificationDto> content,
             long totalElements,
             int totalPages,
             int currentPage,
-            boolean hasNext
-    ) {}
+            boolean hasNext) {
+    }
 }
