@@ -6,8 +6,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 /**
- * Extended color scheme for custom colors outside of Material3's standard palette.
- * Provides gradient, overlay, and accent colors specific to the app's design language.
+ * Love Wallet Extended Color Scheme
+ *
+ * Provides gradient, overlay, and accent colors specific to the Love Wallet design language.
+ * Light mode: Warm pink gradients, soft glass, romantic accents
+ * Dark mode: Warm dark tones with rose undertones (NOT cold crypto-exchange dark)
  */
 data class ExtendedColorScheme(
     val gradientStart: Color,
@@ -22,6 +25,9 @@ data class ExtendedColorScheme(
     val accentSoft: Color,
     val heartPulse: Color,
     val successGreen: Color,
+    val warningAmber: Color,
+    val loveNoteBackground: Color,
+    val anniversaryGold: Color,
 ) {
     val primaryGradient: Brush
         get() = Brush.linearGradient(listOf(gradientStart, gradientEnd))
@@ -37,35 +43,51 @@ data class ExtendedColorScheme(
             )
         )
 
+    /** Soft warm gradient for balance cards and hero sections */
+    val balanceCardGradient: Brush
+        get() = Brush.linearGradient(
+            listOf(
+                cardGradientStart,
+                cardGradientEnd,
+                gradientEnd,
+            )
+        )
+
     companion object {
         fun light() = ExtendedColorScheme(
-            gradientStart = Color(0xFFBA1A4B),
-            gradientEnd = Color(0xFFE91E63),
-            shimmer = Color(0xFFFFD9E1),
-            cardGradientStart = Color(0xFFFF6B8A),
-            cardGradientEnd = Color(0xFFBA1A4B),
-            overlayScrim = Color(0xFF1A1113).copy(alpha = 0.52f),
-            glassBackground = Color(0xFFFFFFFF).copy(alpha = 0.85f),
-            glassBorder = Color(0xFFFFFFFF).copy(alpha = 0.40f),
-            accentWarm = Color(0xFFFF8A80),
-            accentSoft = Color(0xFFFFCDD2),
-            heartPulse = Color(0xFFE91E63),
-            successGreen = Color(0xFF4CAF50),
+            gradientStart = Color(0xFFFF6B8A),
+            gradientEnd = Color(0xFFFF385C),
+            shimmer = Color(0xFFFFF1F3),
+            cardGradientStart = Color(0xFFFF7A92),
+            cardGradientEnd = Color(0xFFFF385C),
+            overlayScrim = Color(0xFF1F1F1F).copy(alpha = 0.48f),
+            glassBackground = Color(0xFFFFFFFF).copy(alpha = 0.88f),
+            glassBorder = Color(0xFFFFFFFF).copy(alpha = 0.45f),
+            accentWarm = Color(0xFFFFA07A),
+            accentSoft = Color(0xFFFFF1F3),
+            heartPulse = Color(0xFFFF385C),
+            successGreen = Color(0xFF22C55E),
+            warningAmber = Color(0xFFF59E0B),
+            loveNoteBackground = Color(0xFFFFF7F8),
+            anniversaryGold = Color(0xFFD4A574),
         )
 
         fun dark() = ExtendedColorScheme(
-            gradientStart = Color(0xFFFFB2C3),
-            gradientEnd = Color(0xFFFF6B8A),
-            shimmer = Color(0xFF3D3234),
-            cardGradientStart = Color(0xFFD0607A),
-            cardGradientEnd = Color(0xFF900037),
-            overlayScrim = Color(0xFF000000).copy(alpha = 0.65f),
-            glassBackground = Color(0xFF1A1113).copy(alpha = 0.88f),
-            glassBorder = Color(0xFFFFFFFF).copy(alpha = 0.12f),
-            accentWarm = Color(0xFFFF8A80),
-            accentSoft = Color(0xFF5D1F35),
-            heartPulse = Color(0xFFFF6B8A),
-            successGreen = Color(0xFF81C784),
+            gradientStart = Color(0xFFFF7A8F),
+            gradientEnd = Color(0xFFCC2D4A),
+            shimmer = Color(0xFF3D3533),
+            cardGradientStart = Color(0xFFD4607A),
+            cardGradientEnd = Color(0xFF8C1A32),
+            overlayScrim = Color(0xFF0A0807).copy(alpha = 0.65f),
+            glassBackground = Color(0xFF1A1614).copy(alpha = 0.90f),
+            glassBorder = Color(0xFFF5EDE8).copy(alpha = 0.10f),
+            accentWarm = Color(0xFFE8956E),
+            accentSoft = Color(0xFF3D2A2A),
+            heartPulse = Color(0xFFFF7A8F),
+            successGreen = Color(0xFF86EFAC),
+            warningAmber = Color(0xFFFBBF24),
+            loveNoteBackground = Color(0xFF2A2220),
+            anniversaryGold = Color(0xFFD4A574),
         )
     }
 }

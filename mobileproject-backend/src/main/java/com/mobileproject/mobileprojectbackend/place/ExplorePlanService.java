@@ -29,6 +29,7 @@ public class ExplorePlanService {
     private static final long DEFAULT_SUGGESTED_BUDGET = 30_000L;
     private static final long LOW_BALANCE_THRESHOLD = 30_000L;
     private static final int SEARCH_POOL_SIZE = 200;
+    private static final int PLAN_VARIANT_SHORTLIST_SIZE = 5;
     private static final Set<String> GENERIC_BRAND_TOKENS = Set.of(
             "an", "banh", "bar", "bo", "bun", "cafe", "coffee", "do", "drink", "food", "hang",
             "mon", "nha", "nuoc", "pho", "quan", "restaurant", "tea", "thuc", "tiem", "tra", "uong");
@@ -46,6 +47,7 @@ public class ExplorePlanService {
         int peopleCount = request.peopleCount() == null ? 2 : request.peopleCount();
         int desiredStops = request.desiredStops() == null ? 2 : request.desiredStops();
         long totalBudget = request.budget();
+        long randomSeed = request.randomSeed() == null ? System.currentTimeMillis() : request.randomSeed();
         Set<String> excludedPlaceIds = normalizeTokenSet(request.excludePlaceIds());
         excludedPlaceIds.addAll(normalizeTokenSet(request.viewedPlaceIds()));
         excludedPlaceIds.addAll(normalizeTokenSet(request.gonePlaceIds()));
@@ -82,7 +84,8 @@ public class ExplorePlanService {
                 desiredStops,
                 excludedPlaceIds,
                 recentKeywords,
-                recentPhrases);
+                recentPhrases,
+                randomSeed);
         long estimatedTotalCost = items.stream()
                 .map(ExplorePlanItemResponse::estimatedCost)
                 .filter(Objects::nonNull)
@@ -112,7 +115,8 @@ public class ExplorePlanService {
                                                           int desiredStops,
                                                           Set<String> excludedPlaceIds,
                                                           Set<String> recentKeywords,
-                                                          Set<String> recentPhrases) {
+                                                          Set<String> recentPhrases,
+                                                          long randomSeed) {
         List<PlaceCandidate> pool = candidates.stream()
                 .map(place -> new PlaceCandidate(
                         place,
@@ -151,7 +155,9 @@ public class ExplorePlanService {
                     usedBrandKeywords,
                     preferredExperienceType,
                     targetCost,
-                    remainingBudget);
+                    remainingBudget,
+                    randomSeed,
+                    stopIndex);
             if (chosen == null) {
                 break;
             }
@@ -183,7 +189,9 @@ public class ExplorePlanService {
                                            Set<String> usedBrandKeywords,
                                            String preferredExperienceType,
                                            long targetCost,
-                                           long remainingBudget) {
+                                           long remainingBudget,
+                                           long randomSeed,
+                                           int stopIndex) {
         List<PlaceCandidate> unusedCandidates = pool.stream()
                 .filter(candidate -> !usedPlaceIds.contains(candidate.place.id()))
                 .filter(candidate -> !excludedPlaceIds.contains(normalizeToken(candidate.place.id())))
@@ -192,21 +200,37 @@ public class ExplorePlanService {
             return null;
         }
 
+        List<PlaceCandidate> budgetSafeCandidates = unusedCandidates.stream()
+                .filter(candidate -> candidate.estimatedCost != null && candidate.estimatedCost <= remainingBudget)
+                .toList();
+        if (budgetSafeCandidates.isEmpty()) {
+            return null;
+        }
+
         Comparator<PlaceCandidate> ranking = Comparator
-                .comparingInt((PlaceCandidate candidate) -> candidate.estimatedCost != null
-                        && candidate.estimatedCost <= remainingBudget ? 0 : 1)
-                .thenComparingInt(candidate -> exactRecentMatch(candidate, recentPhrases) ? 1 : 0)
-                .thenComparingInt(candidate -> overlapCount(candidate.cuisineKeywords, recentKeywords))
-                .thenComparingInt(candidate -> overlapCount(candidate.brandKeywords, recentKeywords))
-                .thenComparingInt(candidate -> overlapCount(candidate.keywords, recentKeywords))
+                .<PlaceCandidate>comparingInt(candidate -> exactRecentMatch(candidate, recentPhrases) ? 1 : 0)
+                .thenComparingInt((PlaceCandidate candidate) -> overlapCount(candidate.cuisineKeywords, recentKeywords))
+                .thenComparingInt((PlaceCandidate candidate) -> overlapCount(candidate.brandKeywords, recentKeywords))
+                .thenComparingInt((PlaceCandidate candidate) -> overlapCount(candidate.keywords, recentKeywords))
                 .thenComparingInt((PlaceCandidate candidate) -> preferredExperienceType.equals(candidate.experienceType) ? 0 : 1)
-                .thenComparingInt(candidate -> overlapCount(candidate.cuisineKeywords, usedCuisineKeywords))
-                .thenComparingInt(candidate -> overlapCount(candidate.brandKeywords, usedBrandKeywords))
-                .thenComparingLong(candidate -> Math.abs((candidate.estimatedCost == null ? targetCost : candidate.estimatedCost) - targetCost))
+                .thenComparingInt((PlaceCandidate candidate) -> overlapCount(candidate.cuisineKeywords, usedCuisineKeywords))
+                .thenComparingInt((PlaceCandidate candidate) -> overlapCount(candidate.brandKeywords, usedBrandKeywords))
+                .thenComparingLong((PlaceCandidate candidate) -> Math.abs((candidate.estimatedCost == null ? targetCost : candidate.estimatedCost) - targetCost))
                 .thenComparing((PlaceCandidate candidate) -> candidate.place.rating(), Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing((PlaceCandidate candidate) -> candidate.place.reviewCount(), Comparator.nullsLast(Comparator.reverseOrder()));
 
-        return unusedCandidates.stream().min(ranking).orElse(null);
+        List<PlaceCandidate> rankedCandidates = budgetSafeCandidates.stream()
+                .sorted(ranking)
+                .toList();
+        if (rankedCandidates.isEmpty()) {
+            return null;
+        }
+
+        int shortlistSize = Math.min(PLAN_VARIANT_SHORTLIST_SIZE, rankedCandidates.size());
+        int pickIndex = Math.floorMod(
+                Objects.hash(randomSeed, stopIndex, preferredExperienceType, targetCost, remainingBudget, usedPlaceIds.size()),
+                shortlistSize);
+        return rankedCandidates.get(pickIndex);
     }
 
     private String buildReason(PlaceCandidate candidate, long targetCost, String preferredExperienceType) {

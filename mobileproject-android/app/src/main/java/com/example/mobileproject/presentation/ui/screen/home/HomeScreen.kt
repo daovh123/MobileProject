@@ -459,9 +459,9 @@ private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.
                 contentDescription = null,
                 tint = Color.Unspecified,
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(30.dp)
                     .align(Alignment.CenterStart)
-                    .offset(x = (-14).dp, y = (-4).dp)
+                    .offset(x = (-14).dp, y = (-3).dp)
                     .rotate(-20f),
             )
         }
@@ -758,8 +758,8 @@ fun SharedBalanceCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 150.dp)
-                .background(extendedColors.cardGradient)
-                .padding(vertical = 28.dp, horizontal = 24.dp),
+                .background(extendedColors.balanceCardGradient)
+                .padding(vertical = 32.dp, horizontal = 28.dp),
         ) {
             Column(
                 modifier = Modifier
@@ -771,7 +771,7 @@ fun SharedBalanceCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.90f),
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
+                    letterSpacing = 1.2.sp,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -802,7 +802,7 @@ fun SharedBalanceCard(
                         label = stringResource(R.string.home_action_transfer),
                         icon = Icons.Default.AccountBalance,
                         onClick = onTransferClick,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(0.8f),
                     )
                     SharedBalanceActionButton(
                         label = stringResource(R.string.home_action_contribute),
@@ -829,13 +829,13 @@ private fun SharedBalanceActionButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = if (enabled) 0.18f else 0.10f),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White.copy(alpha = if (enabled) 0.20f else 0.10f),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
+                .padding(vertical = 14.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -863,9 +863,9 @@ fun DaysTogetherModernCard(daysTogether: Long) {
     val pulseTransition = rememberInfiniteTransition(label = "heart-pulse")
     val pulseScale by pulseTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.12f,
+        targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800),
+            animation = tween(durationMillis = 1200),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "heart-scale",
@@ -893,7 +893,7 @@ fun DaysTogetherModernCard(daysTogether: Long) {
                     Icons.Default.Favorite,
                     null,
                     tint = extendedColors.heartPulse,
-                    modifier = Modifier.size(72.dp).scale(pulseScale),
+                    modifier = Modifier.size(56.dp).scale(pulseScale),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -919,7 +919,7 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
     ElevatedCard(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLow),
+        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Icon(icon, null, tint = colorScheme.primary, modifier = Modifier.size(24.dp))

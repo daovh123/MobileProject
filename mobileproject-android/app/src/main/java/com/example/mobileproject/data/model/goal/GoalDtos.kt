@@ -3,6 +3,8 @@ package com.example.mobileproject.data.model.goal
 import com.google.gson.annotations.SerializedName
 
 data class GoalDto(
+    @SerializedName("success") val success: Boolean? = null,
+    @SerializedName("message") val message: String? = null,
     @SerializedName("id") val id: String?,
     @SerializedName("goalId") val goalId: String?,
     @SerializedName("coupleId") val coupleId: String?,

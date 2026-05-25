@@ -1,4 +1,4 @@
-﻿package com.example.mobileproject.presentation.ui.navigation
+package com.example.mobileproject.presentation.ui.navigation
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -56,18 +56,18 @@ fun AppNavigationBar(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(68.dp)
                 .padding(horizontal = 4.dp),
         ) {
             val itemWidth = maxWidth / items.size
-            val indicatorOffset = itemWidth * selectedIndex + (itemWidth - 26.dp) / 2
+            val indicatorOffset = itemWidth * selectedIndex + (itemWidth - 32.dp) / 2
 
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .offset(x = indicatorOffset, y = 6.dp)
-                    .width(26.dp)
-                    .height(3.dp)
+                    .offset(x = indicatorOffset, y = 5.dp)
+                    .width(32.dp)
+                    .height(4.dp)
                     .background(indicatorColor, RoundedCornerShape(999.dp)),
             )
 
@@ -116,8 +116,8 @@ private fun NavigationBarItemContent(
             contentDescription = stringResource(item.contentDescriptionRes),
             tint = iconColor,
             modifier = Modifier
-                .padding(top = 8.dp)
-                .size(22.dp),
+                .padding(top = 6.dp)
+                .size(24.dp),
         )
 
         Text(

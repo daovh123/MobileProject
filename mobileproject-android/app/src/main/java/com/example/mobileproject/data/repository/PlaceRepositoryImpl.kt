@@ -72,6 +72,7 @@ class PlaceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getExplorePlan(
+        randomSeed: Long?,
         budget: Long,
         peopleCount: Int,
         desiredStops: Int,
@@ -90,6 +91,7 @@ class PlaceRepositoryImpl @Inject constructor(
         recentKeywords: List<String>,
     ): ExplorePlan {
         return placeRemoteDataSource.getExplorePlan(
+            randomSeed = randomSeed,
             budget = budget,
             peopleCount = peopleCount,
             desiredStops = desiredStops,

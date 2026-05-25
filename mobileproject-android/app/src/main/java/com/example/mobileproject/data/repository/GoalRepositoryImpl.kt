@@ -1,5 +1,6 @@
 package com.example.mobileproject.data.repository
 
+import android.util.Log
 import com.example.mobileproject.core.result.Resource
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.data.datasource.remote.GoalApiService
@@ -12,14 +13,21 @@ import com.example.mobileproject.domain.entity.Goal
 import com.example.mobileproject.domain.entity.GoalContributionResult
 import com.example.mobileproject.domain.entity.GoalTask
 import com.example.mobileproject.domain.repository.GoalRepository
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import retrofit2.Response
 import javax.inject.Inject
 
 class GoalRepositoryImpl @Inject constructor(
     private val apiService: GoalApiService,
-    private val authSessionStore: AuthSessionStore
+    private val authSessionStore: AuthSessionStore,
+    private val gson: Gson,
 ) : GoalRepository {
+
+    companion object {
+        private const val TAG = "GoalRepository"
+    }
 
     private fun getAuthHeader(): String {
         val token = authSessionStore.load()?.token ?: ""
@@ -62,12 +70,16 @@ class GoalRepositoryImpl @Inject constructor(
                 tasks = tasks?.map { GoalTaskDto(it.taskId, it.content, it.isCompleted) }
             )
             val response = apiService.createGoal(getAuthHeader(), request)
-            if (response.isSuccessful && response.body() != null) {
-                emit(Resource.Success(response.body()!!.toDomain()))
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success != false) {
+                emit(Resource.Success(body.toDomain()))
             } else {
-                emit(Resource.Error(Exception("Failed to create goal")))
+                val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Failed to create goal"
+                Log.e(TAG, "createGoal failed: code=${response.code()} message=$errorMessage body=$body")
+                emit(Resource.Error(IllegalStateException(errorMessage)))
             }
         } catch (e: Exception) {
+            Log.e(TAG, "createGoal exception", e)
             emit(Resource.Error(e))
         }
     }
@@ -79,7 +91,9 @@ class GoalRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 emit(Resource.Success(response.body()?.progress ?: 0.0))
             } else {
-                emit(Resource.Error(Exception(response.body()?.message ?: "Toggle task failed")))
+                val errorMessage = response.body()?.message ?: response.parseErrorMessage(gson) ?: "Toggle task failed"
+                Log.e(TAG, "toggleTask failed: code=${response.code()} message=$errorMessage")
+                emit(Resource.Error(Exception(errorMessage)))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e))
@@ -108,7 +122,9 @@ class GoalRepositoryImpl @Inject constructor(
                     timestamp = ""
                 )))
             } else {
-                emit(Resource.Error(Exception(body?.message ?: "Contribution failed")))
+                val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Contribution failed"
+                Log.e(TAG, "contributeFromWallet failed: code=${response.code()} message=$errorMessage")
+                emit(Resource.Error(Exception(errorMessage)))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e))
@@ -138,10 +154,22 @@ class GoalRepositoryImpl @Inject constructor(
                     timestamp = ""
                 )))
             } else {
-                emit(Resource.Error(Exception(body?.message ?: "Contribution failed")))
+                val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Contribution failed"
+                Log.e(TAG, "contributeDirect failed: code=${response.code()} message=$errorMessage")
+                emit(Resource.Error(Exception(errorMessage)))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e))
         }
     }
 }
+
+private fun Response<*>.parseErrorMessage(gson: Gson): String? {
+    return runCatching {
+        errorBody()?.charStream()?.use { gson.fromJson(it, GoalErrorDto::class.java).message }
+    }.getOrNull()?.takeIf { !it.isNullOrBlank() }
+}
+
+private data class GoalErrorDto(
+    val message: String? = null,
+)

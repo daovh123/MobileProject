@@ -175,8 +175,8 @@ private fun LoginScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Color(0xFFF7F7F8),
-        unfocusedContainerColor = Color(0xFFF7F7F8),
+        focusedContainerColor = colorScheme.surfaceContainerLow,
+        unfocusedContainerColor = colorScheme.surfaceContainerLow,
         focusedBorderColor = colorScheme.primary.copy(alpha = 0.7f),
         unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.22f),
         focusedLabelColor = colorScheme.primary,

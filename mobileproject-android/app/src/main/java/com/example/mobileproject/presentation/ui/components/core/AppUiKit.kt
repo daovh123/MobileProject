@@ -61,7 +61,7 @@ fun AppScreenBackground(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.primary.copy(alpha = 0.14f),
+                            colorScheme.primary.copy(alpha = 0.10f),
                             Color.Transparent,
                         ),
                     ),
@@ -77,7 +77,7 @@ fun AppScreenBackground(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            colorScheme.tertiary.copy(alpha = 0.10f),
+                            colorScheme.tertiary.copy(alpha = 0.07f),
                             Color.Transparent,
                         ),
                     ),
@@ -99,8 +99,8 @@ fun AppSurfaceCard(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = colorScheme.surfaceContainerLowest.copy(alpha = 0.95f),
-        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
-        shadowElevation = 6.dp,
+        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.12f)),
+        shadowElevation = 8.dp,
         tonalElevation = 2.dp,
     ) {
         content()
@@ -141,7 +141,7 @@ fun AppPrimaryButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier,
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -191,7 +191,7 @@ fun AppFormTextField(
             focusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.95f),
             unfocusedContainerColor = colorScheme.surfaceContainerLowest.copy(alpha = 0.90f),
             focusedBorderColor = colorScheme.primary,
-            unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.40f),
+            unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.30f),
             focusedLabelColor = colorScheme.primary,
             unfocusedLabelColor = colorScheme.onSurfaceVariant,
             cursorColor = colorScheme.primary,

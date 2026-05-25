@@ -1,4 +1,4 @@
-﻿package com.example.mobileproject.presentation.ui.component.wallet
+package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -36,12 +36,12 @@ fun BalanceSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(extendedColors.cardGradient)
-                .padding(vertical = 28.dp, horizontal = 24.dp),
+                .background(extendedColors.balanceCardGradient)
+                .padding(vertical = 32.dp, horizontal = 28.dp),
         ) {
             Column {
                 Text(
-                    text = "TỔNG SỐ DƯ",
+                    text = "VÍ TÌNH YÊU",
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.90f),
                     fontWeight = FontWeight.Bold,

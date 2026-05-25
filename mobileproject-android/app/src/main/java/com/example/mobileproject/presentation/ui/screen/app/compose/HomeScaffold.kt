@@ -281,7 +281,7 @@ fun HomeScaffold(
             Box(
                 modifier = Modifier.align(Alignment.TopEnd).size(280.dp).offset(x = 90.dp, y = (-110).dp)
                     .background(
-                        brush = Brush.radialGradient(colors = listOf(colorScheme.primary.copy(alpha = 0.12f), Color.Transparent)),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.primary.copy(alpha = 0.08f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )
@@ -289,7 +289,7 @@ fun HomeScaffold(
             Box(
                 modifier = Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-110).dp, y = 130.dp)
                     .background(
-                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.08f), Color.Transparent)),
+                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.05f), Color.Transparent)),
                         shape = CircleShape,
                     ),
             )

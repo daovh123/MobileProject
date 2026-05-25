@@ -66,6 +66,7 @@ data class ExploreUiState(
     val desiredStopsInput: String = "2",
     val recentHistoryPlaces: List<Place> = emptyList(),
     val recentSharedPlanPlaces: List<Place> = emptyList(),
+    val recentGeneratedPlanPlaces: List<Place> = emptyList(),
     val explorePlan: ExplorePlan? = null,
     val planItems: List<ExplorePlanItem> = emptyList(),
     val isPlanLoading: Boolean = false,
@@ -108,21 +109,33 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun onQueryChanged(query: String) {
-        _uiState.value = _uiState.value.copy(query = query)
+        _uiState.value = _uiState.value.copy(
+            query = query,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
     }
 
     fun onProvinceChanged(province: String) {
-        _uiState.value = _uiState.value.copy(selectedProvince = province)
+        _uiState.value = _uiState.value.copy(
+            selectedProvince = province,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
     }
 
     fun onTypeChanged(type: ExplorePlaceType) {
-        _uiState.value = _uiState.value.copy(selectedType = type)
+        _uiState.value = _uiState.value.copy(
+            selectedType = type,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
         debugLog("onTypeChanged type=${type.value}")
         refreshPlaces()
     }
 
     fun onNearMeChanged(checked: Boolean) {
-        _uiState.value = _uiState.value.copy(nearMeOnly = checked)
+        _uiState.value = _uiState.value.copy(
+            nearMeOnly = checked,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
         debugLog("onNearMeChanged checked=$checked")
         if (!checked || (_uiState.value.currentLat != null && _uiState.value.currentLng != null)) {
             refreshPlaces()
@@ -153,22 +166,33 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun onMinRatingChanged(minRating: Int?) {
-        _uiState.value = _uiState.value.copy(selectedMinRating = minRating)
+        _uiState.value = _uiState.value.copy(
+            selectedMinRating = minRating,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
         debugLog("onMinRatingChanged minRating=$minRating")
         refreshPlaces()
     }
 
     fun onRadiusChanged(radiusKmInput: String) {
-        _uiState.value = _uiState.value.copy(radiusKmInput = radiusKmInput)
+        _uiState.value = _uiState.value.copy(
+            radiusKmInput = radiusKmInput,
+            recentGeneratedPlanPlaces = emptyList(),
+        )
     }
 
     fun onBudgetSourceChanged(source: ExploreBudgetSource) {
-        _uiState.value = _uiState.value.copy(budgetSource = source, planErrorMessage = null)
+        _uiState.value = _uiState.value.copy(
+            budgetSource = source,
+            recentGeneratedPlanPlaces = emptyList(),
+            planErrorMessage = null,
+        )
     }
 
     fun onManualBudgetChanged(value: String) {
         _uiState.value = _uiState.value.copy(
             manualBudgetInput = value.filter { it.isDigit() },
+            recentGeneratedPlanPlaces = emptyList(),
             planErrorMessage = null,
         )
     }
@@ -183,6 +207,7 @@ class ExploreViewModel @Inject constructor(
             ?: sanitized.take(MAX_EXPLORE_PEOPLE_COUNT.toString().length)
         _uiState.value = _uiState.value.copy(
             peopleCountInput = normalized,
+            recentGeneratedPlanPlaces = emptyList(),
             planErrorMessage = null,
         )
     }
@@ -197,6 +222,7 @@ class ExploreViewModel @Inject constructor(
             ?: sanitized.take(MAX_EXPLORE_STOPS.toString().length)
         _uiState.value = _uiState.value.copy(
             desiredStopsInput = normalized,
+            recentGeneratedPlanPlaces = emptyList(),
             planErrorMessage = null,
         )
     }
@@ -229,9 +255,14 @@ class ExploreViewModel @Inject constructor(
             val effectiveBudget = resolveEffectiveBudget(currentState)
             val peopleCount = currentState.peopleCountInput.toIntOrNull() ?: 2
             val desiredStops = currentState.desiredStopsInput.toIntOrNull() ?: 2
-            val recentPlaces = (currentState.recentSharedPlanPlaces + currentState.recentHistoryPlaces)
+            val recentPlaces = (
+                currentState.recentSharedPlanPlaces +
+                    currentState.recentHistoryPlaces +
+                    currentState.recentGeneratedPlanPlaces
+                )
                 .distinctBy { it.id }
             val excludedPlaceIds = recentPlaces.map { it.id }.toSet()
+            val requestRandomSeed = System.currentTimeMillis()
 
             if (effectiveBudget <= 0L) {
                 _uiState.value = currentState.copy(
@@ -269,6 +300,7 @@ class ExploreViewModel @Inject constructor(
 
             runCatching {
                 getExplorePlanUseCase(
+                    randomSeed = requestRandomSeed,
                     budget = effectiveBudget,
                     peopleCount = peopleCount,
                     desiredStops = desiredStops,
@@ -297,14 +329,25 @@ class ExploreViewModel @Inject constructor(
                         estimatedTotalCost = filteredItems.sumOf(ExplorePlanItem::estimatedCost),
                     ),
                 )
+                val updatedGeneratedPlaces = buildList {
+                    addAll(filteredItems.map(ExplorePlanItem::place))
+                    addAll(currentState.recentGeneratedPlanPlaces)
+                }.distinctBy { it.id }.take(30)
+                val budgetCapacityMessage = when {
+                    filteredItems.isEmpty() -> "Budget hien tai chua du de goi y quan phu hop."
+                    filteredItems.size < desiredStops -> "Budget hien tai chi du de goi y ${filteredItems.size}/$desiredStops quan."
+                    else -> null
+                }
                 _uiState.value = _uiState.value.copy(
                     isPlanLoading = false,
                     explorePlan = filteredPlan,
                     planItems = filteredItems,
+                    recentGeneratedPlanPlaces = updatedGeneratedPlaces,
                     planErrorMessage = when {
+                        budgetCapacityMessage != null -> budgetCapacityMessage
                         removedCount <= 0 -> null
-                        filteredItems.isEmpty() -> "Da bo qua $removedCount dia diem da xem/da di. Thu doi bo loc de tim dia diem moi."
-                        else -> "Da bo qua $removedCount dia diem da xem/da di trong lich su."
+                        filteredItems.isEmpty() -> "Da bo qua $removedCount dia diem da xem, da di, hoac da duoc goi y. Thu doi bo loc de tim dia diem moi."
+                        else -> "Da bo qua $removedCount dia diem da xem, da di, hoac da duoc goi y truoc do."
                     },
                 )
             }.onFailure { throwable ->

@@ -229,7 +229,7 @@ private fun CoupleConnectScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    uiState.myCoupleCode ?: "--- ---",
+                                    uiState.myCoupleCode?.replace("-", "") ?: "------",
                                     style = MaterialTheme.typography.displaySmall,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,

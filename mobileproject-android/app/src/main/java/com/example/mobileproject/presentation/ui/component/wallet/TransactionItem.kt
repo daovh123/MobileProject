@@ -66,9 +66,9 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
         modifier = Modifier
             .fillMaxWidth()
             .clickable { showDetail = true },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -83,8 +83,8 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .background(colorScheme.surfaceVariant, CircleShape),
+                        .size(44.dp)
+                        .background(colorScheme.primaryContainer, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -159,7 +159,7 @@ fun TransactionDetailDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(32.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
@@ -220,7 +220,7 @@ fun TransactionDetailDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = MaterialTheme.shapes.large
                 ) {
                     Text(stringResource(R.string.common_close), fontWeight = FontWeight.Bold)
                 }

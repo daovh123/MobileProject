@@ -376,7 +376,7 @@ fun AddFutureGoalScreen(
                         Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.onPrimary)
                     }
                     Text(
-                        if (state.isCreating) "Creating..." else "Create Future Goal",
+                        if (state.isCreating) "Đang tạo..." else "Tạo Mục Tiêu",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = colorScheme.onPrimary,

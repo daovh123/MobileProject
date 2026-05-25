@@ -32,6 +32,7 @@ interface PlaceRepository {
     ): Place
 
     suspend fun getExplorePlan(
+        randomSeed: Long?,
         budget: Long,
         peopleCount: Int,
         desiredStops: Int,

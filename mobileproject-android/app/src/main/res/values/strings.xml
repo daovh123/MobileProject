@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">You &amp; Me</string>
+    <string name="app_name">Affinity</string>
 
     <string name="login_title">Đăng nhập</string>
     <string name="login_subtitle">Nhập thông tin để tiếp tục</string>
@@ -7,7 +7,7 @@
     <string name="login_password">Mật khẩu</string>
     <string name="login_button">Đăng nhập</string>
     <string name="login_welcome_title">Chào mừng trở lại</string>
-    <string name="login_welcome_subtitle">Tiếp tục hành trình chung cùng You &amp; Me</string>
+    <string name="login_welcome_subtitle">Tiếp tục hành trình chung cùng Affinity</string>
     <string name="login_email_label">Địa chỉ Email</string>
     <string name="login_email_hint">heart@together.com</string>
     <string name="login_password_label">Mật khẩu</string>
@@ -17,7 +17,7 @@
     <string name="login_sign_up">Đăng ký</string>
 
     <string name="register_title">Tạo tài khoản</string>
-    <string name="register_subtitle">Bắt đầu hành trình cùng You &amp; Me</string>
+    <string name="register_subtitle">Bắt đầu hành trình cùng Affinity</string>
     <string name="register_name_hint">Họ và tên</string>
     <string name="register_email_hint">Địa chỉ email</string>
     <string name="register_gender_label">Giới tính</string>
@@ -349,7 +349,7 @@
 
     <!-- Settings - About -->
     <string name="settings_about_section_title">Về ứng dụng</string>
-    <string name="settings_about_section_subtitle">Thông tin về You &amp; Me.</string>
+    <string name="settings_about_section_subtitle">Thông tin về Affinity.</string>
     <string name="settings_app_version_title">Phiên bản</string>
     <string name="settings_terms_of_service_title">Điều khoản dịch vụ</string>
     <string name="settings_terms_of_service_subtitle">Xem điều khoản sử dụng của ứng dụng.</string>
@@ -533,4 +533,12 @@
     <!-- Settings - URLs (replace with real URLs before release) -->
     <string name="url_terms_of_service">https://policies.google.com/terms</string>
     <string name="url_privacy_policy">https://policies.google.com/privacy</string>
+
+    <!-- Welcome Onboarding Screen -->
+    <string name="welcome_title_line1">Chào mừng đến với</string>
+    <string name="welcome_title_line2">Affinity!</string>
+    <string name="welcome_subtitle">Cùng nhau xây dựng tương lai tài chính và gắn kết tình yêu. Một không gian riêng tư được thiết kế cho hành trình chung của hai bạn.</string>
+    <string name="welcome_get_started">BẮT ĐẦU NGAY</string>
+    <string name="welcome_already_have_account">Đã có tài khoản? </string>
+    <string name="welcome_login">Đăng nhập</string>
 </resources>

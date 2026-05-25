@@ -34,47 +34,54 @@ private val AppFontFamily = FontFamily(
     ),
 )
 
+/**
+ * Love Wallet Typography
+ *
+ * Based on Plus Jakarta Sans (close to Inter — Love Wallet recommended).
+ * Display tiers use SemiBold (Airbnb style — trust visual content over typographic muscle).
+ * Financial labels use tighter letter-spacing for clean money display (Stripe-inspired).
+ */
 private val AppTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = AppFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 40.sp,
-        lineHeight = 48.sp,
-        letterSpacing = (-0.8).sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 38.sp,
+        lineHeight = 46.sp,
+        letterSpacing = (-1.0).sp,
     ),
     displayMedium = TextStyle(
         fontFamily = AppFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 34.sp,
-        lineHeight = 42.sp,
-        letterSpacing = (-0.5).sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-0.6).sp,
     ),
     displaySmall = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.3).sp,
+        fontSize = 26.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.4).sp,
     ),
     headlineLarge = TextStyle(
         fontFamily = AppFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 26.sp,
+        lineHeight = 34.sp,
         letterSpacing = (-0.3).sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontSize = 22.sp,
+        lineHeight = 30.sp,
         letterSpacing = (-0.3).sp,
     ),
     headlineSmall = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 28.sp,
+        fontSize = 18.sp,
+        lineHeight = 26.sp,
         letterSpacing = (-0.2).sp,
     ),
     titleLarge = TextStyle(
@@ -121,7 +128,7 @@ private val AppTypography = Typography(
     ),
     labelLarge = TextStyle(
         fontFamily = AppFontFamily,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
@@ -131,23 +138,29 @@ private val AppTypography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.4.sp,
     ),
     labelSmall = TextStyle(
         fontFamily = AppFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
+        letterSpacing = 0.4.sp,
     ),
 )
 
+/**
+ * Love Wallet Shape System
+ *
+ * Soft, generous radius — Airbnb-inspired friendly shapes.
+ * --radius-input: 14dp, --radius-button: 16dp, --radius-card: 24dp
+ */
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
     medium = RoundedCornerShape(16.dp),
     large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 @Composable

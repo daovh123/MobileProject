@@ -1,4 +1,4 @@
-﻿package com.example.mobileproject.presentation.ui.components.auth
+package com.example.mobileproject.presentation.ui.components.auth
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -37,6 +37,20 @@ fun AuthBackdrop(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val isDark = colorScheme.background.red < 0.5f
+    val backdropColors = if (isDark) {
+        listOf(
+            Color(0xFF1A1614),
+            Color(0xFF221E1C),
+            Color(0xFF14110F),
+        )
+    } else {
+        listOf(
+            Color(0xFFFFFBFA),
+            Color(0xFFFFF1F3),
+            Color(0xFFFFE8EC),
+        )
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Box(
@@ -44,11 +58,7 @@ fun AuthBackdrop(
                 .fillMaxSize()
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFFFFAFB),
-                            Color(0xFFFFF1F5),
-                            Color(0xFFF7F2FF),
-                        ),
+                        colors = backdropColors,
                     ),
                 ),
         )
@@ -126,9 +136,9 @@ fun AuthFormSurface(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(28.dp),
         color = Color.White.copy(alpha = 0.97f),
-        shadowElevation = 12.dp,
+        shadowElevation = 8.dp,
         tonalElevation = 2.dp,
     ) {
         Column(

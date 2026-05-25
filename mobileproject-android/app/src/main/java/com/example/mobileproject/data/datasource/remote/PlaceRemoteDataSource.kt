@@ -62,6 +62,7 @@ class PlaceRemoteDataSource @Inject constructor(
     }
 
     suspend fun getExplorePlan(
+        randomSeed: Long?,
         budget: Long,
         peopleCount: Int,
         desiredStops: Int,
@@ -81,6 +82,7 @@ class PlaceRemoteDataSource @Inject constructor(
     ): ExplorePlanResponseDto {
         return placeApiService.getExplorePlan(
             ExplorePlanRequestDto(
+                randomSeed = randomSeed,
                 budget = budget,
                 peopleCount = peopleCount,
                 desiredStops = desiredStops,

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record ExplorePlanRequest(
+        Long randomSeed,
         String q,
         String province,
         String district,

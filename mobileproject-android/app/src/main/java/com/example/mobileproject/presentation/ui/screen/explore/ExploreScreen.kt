@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -184,6 +185,7 @@ fun ExploreScreen(
 
     var isAdvancedExpanded by rememberSaveable { mutableStateOf(false) }
     var isTrendingCollapsed by rememberSaveable { mutableStateOf(false) }
+    var isBudgetPlannerExpanded by rememberSaveable { mutableStateOf(false) }
 
     var currentLocationLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var currentLocationLng by rememberSaveable { mutableStateOf<Double?>(null) }
@@ -301,6 +303,7 @@ fun ExploreScreen(
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     var showPlaceDetail by rememberSaveable { mutableStateOf(false) }
     var lastHandledRandomSuggestionToken by rememberSaveable { mutableStateOf(-1L) }
+    var expandedBudgetItemKey by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.randomSuggestionToken, uiState.randomSuggestion) {
         val suggestion = uiState.randomSuggestion
@@ -430,6 +433,7 @@ fun ExploreScreen(
 
             item {
                 ExploreBudgetPlannerCard(
+                    isExpanded = isBudgetPlannerExpanded,
                     budgetSource = uiState.budgetSource,
                     walletBalance = uiState.walletBalance,
                     walletLoading = uiState.walletLoading,
@@ -439,6 +443,9 @@ fun ExploreScreen(
                     isPlanLoading = uiState.isPlanLoading,
                     planErrorMessage = uiState.planErrorMessage,
                     lowBalanceMessage = uiState.explorePlan?.summary?.balanceMessage,
+                    onToggleExpanded = {
+                        isBudgetPlannerExpanded = !isBudgetPlannerExpanded
+                    },
                     onBudgetSourceChanged = exploreViewModel::onBudgetSourceChanged,
                     onManualBudgetChanged = exploreViewModel::onManualBudgetChanged,
                     onPeopleCountChanged = exploreViewModel::onPeopleCountChanged,
@@ -461,13 +468,18 @@ fun ExploreScreen(
                     )
                 }
                 items(uiState.planItems, key = { "budget_${it.stopOrder}_${it.place.id}" }) { item ->
+                    val itemKey = "budget_${item.stopOrder}_${item.place.id}"
                     ExploreBudgetPlanItemCard(
                         stopOrder = item.stopOrder,
                         title = valueOrUpdating(item.place.name, context),
                         subtitle = item.reason,
                         estimatedCost = item.estimatedCost,
                         experienceType = item.experienceType,
-                        onClick = {
+                        isExpanded = expandedBudgetItemKey == itemKey,
+                        onToggleExpanded = {
+                            expandedBudgetItemKey = if (expandedBudgetItemKey == itemKey) null else itemKey
+                        },
+                        onViewDetail = {
                             selectedPlace = item.place
                             showPlaceDetail = true
                         },
@@ -683,6 +695,7 @@ fun ExploreScreen(
 
 @Composable
 internal fun ExploreBudgetPlannerCard(
+    isExpanded: Boolean,
     budgetSource: ExploreBudgetSource,
     walletBalance: Long?,
     walletLoading: Boolean,
@@ -692,6 +705,7 @@ internal fun ExploreBudgetPlannerCard(
     isPlanLoading: Boolean,
     planErrorMessage: String?,
     lowBalanceMessage: String?,
+    onToggleExpanded: () -> Unit,
     onBudgetSourceChanged: (ExploreBudgetSource) -> Unit,
     onManualBudgetChanged: (String) -> Unit,
     onPeopleCountChanged: (String) -> Unit,
@@ -703,102 +717,142 @@ internal fun ExploreBudgetPlannerCard(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AppSectionHeader(
-                title = stringResource(R.string.explore_budget_title),
-                subtitle = stringResource(R.string.explore_budget_subtitle),
-            )
-
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    FilterChip(
-                        selected = budgetSource == ExploreBudgetSource.WALLET,
-                        onClick = { onBudgetSourceChanged(ExploreBudgetSource.WALLET) },
-                        enabled = walletBalance != null || walletLoading,
-                        label = { Text(stringResource(R.string.explore_budget_wallet)) },
-                        colors = FilterChipDefaults.filterChipColors(),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable(onClick = onToggleExpanded)
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.explore_budget_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.explore_budget_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                item {
-                    FilterChip(
-                        selected = budgetSource == ExploreBudgetSource.MANUAL,
-                        onClick = { onBudgetSourceChanged(ExploreBudgetSource.MANUAL) },
-                        label = { Text(stringResource(R.string.explore_budget_manual)) },
-                        colors = FilterChipDefaults.filterChipColors(),
+
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            if (isExpanded) R.drawable.ic_expand_less_24 else R.drawable.ic_expand_more_24,
+                        ),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(10.dp),
                     )
                 }
             }
 
-            if (walletLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            } else if (walletBalance != null) {
-                Text(
-                    text = stringResource(R.string.explore_budget_wallet_balance, formatSimpleAmount(walletBalance)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            AnimatedVisibility(visible = isExpanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            FilterChip(
+                                selected = budgetSource == ExploreBudgetSource.WALLET,
+                                onClick = { onBudgetSourceChanged(ExploreBudgetSource.WALLET) },
+                                enabled = walletBalance != null || walletLoading,
+                                label = { Text(stringResource(R.string.explore_budget_wallet)) },
+                                colors = FilterChipDefaults.filterChipColors(),
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = budgetSource == ExploreBudgetSource.MANUAL,
+                                onClick = { onBudgetSourceChanged(ExploreBudgetSource.MANUAL) },
+                                label = { Text(stringResource(R.string.explore_budget_manual)) },
+                                colors = FilterChipDefaults.filterChipColors(),
+                            )
+                        }
+                    }
+
+                    if (walletLoading) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else if (walletBalance != null) {
+                        Text(
+                            text = stringResource(R.string.explore_budget_wallet_balance, formatSimpleAmount(walletBalance)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    AppFormTextField(
+                        value = manualBudgetInput,
+                        onValueChange = onManualBudgetChanged,
+                        label = stringResource(R.string.explore_budget_input_label),
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(text = stringResource(R.string.explore_budget_input_placeholder))
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next,
+                        ),
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        AppFormTextField(
+                            value = peopleCountInput,
+                            onValueChange = onPeopleCountChanged,
+                            label = stringResource(R.string.explore_budget_people_label),
+                            modifier = Modifier.weight(1f),
+                            supporting = {
+                                Text(text = stringResource(R.string.explore_budget_people_support))
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Next,
+                            ),
+                        )
+                        AppFormTextField(
+                            value = desiredStopsInput,
+                            onValueChange = onDesiredStopsChanged,
+                            label = stringResource(R.string.explore_budget_stops_label),
+                            modifier = Modifier.weight(1f),
+                            supporting = {
+                                Text(text = stringResource(R.string.explore_budget_stops_support))
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done,
+                            ),
+                        )
+                    }
+
+                    if (!lowBalanceMessage.isNullOrBlank()) {
+                        AppStateMessage(
+                            title = stringResource(R.string.explore_budget_low_balance_title),
+                            message = lowBalanceMessage,
+                        )
+                    } else if (!planErrorMessage.isNullOrBlank()) {
+                        AppStateMessage(
+                            title = stringResource(R.string.explore_retry),
+                            message = planErrorMessage,
+                        )
+                    }
+
+                    AppPrimaryButton(
+                        text = stringResource(R.string.explore_budget_action),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isPlanLoading,
+                        onClick = onBuildPlan,
+                    )
+                }
             }
-
-            AppFormTextField(
-                value = manualBudgetInput,
-                onValueChange = onManualBudgetChanged,
-                label = stringResource(R.string.explore_budget_input_label),
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = stringResource(R.string.explore_budget_input_placeholder))
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Next,
-                ),
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                AppFormTextField(
-                    value = peopleCountInput,
-                    onValueChange = onPeopleCountChanged,
-                    label = stringResource(R.string.explore_budget_people_label),
-                    modifier = Modifier.weight(1f),
-                    supporting = {
-                        Text(text = stringResource(R.string.explore_budget_people_support))
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Next,
-                    ),
-                )
-                AppFormTextField(
-                    value = desiredStopsInput,
-                    onValueChange = onDesiredStopsChanged,
-                    label = stringResource(R.string.explore_budget_stops_label),
-                    modifier = Modifier.weight(1f),
-                    supporting = {
-                        Text(text = stringResource(R.string.explore_budget_stops_support))
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done,
-                    ),
-                )
-            }
-
-            if (!lowBalanceMessage.isNullOrBlank()) {
-                AppStateMessage(
-                    title = stringResource(R.string.explore_budget_low_balance_title),
-                    message = lowBalanceMessage,
-                )
-            } else if (!planErrorMessage.isNullOrBlank()) {
-                AppStateMessage(
-                    title = stringResource(R.string.explore_retry),
-                    message = planErrorMessage,
-                )
-            }
-
-            AppPrimaryButton(
-                text = stringResource(R.string.explore_budget_action),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isPlanLoading,
-                onClick = onBuildPlan,
-            )
         }
     }
 }
@@ -810,7 +864,9 @@ private fun ExploreBudgetPlanItemCard(
     subtitle: String,
     estimatedCost: Long,
     experienceType: String,
-    onClick: () -> Unit,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onViewDetail: () -> Unit,
     onSendToChat: () -> Unit,
     onOpenMaps: () -> Unit,
 ) {
@@ -819,87 +875,137 @@ private fun ExploreBudgetPlanItemCard(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Button(
-                onClick = onClick,
+            val cardShape = MaterialTheme.shapes.large
+            val rowShape = remember(isExpanded) {
+                if (isExpanded) {
+                    RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                } else {
+                    cardShape
+                }
+            }
+            val verticalPadding = if (isExpanded) 12.dp else 16.dp
+
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-                    .padding(top = 10.dp),
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    .clip(rowShape)
+                    .clickable(onClick = onToggleExpanded)
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = verticalPadding),
+                verticalAlignment = Alignment.Top,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                    ) {
-                        Text(
-                            text = stopOrder.toString(),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Text(
+                        text = stopOrder.toString(),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
+                            text = stringResource(R.string.explore_budget_cost_format, formatSimpleAmount(estimatedCost)),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.End,
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
                             text = subtitle,
+                            modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = stringResource(R.string.explore_budget_cost_format, formatSimpleAmount(estimatedCost)),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = experienceType.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                        ) {
+                            Text(
+                                text = experienceType.replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                                },
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        Icon(
+                            painter = painterResource(
+                                if (isExpanded) R.drawable.ic_expand_less_24 else R.drawable.ic_expand_more_24,
+                            ),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .padding(bottom = 10.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onOpenMaps) {
-                    Text(text = stringResource(R.string.explore_budget_open_map_action))
-                }
-                TextButton(onClick = onSendToChat) {
-                    Text(text = stringResource(R.string.explore_budget_send_to_chat_action))
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onViewDetail) {
+                            Text(text = stringResource(R.string.explore_detail_title))
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onOpenMaps) {
+                            Text(text = stringResource(R.string.explore_budget_open_map_action))
+                        }
+                        TextButton(onClick = onSendToChat) {
+                            Text(text = stringResource(R.string.explore_budget_send_to_chat_action))
+                        }
+                    }
                 }
             }
         }

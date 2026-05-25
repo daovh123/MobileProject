@@ -171,7 +171,7 @@ fun WalletScreen(
                                     .padding(vertical = 12.dp, horizontal = 8.dp)
                                     .background(
                                         if (isSelected) colorScheme.surfaceVariant else Color.Transparent,
-                                        RoundedCornerShape(8.dp),
+                                        MaterialTheme.shapes.extraSmall,
                                     ),
                                 contentAlignment = Alignment.CenterStart,
                             ) {

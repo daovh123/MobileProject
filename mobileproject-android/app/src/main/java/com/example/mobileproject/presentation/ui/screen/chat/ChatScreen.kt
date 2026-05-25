@@ -746,10 +746,10 @@ private fun ExplorePlanChatCard(
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     val density = LocalDensity.current
-    val cardBodyColor = Color(0xFFFFF5F8)
-    val cardBodyText = Color(0xFF4B2B34)
-    val cardBodyMuted = Color(0xFF7C5964)
-    val ctaColor = Color(0xFF8F153F)
+    val cardBodyColor = colorScheme.primaryContainer
+    val cardBodyText = colorScheme.onPrimaryContainer
+    val cardBodyMuted = colorScheme.onSurfaceVariant
+    val ctaColor = colorScheme.primary
     val fallbackImageUrl = remember(card.title) { fallbackImageFor(card.title) }
     val primaryImageUrl = card.imageUrl?.takeIf { it.isNotBlank() }
     var imageModel by remember(card.title, primaryImageUrl) {
@@ -951,10 +951,11 @@ private fun PlannerCardDetail(
     labelColor: androidx.compose.ui.graphics.Color,
     modifier: Modifier = Modifier,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFFFEEF2),
+        color = colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

@@ -164,13 +164,13 @@ fun HomeTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = colorScheme.surface.copy(alpha = 0.98f),
+            containerColor = colorScheme.surface.copy(alpha = 0.95f),
             scrolledContainerColor = colorScheme.surfaceColorAtElevation(3.dp),
             titleContentColor = colorScheme.onSurface,
             navigationIconContentColor = colorScheme.primary,
             actionIconContentColor = colorScheme.primary,
         ),
-        modifier = Modifier.padding(bottom = 4.dp),
+        modifier = Modifier.padding(bottom = 2.dp),
     )
 }
 

@@ -8,6 +8,7 @@ class GetExplorePlanUseCase @Inject constructor(
     private val placeRepository: PlaceRepository,
 ) {
     suspend operator fun invoke(
+        randomSeed: Long? = null,
         budget: Long,
         peopleCount: Int,
         desiredStops: Int,
@@ -26,6 +27,7 @@ class GetExplorePlanUseCase @Inject constructor(
         recentKeywords: List<String> = emptyList(),
     ): ExplorePlan {
         return placeRepository.getExplorePlan(
+            randomSeed = randomSeed,
             budget = budget,
             peopleCount = peopleCount,
             desiredStops = desiredStops,

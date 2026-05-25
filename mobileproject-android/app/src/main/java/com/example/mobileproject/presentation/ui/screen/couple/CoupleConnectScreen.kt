@@ -222,7 +222,7 @@ fun CoupleConnectContent(
                                     modifier = Modifier.fillMaxSize(),
                                 ) {
                                     Text(
-                                        text = uiState.myCoupleCode.takeIf { !it.isNullOrBlank() } ?: "000000",
+                                        text = uiState.myCoupleCode?.replace("-", "")?.takeIf { it.isNotBlank() } ?: "000000",
                                         style = MaterialTheme.typography.displaySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = colorScheme.primary,
@@ -233,7 +233,7 @@ fun CoupleConnectContent(
 
                             Button(
                                 onClick = {
-                                    uiState.myCoupleCode?.let { clipboardManager.setText(AnnotatedString(it)) }
+                                    uiState.myCoupleCode?.replace("-", "")?.let { clipboardManager.setText(AnnotatedString(it)) }
                                 },
                                 enabled = !uiState.myCoupleCode.isNullOrBlank(),
                                 modifier = Modifier
@@ -256,6 +256,45 @@ fun CoupleConnectContent(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                 )
+                            }
+
+                            if (uiState.outgoingStatus.equals("PENDING", ignoreCase = true)) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+                                    border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_waiting_partner_accept),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
+
+                            if (uiState.outgoingStatus.equals("REJECTED", ignoreCase = true)) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = colorScheme.errorContainer.copy(alpha = 0.90f),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_request_rejected),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = colorScheme.onErrorContainer,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
                         }
                     }
@@ -435,6 +474,106 @@ fun CoupleConnectContent(
                                 .padding(16.dp),
                             textAlign = TextAlign.Center,
                         )
+                    }
+                }
+            }
+
+            if (!uiState.incomingRequestId.isNullOrBlank()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = extendedColors.glassBackground,
+                        border = BorderStroke(1.dp, extendedColors.glassBorder),
+                        shadowElevation = 16.dp,
+                        tonalElevation = 6.dp,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.couple_incoming_request_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                color = colorScheme.surfaceContainerLow.copy(alpha = 0.80f),
+                                border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                            ) {
+                                Text(
+                                    text = uiState.incomingRequesterDisplayName
+                                        ?: uiState.incomingRequesterUsername
+                                        ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Button(
+                                    onClick = {
+                                        coupleViewModel.respondIncomingRequest(
+                                            requestId = uiState.incomingRequestId.orEmpty(),
+                                            accept = true,
+                                        )
+                                    },
+                                    enabled = !uiState.isLoading,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(52.dp),
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.primary,
+                                        contentColor = colorScheme.onPrimary,
+                                    ),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_accept),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        coupleViewModel.respondIncomingRequest(
+                                            requestId = uiState.incomingRequestId.orEmpty(),
+                                            accept = false,
+                                        )
+                                    },
+                                    enabled = !uiState.isLoading,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(52.dp),
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = colorScheme.surfaceContainerHigh,
+                                        contentColor = colorScheme.onSurface,
+                                    ),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_reject),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

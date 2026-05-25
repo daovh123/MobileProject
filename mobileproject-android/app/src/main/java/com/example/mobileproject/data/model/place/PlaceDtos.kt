@@ -49,6 +49,8 @@ data class PlaceDto(
 )
 
 data class ExplorePlanRequestDto(
+    @SerializedName("randomSeed")
+    val randomSeed: Long? = null,
     @SerializedName("budget")
     val budget: Long,
     @SerializedName("peopleCount")
