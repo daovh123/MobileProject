@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
@@ -82,7 +83,7 @@ fun TopUpQRScreen(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
-    val selectedBank = remember(bankId) { TopUpViewModel.findBankById(bankId) }
+    val selectedBank = remember(bankId) { VietnamBankCatalog.findById(bankId) }
     val displayBankName = selectedBank?.name ?: bankName
 
     LaunchedEffect(Unit) {

@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mobileproject.presentation.viewmodel.VietnamBank
+import com.example.mobileproject.presentation.model.wallet.VietnamBank
 
 @Composable
 fun BankLogo(

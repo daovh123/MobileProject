@@ -52,10 +52,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.model.wallet.VietnamBank
+import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
-import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.presentation.viewmodel.TransferMoneyViewModel
-import com.example.mobileproject.presentation.viewmodel.VietnamBank
 import com.example.mobileproject.utils.formatSimpleAmount
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +65,7 @@ fun TransferMoneyScreen(
     viewModel: TransferMoneyViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val banks = remember { TopUpViewModel.vietnamBanks }
+    val banks = remember { VietnamBankCatalog.banks }
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 

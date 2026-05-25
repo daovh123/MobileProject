@@ -60,11 +60,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.model.wallet.VietnamBank
+import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
 import com.example.mobileproject.presentation.viewmodel.TopUpStep
 import com.example.mobileproject.presentation.viewmodel.TopUpUiState
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
-import com.example.mobileproject.presentation.viewmodel.VietnamBank
 import com.example.mobileproject.utils.formatSimpleAmount
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -343,7 +344,7 @@ private fun BankSelectStep(
                 .weight(1f),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            items(TopUpViewModel.vietnamBanks, key = { it.id }) { bank ->
+            items(VietnamBankCatalog.banks, key = { it.id }) { bank ->
                 BankItem(
                     bank = bank,
                     isSelected = uiState.selectedBank?.id == bank.id,

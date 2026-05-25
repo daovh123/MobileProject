@@ -361,7 +361,7 @@ fun AddSavingGoalScreen(
                         Icon(Icons.Default.Add, contentDescription = null, tint = colorScheme.onPrimary)
                     }
                     Text(
-                        if (state.isCreating) "Creating..." else "Create Saving Goal",
+                        if (state.isCreating) "Đang tạo..." else "Tạo mục tiêu",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = colorScheme.onPrimary,

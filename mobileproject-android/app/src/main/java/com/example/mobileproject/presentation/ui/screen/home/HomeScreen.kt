@@ -639,7 +639,7 @@ private fun HomeContent(
                                                 .padding(12.dp),
                                         ) {
                                             Text(
-                                                text = "Khoang cach: ${"%.2f".format(distanceKm)} km",
+                                                text = "Khoảng cách: ${"%.2f".format(distanceKm)} km",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = colorScheme.onSurface,
                                                 fontWeight = FontWeight.SemiBold,
@@ -796,20 +796,20 @@ fun SharedBalanceCard(
                         label = stringResource(R.string.top_up_title),
                         icon = Icons.Default.Bolt,
                         onClick = onTopUpClick,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(0.95f),
                     )
                     SharedBalanceActionButton(
                         label = stringResource(R.string.home_action_transfer),
                         icon = Icons.Default.AccountBalance,
                         onClick = onTransferClick,
-                        modifier = Modifier.weight(0.8f),
+                        modifier = Modifier.weight(1.1f),
                     )
                     SharedBalanceActionButton(
                         label = stringResource(R.string.home_action_contribute),
                         icon = Icons.Default.Savings,
                         onClick = onContributeClick,
                         enabled = canContribute,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(0.95f),
                     )
                 }
             }
