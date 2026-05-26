@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: mobileproject-backend
+    env: java
+    region: singapore
+    plan: free
+    rootDir: mobileproject-backend
+    buildCommand: ./mvnw -DskipTests package
+    startCommand: java -jar target/*.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JAVA_VERSION
+        value: "21"
+      - key: APP_AUTH_TOKEN_SECRET
+        sync: false
+      - key: SEPAY_API_KEY
+        sync: false
+      - key: SEPAY_WEBHOOK_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SEPAY_TRANSFER_PREFIX
+        value: YMW
