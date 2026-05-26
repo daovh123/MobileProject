@@ -89,8 +89,8 @@ object HomeRoutes {
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
     const val TRANSFER_MONEY: String = "transfer_money"
-    const val TOP_UP_QR: String = "top_up_qr/{amount}/{bankId}/{bankName}/{note}"
-    const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{amount}/{bankId}/{bankName}/{note}"
+    const val TOP_UP_QR: String = "top_up_qr/{topUpId}"
+    const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{topUpId}"
     const val QR_SCANNER: String = "qr_scanner"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
@@ -99,12 +99,12 @@ object HomeRoutes {
     const val FUTURE_GOALS: String = "future_goals"
     const val NOTIFICATIONS: String = "notifications"
 
-    fun topUpQRRoute(amount: Long, bankId: String, bankName: String, note: String): String {
-        return "top_up_qr/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    fun topUpQRRoute(topUpId: String): String {
+        return "top_up_qr/${java.net.URLEncoder.encode(topUpId, "UTF-8")}"
     }
 
-    fun topUpBankRedirectRoute(amount: Long, bankId: String, bankName: String, note: String): String {
-        return "top_up_bank_redirect/$amount/$bankId/${java.net.URLEncoder.encode(bankName, "UTF-8")}/${java.net.URLEncoder.encode(note, "UTF-8")}"
+    fun topUpBankRedirectRoute(topUpId: String): String {
+        return "top_up_bank_redirect/${java.net.URLEncoder.encode(topUpId, "UTF-8")}"
     }
 }
 
@@ -342,14 +342,14 @@ fun HomeScaffold(
                 composable(HomeRoutes.TOP_UP) {
                     TopUpScreen(
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToQR = { amount, bankId, bankName, note ->
+                        onNavigateToQR = { topUpId ->
                             navController.navigate(
-                                HomeRoutes.topUpQRRoute(amount, bankId, bankName, note)
+                                HomeRoutes.topUpQRRoute(topUpId)
                             )
                         },
-                        onNavigateToBankRedirect = { amount, bankId, bankName, note ->
+                        onNavigateToBankRedirect = { topUpId ->
                             navController.navigate(
-                                HomeRoutes.topUpBankRedirectRoute(amount, bankId, bankName, note)
+                                HomeRoutes.topUpBankRedirectRoute(topUpId)
                             )
                         }
                     )
@@ -362,25 +362,14 @@ fun HomeScaffold(
                 composable(
                     route = HomeRoutes.TOP_UP_QR,
                     arguments = listOf(
-                        navArgument("amount") { type = NavType.LongType },
-                        navArgument("bankId") { type = NavType.StringType },
-                        navArgument("bankName") { type = NavType.StringType },
-                        navArgument("note") { type = NavType.StringType }
+                        navArgument("topUpId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
-                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
-                    val bankName = java.net.URLDecoder.decode(
-                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
-                    )
-                    val note = java.net.URLDecoder.decode(
-                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    val topUpId = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("topUpId") ?: "", "UTF-8"
                     )
                     TopUpQRScreen(
-                        amount = amount,
-                        bankId = bankId,
-                        bankName = bankName,
-                        note = note,
+                        topUpId = topUpId,
                         onNavigateBack = { navController.popBackStack() },
                         onPaymentSuccess = {
                             val popped = navController.popBackStack(HomeRoutes.WALLET, inclusive = false)
@@ -399,25 +388,14 @@ fun HomeScaffold(
                 composable(
                     route = HomeRoutes.TOP_UP_BANK_REDIRECT,
                     arguments = listOf(
-                        navArgument("amount") { type = NavType.LongType },
-                        navArgument("bankId") { type = NavType.StringType },
-                        navArgument("bankName") { type = NavType.StringType },
-                        navArgument("note") { type = NavType.StringType }
+                        navArgument("topUpId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
-                    val bankId = backStackEntry.arguments?.getString("bankId") ?: ""
-                    val bankName = java.net.URLDecoder.decode(
-                        backStackEntry.arguments?.getString("bankName") ?: "", "UTF-8"
-                    )
-                    val note = java.net.URLDecoder.decode(
-                        backStackEntry.arguments?.getString("note") ?: "", "UTF-8"
+                    val topUpId = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("topUpId") ?: "", "UTF-8"
                     )
                     TopUpBankRedirectScreen(
-                        amount = amount,
-                        bankId = bankId,
-                        bankName = bankName,
-                        note = note,
+                        topUpId = topUpId,
                         onNavigateBack = { navController.popBackStack() },
                         onPaymentSuccess = {
                             val popped = navController.popBackStack(HomeRoutes.WALLET, inclusive = false)

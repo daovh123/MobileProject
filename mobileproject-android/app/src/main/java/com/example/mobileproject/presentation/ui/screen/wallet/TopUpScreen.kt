@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -61,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
+import com.example.mobileproject.presentation.viewmodel.TopUpNavigationEvent
+import com.example.mobileproject.presentation.viewmodel.TopUpPaymentMode
 import com.example.mobileproject.presentation.viewmodel.TopUpStep
 import com.example.mobileproject.presentation.viewmodel.TopUpUiState
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
@@ -71,12 +75,21 @@ import com.example.mobileproject.utils.formatSimpleAmount
 @Composable
 fun TopUpScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToQR: (amount: Long, bankId: String, bankName: String, note: String) -> Unit,
-    onNavigateToBankRedirect: (amount: Long, bankId: String, bankName: String, note: String) -> Unit,
+    onNavigateToQR: (topUpId: String) -> Unit,
+    onNavigateToBankRedirect: (topUpId: String) -> Unit,
     viewModel: TopUpViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.navigationEvents.collect { event ->
+            when (event) {
+                is TopUpNavigationEvent.OpenQr -> onNavigateToQR(event.topUpId)
+                is TopUpNavigationEvent.OpenBankRedirect -> onNavigateToBankRedirect(event.topUpId)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = colorScheme.background,
@@ -134,8 +147,6 @@ fun TopUpScreen(
                     uiState = uiState,
                     viewModel = viewModel,
                     colorScheme = colorScheme,
-                    onNavigateToQR = onNavigateToQR,
-                    onNavigateToBankRedirect = onNavigateToBankRedirect,
                     modifier = Modifier.padding(paddingValues),
                 )
             }
@@ -290,8 +301,6 @@ private fun BankSelectStep(
     uiState: TopUpUiState,
     viewModel: TopUpViewModel,
     colorScheme: ColorScheme,
-    onNavigateToQR: (amount: Long, bankId: String, bankName: String, note: String) -> Unit,
-    onNavigateToBankRedirect: (amount: Long, bankId: String, bankName: String, note: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val amount = uiState.amount.toLongOrNull() ?: 0L
@@ -358,45 +367,46 @@ private fun BankSelectStep(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 20.dp),
             ) {
+                uiState.error?.let { message ->
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
                 Button(
-                    onClick = {
-                        uiState.selectedBank?.let { bank ->
-                            onNavigateToQR(
-                                amount,
-                                bank.id,
-                                bank.name,
-                                uiState.note.ifBlank { "Nạp tiền ví You & Me" },
-                            )
-                        }
-                    },
+                    onClick = { viewModel.createTopUpRequest(TopUpPaymentMode.QR) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                    enabled = !uiState.isLoading,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Tạo mã QR", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            color = colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Tạo mã QR", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
 
                 OutlinedButton(
-                    onClick = {
-                        uiState.selectedBank?.let { bank ->
-                            onNavigateToBankRedirect(
-                                amount,
-                                bank.id,
-                                bank.name,
-                                uiState.note.ifBlank { "Nạp tiền ví You & Me" },
-                            )
-                        }
-                    },
+                    onClick = { viewModel.createTopUpRequest(TopUpPaymentMode.BANK_REDIRECT) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp),
                     shape = RoundedCornerShape(20.dp),
+                    enabled = !uiState.isLoading,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(24.dp))
