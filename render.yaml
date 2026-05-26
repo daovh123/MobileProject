@@ -6,8 +6,9 @@ services:
     plan: free
     rootDir: mobileproject-backend
     healthCheckPath: /actuator/health
-    dockerContext: mobileproject-backend
-    dockerfilePath: mobileproject-backend/Dockerfile
+    # When rootDir is set, docker paths are relative to that directory.
+    dockerContext: .
+    dockerfilePath: Dockerfile
     envVars:
       - key: APP_AUTH_TOKEN_SECRET
         generateValue: true
