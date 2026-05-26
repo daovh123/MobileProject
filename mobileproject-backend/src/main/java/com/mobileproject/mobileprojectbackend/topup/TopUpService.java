@@ -7,6 +7,8 @@ import com.mobileproject.mobileprojectbackend.transaction.dto.TransactionRespons
 import com.mobileproject.mobileprojectbackend.topup.dto.CreateTopUpRequest;
 import com.mobileproject.mobileprojectbackend.topup.dto.SePayWebhookRequest;
 import com.mobileproject.mobileprojectbackend.topup.dto.TopUpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class TopUpService {
 
     private static final int MAX_TRANSFER_CODE_ATTEMPTS = 5;
+    private static final Logger log = LoggerFactory.getLogger(TopUpService.class);
 
     private final TopUpRequestRepository topUpRequestRepository;
     private final CoupleInfoRepository coupleInfoRepository;
@@ -108,7 +111,15 @@ public class TopUpService {
         }
         if (hasText(sePayProperties.accountNumber())
                 && !matchesConfiguredReceivingAccount(webhook, sePayProperties.accountNumber())) {
-            return TopUpWebhookResult.failure("Webhook account/subAccount does not match configured SePay account");
+            // Some banks/VA formats do not consistently populate account fields in webhook payloads.
+            // Keep processing by transfer code + amount instead of hard rejecting valid top-ups.
+            log.warn(
+                    "SePay account mismatch, continue matching by transfer code: configuredAccount={}, webhookAccount={}, webhookSubAccount={}, webhookCode={}",
+                    sePayProperties.accountNumber(),
+                    webhook.accountNumber(),
+                    webhook.subAccount(),
+                    webhook.code()
+            );
         }
 
         Optional<TopUpRequest> matchedRequest = findMatchingRequest(webhook);
