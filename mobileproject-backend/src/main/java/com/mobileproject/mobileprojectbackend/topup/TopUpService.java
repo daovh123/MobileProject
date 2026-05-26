@@ -107,8 +107,8 @@ public class TopUpService {
             return TopUpWebhookResult.failure("Transfer amount must be positive");
         }
         if (hasText(sePayProperties.accountNumber())
-                && !sePayProperties.accountNumber().equals(nullToEmpty(webhook.accountNumber()))) {
-            return TopUpWebhookResult.failure("Webhook account number does not match configured SePay account");
+                && !matchesConfiguredReceivingAccount(webhook, sePayProperties.accountNumber())) {
+            return TopUpWebhookResult.failure("Webhook account/subAccount does not match configured SePay account");
         }
 
         Optional<TopUpRequest> matchedRequest = findMatchingRequest(webhook);
@@ -241,6 +241,20 @@ public class TopUpService {
         String searchableText = (nullToEmpty(webhook.content()) + " " + nullToEmpty(webhook.description()))
                 .toUpperCase(Locale.ROOT);
         return searchableText.contains(upperCode);
+    }
+
+    /**
+     * BIDV/VA webhooks may carry the VA in subAccount while accountNumber is the parent account.
+     * Accept either field when matching against configured receiving account.
+     */
+    private boolean matchesConfiguredReceivingAccount(SePayWebhookRequest webhook, String configuredAccountNumber) {
+        String configured = nullToEmpty(configuredAccountNumber).trim();
+        if (configured.isBlank()) {
+            return true;
+        }
+        String accountNumber = nullToEmpty(webhook.accountNumber()).trim();
+        String subAccount = nullToEmpty(webhook.subAccount()).trim();
+        return configured.equalsIgnoreCase(accountNumber) || configured.equalsIgnoreCase(subAccount);
     }
 
     private TopUpRequest claimPendingRequest(TopUpRequest request, SePayWebhookRequest webhook) {

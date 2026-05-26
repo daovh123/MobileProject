@@ -78,7 +78,11 @@ class OnboardingRepositoryImpl @Inject constructor(
                 anniversaryTomorrow = body.anniversaryTomorrow ?: false
             )
         } else {
-            val errorMsg = response.parseErrorMessage(gson) ?: "Khong the tai trang thai ghep doi"
+            val errorMsg = if (response.code() == 401) {
+                "Phien dang nhap het han, vui long dang nhap lai"
+            } else {
+                response.parseErrorMessage(gson) ?: "Khong the tai trang thai ghep doi"
+            }
             throw Exception(errorMsg)
         }
     }
