@@ -5,12 +5,10 @@ WORKDIR /app
 
 # Leverage Docker layer caching for dependencies
 COPY pom.xml ./
-COPY .mvn .mvn
-COPY mvnw mvnw
-RUN ./mvnw -q -DskipTests dependency:go-offline
+RUN mvn -q -DskipTests dependency:go-offline
 
 COPY src src
-RUN ./mvnw -q -DskipTests package
+RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
@@ -21,4 +19,3 @@ EXPOSE 8080
 
 COPY --from=build /app/target/*.jar /app/app.jar
 CMD ["java", "-jar", "/app/app.jar"]
-
