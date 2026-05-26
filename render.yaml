@@ -16,6 +16,14 @@ services:
         sync: false
       - key: SEPAY_WEBHOOK_API_KEY
         sync: false
+      - key: SEPAY_ACCOUNT_NUMBER
+        sync: false
+      - key: SEPAY_BANK_CODE
+        value: BIDV
+      - key: SEPAY_ACCOUNT_NAME
+        sync: false
+      - key: SEPAY_BANK_NAME
+        value: BIDV
       - key: MONGODB_URI
         sync: false
       - key: REDIS_URL
