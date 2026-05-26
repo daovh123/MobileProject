@@ -56,7 +56,7 @@ class PlaceControllerExplorePlanIntegrationTest {
         ));
 
         ExplorePlanRequest request = new ExplorePlanRequest(
-                null, null, null, "all", null, null, null, null,
+                null, null, null, null, "all", null, null, null, null,
                 100_000L, 2, 2,
                 List.of(),
                 List.of(),

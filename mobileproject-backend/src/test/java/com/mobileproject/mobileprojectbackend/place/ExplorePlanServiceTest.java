@@ -78,7 +78,7 @@ class ExplorePlanServiceTest {
         ));
 
         ExplorePlanResponse response = service.buildPlan(new ExplorePlanRequest(
-                null, null, null, "all", null, null, null, null,
+                null, null, null, null, "all", null, null, null, null,
                 120_000L, 2, 1,
                 List.of(),
                 List.of("viewed-1"),
@@ -107,7 +107,7 @@ class ExplorePlanServiceTest {
         ));
 
         ExplorePlanResponse response = service.buildPlan(new ExplorePlanRequest(
-                null, null, null, "all", null, null, null, null,
+                null, null, null, null, "all", null, null, null, null,
                 150_000L, 2, 2,
                 List.of(),
                 List.of(),
@@ -160,7 +160,7 @@ class ExplorePlanServiceTest {
         ));
 
         ExplorePlanResponse drinkResponse = service.buildPlan(new ExplorePlanRequest(
-                null, null, null, "drink", null, null, null, null,
+                null, null, null, null, "drink", null, null, null, null,
                 500_000L, 2, 1,
                 List.of(),
                 List.of(),
@@ -189,7 +189,7 @@ class ExplorePlanServiceTest {
 
     private ExplorePlanRequest request(long budget, int peopleCount, int desiredStops) {
         return new ExplorePlanRequest(
-                null, null, null, "all", null, null, null, null,
+                null, null, null, null, "all", null, null, null, null,
                 budget, peopleCount, desiredStops,
                 List.of(),
                 List.of(),
