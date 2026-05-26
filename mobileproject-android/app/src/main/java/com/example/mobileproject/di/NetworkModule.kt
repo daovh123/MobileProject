@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
@@ -44,7 +45,22 @@ object NetworkModule {
                     Log.i("NetworkModule", "Outgoing request: ${request.method} ${request.url}")
                 } catch (_: Throwable) {
                 }
-                chain.proceed(request)
+                val response: Response = chain.proceed(request)
+                try {
+                    Log.i(
+                        "NetworkModule",
+                        "Incoming response: ${response.code} ${request.method} ${request.url}"
+                    )
+                    if (!response.isSuccessful) {
+                        val bodyPreview = response.peekBody(2048).string()
+                        Log.w(
+                            "NetworkModule",
+                            "HTTP ${response.code} for ${request.url}. Body: $bodyPreview"
+                        )
+                    }
+                } catch (_: Throwable) {
+                }
+                response
             }
             .cache(cache)
             .addNetworkInterceptor { chain ->

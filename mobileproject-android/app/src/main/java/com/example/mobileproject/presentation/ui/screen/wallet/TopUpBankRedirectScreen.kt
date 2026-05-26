@@ -5,16 +5,19 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
+import com.example.mobileproject.domain.entity.TopUpStatus
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
@@ -46,37 +51,26 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun TopUpBankRedirectScreen(
-    amount: Long,
-    bankId: String,
-    bankName: String,
-    note: String,
+    topUpId: String,
     onNavigateBack: () -> Unit,
     onPaymentSuccess: () -> Unit,
     viewModel: TopUpViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
-    val selectedBank = remember(bankId) { VietnamBankCatalog.findById(bankId) }
-    val displayBankName = selectedBank?.name ?: bankName
+    val topUp = uiState.activeTopUp
+    val selectedBank = remember(topUp?.bankId) { topUp?.bankId?.let(TopUpViewModel::findBankById) }
 
-    var phase by remember { mutableIntStateOf(0) }
+    var phase by remember(topUpId) { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        viewModel.onAmountChange(amount.toString())
-        viewModel.onNoteChange(note)
+    LaunchedEffect(topUpId) {
+        delay(1200)
+        phase = 1
+        viewModel.startTopUpStatusPolling(topUpId)
     }
 
-    LaunchedEffect(phase) {
-        if (phase == 0) {
-            delay(2000)
-            phase = 1
-        }
-    }
-
-    LaunchedEffect(phase) {
-        if (phase == 1) {
-            viewModel.topUpNow()
-            delay(1500)
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
             phase = 2
         }
     }
@@ -113,66 +107,23 @@ fun TopUpBankRedirectScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                when (phase) {
-                    0 -> {
+                when {
+                    phase == 0 || topUp == null -> {
                         CircularProgressIndicator(
                             modifier = Modifier.size(64.dp),
                             color = colorScheme.primary,
                             strokeWidth = 5.dp,
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        BankLogo(bank = selectedBank, size = 56.dp)
-                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Đang chuyển tiếp tới",
+                            text = "Đang chuẩn bị yêu cầu chuyển khoản...",
                             style = MaterialTheme.typography.bodyLarge,
                             color = colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = displayBankName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Vui lòng không tắt ứng dụng...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
                         )
                     }
 
-                    1 -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp),
-                            color = colorScheme.primary,
-                            strokeWidth = 5.dp,
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        BankLogo(bank = selectedBank, size = 56.dp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Đang xử lý thanh toán...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = formatSimpleAmount(amount),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Vui lòng không tắt ứng dụng...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    else -> {
+                    topUp.status == TopUpStatus.PAID -> {
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Thành công",
@@ -190,7 +141,7 @@ fun TopUpBankRedirectScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = formatSimpleAmount(amount),
+                            text = formatSimpleAmount(topUp.amount),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.primary,
@@ -200,7 +151,7 @@ fun TopUpBankRedirectScreen(
                         BankLogo(bank = selectedBank, size = 42.dp)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = displayBankName,
+                            text = topUp.bankName,
                             style = MaterialTheme.typography.bodyMedium,
                             color = colorScheme.onSurfaceVariant,
                         )
@@ -221,8 +172,115 @@ fun TopUpBankRedirectScreen(
                             )
                         }
                     }
+
+                    else -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            color = colorScheme.primary,
+                            strokeWidth = 5.dp,
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        BankLogo(bank = selectedBank, size = 56.dp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Đang chờ ngân hàng xác nhận",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = formatSimpleAmount(topUp.amount),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TransferSummary(topUp = topUp)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        uiState.error?.let { message ->
+                            Text(
+                                text = message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.error,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        Button(
+                            onClick = { viewModel.refreshTopUpStatus(topUpId) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp),
+                            shape = RoundedCornerShape(30.dp),
+                            enabled = !uiState.isLoading && topUp.status == TopUpStatus.PENDING,
+                        ) {
+                            if (uiState.isLoading || uiState.isPolling) {
+                                CircularProgressIndicator(
+                                    color = colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Pending, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Kiểm tra trạng thái",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Hãy chuyển đúng nội dung để Sepay/webhook đối soát và backend cập nhật PAID.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TransferSummary(topUp: com.example.mobileproject.domain.entity.TopUpRequest) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = topUp.bankName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = "${topUp.accountNumber} - ${topUp.accountName}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = topUp.transferContent,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

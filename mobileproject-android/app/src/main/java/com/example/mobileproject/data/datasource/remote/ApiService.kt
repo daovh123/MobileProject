@@ -40,6 +40,8 @@ import com.example.mobileproject.data.model.ProductDto
 import okhttp3.MultipartBody
 import com.example.mobileproject.data.model.remote.WalletResponse
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
+import com.example.mobileproject.data.model.transaction.TopUpCreateRequestDto
+import com.example.mobileproject.data.model.transaction.TopUpResponseDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionResponseDto
@@ -169,6 +171,19 @@ interface ApiService {
         @Header("Authorization") authorization: String,
         @Path("coupleId", encoded = true) coupleId: String
     ): Response<WalletResponse>
+
+    // Top-up APIs
+    @POST("api/v1/top-ups")
+    suspend fun createTopUp(
+        @Header("Authorization") authorization: String,
+        @Body request: TopUpCreateRequestDto,
+    ): Response<TopUpResponseDto>
+
+    @GET("api/v1/top-ups/{id}")
+    suspend fun getTopUp(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: String,
+    ): Response<TopUpResponseDto>
 
     // Transaction APIs
     @POST("api/v1/transactions")

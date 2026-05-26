@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: mobileproject-backend
+    runtime: docker
+    region: singapore
+    plan: free
+    rootDir: mobileproject-backend
+    healthCheckPath: /actuator/health
+    # When rootDir is set, docker paths are relative to that directory.
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: APP_AUTH_TOKEN_SECRET
+        generateValue: true
+      - key: SEPAY_API_KEY
+        sync: false
+      - key: SEPAY_WEBHOOK_API_KEY
+        sync: false
+      - key: SEPAY_ACCOUNT_NUMBER
+        sync: false
+      - key: SEPAY_BANK_CODE
+        value: BIDV
+      - key: SEPAY_ACCOUNT_NAME
+        sync: false
+      - key: SEPAY_BANK_NAME
+        value: BIDV
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SEPAY_TRANSFER_PREFIX
+        value: YMW
