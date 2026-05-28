@@ -1,14 +1,21 @@
 package com.example.mobileproject.presentation.ui.screen.wallet
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,25 +24,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.FlashOff
-import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,301 +44,161 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
 
-@Composable
-private fun ScanCorner(
-    modifier: Modifier = Modifier,
-    color: Color,
-) {
-    Canvas(modifier = modifier.size(30.dp)) {
-        val strokeW = 4.dp.toPx()
-        drawLine(color, Offset(0f, strokeW / 2), Offset(size.width, strokeW / 2), strokeW)
-        drawLine(color, Offset(strokeW / 2, 0f), Offset(strokeW / 2, size.height), strokeW)
-    }
-}
-
+/**
+ * Quet QR that: CameraX + MLKit.
+ * Tra ve rawValue cho man truoc (payout/transfer).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QRScannerScreen(
     onNavigateBack: () -> Unit,
     onManualInput: () -> Unit,
+    onScanned: (rawValue: String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val colorScheme = MaterialTheme.colorScheme
-    var scanPhase by remember { mutableIntStateOf(0) }
-    var isFlashOn by remember { mutableStateOf(false) }
-    var showConfirmedState by remember { mutableStateOf(false) }
 
-    LaunchedEffect(scanPhase) {
-        if (scanPhase == 1) {
-            delay(1500L)
-            scanPhase = 2
-        }
-    }
+    var hasCameraPermission by remember { mutableStateOf(hasCameraPermission(context)) }
+    var isScanningEnabled by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(showConfirmedState) {
-        if (showConfirmedState) {
-            delay(1000L)
-            onNavigateBack()
-        }
-    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted -> hasCameraPermission = granted },
+    )
 
-    val scanFrameSize = 280.dp
-    val darkBackground = Color(0xFF1A1A1A)
-    val successColor = Color(0xFF4CAF50)
-
-    val infiniteTransition = rememberInfiniteTransition(label = "scanLine")
-    val scanLineProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "scanLineProgress",
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                scanQrFromImageUri(
+                    context = context,
+                    uri = uri,
+                    onFound = { raw ->
+                        isScanningEnabled = false
+                        onScanned(raw)
+                    },
+                    onNotFound = { errorMessage = "Khong tim thay ma QR trong anh." },
+                    onError = { errorMessage = it },
+                )
+            }
+        },
     )
 
     Scaffold(
-        containerColor = darkBackground,
+        containerColor = colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Quét mã QR",
+                        "Quet ma QR",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
-                            tint = Color.White,
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lai")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.surface),
             )
         },
-    ) { paddingValues ->
-        Box(
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center,
+                .padding(padding),
         ) {
-            when (scanPhase) {
-                0 -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Spacer(modifier = Modifier.weight(1f))
-                        Box(
-                            modifier = Modifier
-                                .size(scanFrameSize)
-                                .clickable { scanPhase = 1 },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            ScanCorner(modifier = Modifier.align(Alignment.TopStart), color = colorScheme.primary)
-                            ScanCorner(modifier = Modifier.align(Alignment.TopEnd).rotate(90f), color = colorScheme.primary)
-                            ScanCorner(modifier = Modifier.align(Alignment.BottomEnd).rotate(180f), color = colorScheme.primary)
-                            ScanCorner(modifier = Modifier.align(Alignment.BottomStart).rotate(270f), color = colorScheme.primary)
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp)
-                                    .offset(y = ((scanLineProgress - 0.5f) * (scanFrameSize.value - 16f)).dp)
-                                    .height(2.dp)
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(
-                                                colorScheme.primary.copy(alpha = 0f),
-                                                colorScheme.primary.copy(alpha = 0.8f),
-                                                colorScheme.primary,
-                                                colorScheme.primary.copy(alpha = 0.8f),
-                                                colorScheme.primary.copy(alpha = 0f),
-                                            ),
-                                        ),
-                                    ),
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Đưa mã QR vào khung hình",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(colorScheme.surfaceContainerLow),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!hasCameraPermission) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.QrCodeScanner,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp),
+                            tint = colorScheme.primary,
                         )
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 48.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clickable { isFlashOn = !isFlashOn },
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = if (isFlashOn) Icons.Filled.FlashOff else Icons.Filled.FlashOn,
-                                        contentDescription = "Đèn flash",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                shape = CircleShape,
-                                color = colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                modifier = Modifier.size(56.dp),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Filled.PhotoLibrary,
-                                        contentDescription = "Thư viện ảnh",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-                        TextButton(onClick = onManualInput) {
-                            Text(
-                                text = "Nhập mã thủ công",
-                                color = colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
-                }
-
-                1 -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Box(modifier = Modifier.size(scanFrameSize), contentAlignment = Alignment.Center) {
-                            ScanCorner(modifier = Modifier.align(Alignment.TopStart), color = successColor)
-                            ScanCorner(modifier = Modifier.align(Alignment.TopEnd).rotate(90f), color = successColor)
-                            ScanCorner(modifier = Modifier.align(Alignment.BottomEnd).rotate(180f), color = successColor)
-                            ScanCorner(modifier = Modifier.align(Alignment.BottomStart).rotate(270f), color = successColor)
-                            CircularProgressIndicator(
-                                color = successColor,
-                                modifier = Modifier.size(48.dp),
-                                strokeWidth = 3.dp,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Đang xử lý...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
+                            text = "Can quyen Camera de quet QR.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TextButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                            Text("Cap quyen Camera")
+                        }
+                    }
+                } else {
+                    CameraQrPreview(
+                        isEnabled = isScanningEnabled,
+                        onQrFound = { raw ->
+                            isScanningEnabled = false
+                            onScanned(raw)
+                        },
+                        onError = { errorMessage = it },
+                        context = context,
+                        lifecycleOwner = lifecycleOwner,
+                    )
+                }
+            }
+
+            errorMessage?.let { msg ->
+                Text(
+                    text = msg,
+                    color = colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.size(52.dp),
+                    onClick = { pickImageLauncher.launch("image/*") },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.PhotoLibrary,
+                            contentDescription = "Chon anh",
                         )
                     }
                 }
 
-                else -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Card(
-                            modifier = Modifier
-                                .widthIn(max = 320.dp)
-                                .padding(24.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                if (showConfirmedState) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckCircle,
-                                        contentDescription = null,
-                                        tint = successColor,
-                                        modifier = Modifier.size(72.dp),
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "Thanh toán thành công!",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = successColor,
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckCircle,
-                                        contentDescription = null,
-                                        tint = successColor,
-                                        modifier = Modifier.size(64.dp),
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "Quét thành công!",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colorScheme.onSurface,
-                                    )
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    HorizontalDivider(color = colorScheme.surfaceVariant)
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    PaymentInfoRow(label = "Người nhận", value = "Nguyễn Văn A")
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    PaymentInfoRow(label = "Số tiền", value = "150,000 VNĐ")
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    PaymentInfoRow(label = "Nội dung", value = "Thanh toán đơn hàng")
-
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    Button(
-                                        onClick = { showConfirmedState = true },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(52.dp),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                                    ) {
-                                        Text(
-                                            text = "Xác nhận thanh toán",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                TextButton(onClick = onManualInput) {
+                    Text("Nhap ma thu cong")
                 }
             }
         }
@@ -350,26 +206,136 @@ fun QRScannerScreen(
 }
 
 @Composable
-private fun PaymentInfoRow(
-    label: String,
-    value: String,
+private fun CameraQrPreview(
+    isEnabled: Boolean,
+    onQrFound: (String) -> Unit,
+    onError: (String) -> Unit,
+    context: Context,
+    lifecycleOwner: androidx.lifecycle.LifecycleOwner,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = colorScheme.onSurface,
-        )
+    var previewView: PreviewView? by remember { mutableStateOf(null) }
+
+    LaunchedEffect(Unit) {
+        // no-op; binding happens in AndroidView factory/update
+    }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { ctx ->
+            PreviewView(ctx).also { pv ->
+                pv.scaleType = PreviewView.ScaleType.FILL_CENTER
+                previewView = pv
+            }
+        },
+        update = { pv ->
+            if (!isEnabled) return@AndroidView
+
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener(
+                {
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also { it.setSurfaceProvider(pv.surfaceProvider) }
+
+                    val executor = Executors.newSingleThreadExecutor()
+                    val options = BarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                        .build()
+                    val scanner = BarcodeScanning.getClient(options)
+
+                    val analysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                    analysis.setAnalyzer(executor) { imageProxy ->
+                        analyzeFrameForQr(
+                            imageProxy = imageProxy,
+                            scanner = scanner,
+                            onQrFound = onQrFound,
+                            onError = onError,
+                        )
+                    }
+
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            analysis,
+                        )
+                    } catch (t: Throwable) {
+                        onError("Khong the mo camera: ${t.message ?: t::class.java.simpleName}")
+                    }
+                },
+                ContextCompat.getMainExecutor(context),
+            )
+        },
+    )
+}
+
+private fun analyzeFrameForQr(
+    imageProxy: ImageProxy,
+    scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
+    onQrFound: (String) -> Unit,
+    onError: (String) -> Unit,
+) {
+    val mediaImage = imageProxy.image
+    if (mediaImage == null) {
+        imageProxy.close()
+        return
+    }
+
+    val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+    scanner.process(image)
+        .addOnSuccessListener { barcodes ->
+            val raw = barcodes.firstOrNull()?.rawValue
+            if (!raw.isNullOrBlank()) {
+                onQrFound(raw)
+            }
+        }
+        .addOnFailureListener { e ->
+            onError("Loi quet QR: ${e.message ?: "unknown"}")
+        }
+        .addOnCompleteListener {
+            imageProxy.close()
+        }
+}
+
+private fun scanQrFromImageUri(
+    context: Context,
+    uri: Uri,
+    onFound: (String) -> Unit,
+    onNotFound: () -> Unit,
+    onError: (String) -> Unit,
+) {
+    try {
+        val bitmap = if (Build.VERSION.SDK_INT >= 28) {
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+        }
+
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+            .build()
+        val scanner = BarcodeScanning.getClient(options)
+
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                val raw = barcodes.firstOrNull()?.rawValue
+                if (!raw.isNullOrBlank()) onFound(raw) else onNotFound()
+            }
+            .addOnFailureListener { e ->
+                onError("Loi doc QR tu anh: ${e.message ?: "unknown"}")
+            }
+    } catch (t: Throwable) {
+        onError("Khong the mo anh: ${t.message ?: t::class.java.simpleName}")
     }
 }
+
+private fun hasCameraPermission(context: Context): Boolean {
+    return ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+}
+

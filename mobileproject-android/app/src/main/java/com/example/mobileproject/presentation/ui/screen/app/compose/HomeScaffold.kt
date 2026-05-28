@@ -420,6 +420,13 @@ fun HomeScaffold(
                                 launchSingleTop = true
                             }
                         },
+                        onScanned = { rawValue ->
+                            // Pass QR raw value back to the previous screen (Wallet) so it can open payout/transfer UI.
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("qr_scanned_raw", rawValue)
+                            navController.popBackStack()
+                        },
                     )
                 }
                 composable(HomeRoutes.RECENT_TRANSACTIONS) {
