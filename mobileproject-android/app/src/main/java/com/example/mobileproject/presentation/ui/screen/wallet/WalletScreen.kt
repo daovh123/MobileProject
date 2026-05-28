@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Savings
@@ -35,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -69,8 +66,6 @@ fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToTopUp: () -> Unit,
     onSeeAllTransactions: () -> Unit,
-    onNavigateToTransferMoney: () -> Unit,
-    onNavigateToQRScanner: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel(),
     savingGoalViewModel: SavingGoalViewModel = hiltViewModel(),
 ) {
@@ -83,7 +78,6 @@ fun WalletScreen(
     var isMonthPickerVisible by remember { mutableStateOf(false) }
     var isFabExpanded by remember { mutableStateOf(false) }
     var isContributeSheetVisible by remember { mutableStateOf(false) }
-    var isTransferOptionsVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -150,7 +144,7 @@ fun WalletScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Chọn tháng",
+                        text = "Chon thang",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface,
@@ -208,40 +202,11 @@ fun WalletScreen(
                         color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.clickable {
                             isFabExpanded = false
-                            isTransferOptionsVisible = true
-                        },
-                    ) {
-                        Text(
-                            text = "Chuyển tiền",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    FloatingActionButton(
-                        onClick = {
-                            isFabExpanded = false
-                            isTransferOptionsVisible = true
-                        },
-                        containerColor = colorScheme.surfaceContainerLowest,
-                        contentColor = colorScheme.primary,
-                        shape = CircleShape,
-                        modifier = Modifier.size(48.dp),
-                    ) { Icon(imageVector = Icons.Default.AccountBalance, contentDescription = null) }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.clickable {
-                            isFabExpanded = false
                             isContributeSheetVisible = true
                         },
                     ) {
                         Text(
-                            text = "Đóng góp vào mục tiêu",
+                            text = "Dong gop vao muc tieu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -270,7 +235,7 @@ fun WalletScreen(
                         },
                     ) {
                         Text(
-                            text = "Thêm chi tiêu",
+                            text = "Them chi tieu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -299,7 +264,7 @@ fun WalletScreen(
                         },
                     ) {
                         Text(
-                            text = "Nạp tiền",
+                            text = "Nap tien",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -351,20 +316,6 @@ fun WalletScreen(
                         contributorId = if (isDirect) "me" else null,
                     )
                     isContributeSheetVisible = false
-                },
-            )
-        }
-
-        if (isTransferOptionsVisible) {
-            TransferOptionsBottomSheet(
-                onDismiss = { isTransferOptionsVisible = false },
-                onManualTransfer = {
-                    isTransferOptionsVisible = false
-                    onNavigateToTransferMoney()
-                },
-                onScanQr = {
-                    isTransferOptionsVisible = false
-                    onNavigateToQRScanner()
                 },
             )
         }

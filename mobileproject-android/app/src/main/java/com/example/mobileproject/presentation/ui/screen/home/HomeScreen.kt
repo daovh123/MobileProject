@@ -54,7 +54,6 @@ import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
-import com.example.mobileproject.presentation.ui.screen.wallet.TransferOptionsBottomSheet
 import com.example.mobileproject.presentation.ui.theme.AppTheme
 import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
@@ -92,8 +91,6 @@ fun HomeScreen(
     onNavigateToAddSavingGoal: () -> Unit,
     onNavigateToAddFutureGoal: () -> Unit,
     onNavigateToTopUp: () -> Unit,
-    onNavigateToTransferMoney: () -> Unit,
-    onNavigateToQRScanner: () -> Unit,
     onNavigateToChat: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -115,7 +112,6 @@ fun HomeScreen(
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var isFabExpanded by remember { mutableStateOf(false) }
-    var isTransferOptionsVisible by remember { mutableStateOf(false) }
     var isContributeSheetVisible by remember { mutableStateOf(false) }
 
     var myMarker by remember { mutableStateOf<Marker?>(null) }
@@ -346,7 +342,7 @@ fun HomeScreen(
             goals = sortedGoals,
             canContribute = savingGoals.isNotEmpty(),
             onTopUpClick = onNavigateToTopUp,
-            onTransferClick = { isTransferOptionsVisible = true },
+            onTransferClick = { },
             onContributeClick = { isContributeSheetVisible = true },
             onPairNow = {
                 if (accessToken.isNotBlank()) {
@@ -396,20 +392,6 @@ fun HomeScreen(
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).size(60.dp)
         ) {
             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp).rotate(rotation))
-        }
-
-        if (isTransferOptionsVisible) {
-            TransferOptionsBottomSheet(
-                onDismiss = { isTransferOptionsVisible = false },
-                onManualTransfer = {
-                    isTransferOptionsVisible = false
-                    onNavigateToTransferMoney()
-                },
-                onScanQr = {
-                    isTransferOptionsVisible = false
-                    onNavigateToQRScanner()
-                },
-            )
         }
 
         if (isContributeSheetVisible) {
