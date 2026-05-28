@@ -62,6 +62,7 @@ import com.example.mobileproject.utils.formatSimpleAmount
 @Composable
 fun TransferMoneyScreen(
     onNavigateBack: () -> Unit,
+    scannedQrRaw: String = "",
     viewModel: TransferMoneyViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -77,6 +78,13 @@ fun TransferMoneyScreen(
 
     val amountValue = amount.toLongOrNull() ?: 0L
     val canConfirm = accountNumber.length >= 6 && selectedBank != null && amountValue > 0L && !uiState.isSubmitting
+
+    LaunchedEffect(scannedQrRaw) {
+        if (scannedQrRaw.isNotBlank() && note.isBlank()) {
+            note = "QR: ${scannedQrRaw.take(120)}"
+            snackbarHostState.showSnackbar("Da doc QR. Vui long kiem tra STK/Ngân hàng/so tien roi xac nhan.")
+        }
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
@@ -185,6 +193,37 @@ fun TransferMoneyScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            if (uiState.isWaitingBankConfirmation || !uiState.statusText.isNullOrBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = if (uiState.isWaitingBankConfirmation) "Dang cho xac nhan tien ra" else "Trang thai lenh rut",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface,
+                        )
+                        uiState.transferCode?.takeIf { it.isNotBlank() }?.let {
+                            TransferSummaryRow("Ma giao dich", it)
+                        }
+                        uiState.statusText?.takeIf { it.isNotBlank() }?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,

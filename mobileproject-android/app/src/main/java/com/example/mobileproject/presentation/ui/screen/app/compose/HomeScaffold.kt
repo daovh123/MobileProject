@@ -88,7 +88,7 @@ object HomeRoutes {
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
-    const val TRANSFER_MONEY: String = "transfer_money"
+    const val TRANSFER_MONEY: String = "transfer_money?qrRaw={qrRaw}"
     const val TOP_UP_QR: String = "top_up_qr/{topUpId}"
     const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{topUpId}"
     const val QR_SCANNER: String = "qr_scanner"
@@ -105,6 +105,11 @@ object HomeRoutes {
 
     fun topUpBankRedirectRoute(topUpId: String): String {
         return "top_up_bank_redirect/${java.net.URLEncoder.encode(topUpId, "UTF-8")}"
+    }
+
+    fun transferMoneyRoute(qrRaw: String? = null): String {
+        if (qrRaw.isNullOrBlank()) return "transfer_money?qrRaw="
+        return "transfer_money?qrRaw=${java.net.URLEncoder.encode(qrRaw, "UTF-8")}"
     }
 }
 
@@ -134,7 +139,7 @@ fun HomeScaffold(
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
-    val isTransferMoneyRoute = currentRoute == HomeRoutes.TRANSFER_MONEY
+    val isTransferMoneyRoute = currentRoute.startsWith("transfer_money")
     val isTopUpQRRoute = currentRoute.startsWith("top_up_qr/")
     val isTopUpBankRedirectRoute = currentRoute.startsWith("top_up_bank_redirect/")
     val isQRScannerRoute = currentRoute == HomeRoutes.QR_SCANNER
@@ -308,7 +313,7 @@ fun HomeScaffold(
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
-                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.transferMoneyRoute()) },
                         onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) },
                         onNavigateToChat = {
                             navController.navigate(HomeRoutes.CHAT) {
@@ -332,7 +337,7 @@ fun HomeScaffold(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
                         onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) },
-                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
+                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.transferMoneyRoute()) },
                         onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) }
                     )
                 }
@@ -354,9 +359,22 @@ fun HomeScaffold(
                         }
                     )
                 }
-                composable(HomeRoutes.TRANSFER_MONEY) {
+                composable(
+                    route = HomeRoutes.TRANSFER_MONEY,
+                    arguments = listOf(
+                        navArgument("qrRaw") {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = ""
+                        },
+                    ),
+                ) { backStackEntry ->
+                    val qrRaw = java.net.URLDecoder.decode(
+                        backStackEntry.arguments?.getString("qrRaw") ?: "", "UTF-8"
+                    )
                     TransferMoneyScreen(
                         onNavigateBack = { navController.popBackStack() },
+                        scannedQrRaw = qrRaw,
                     )
                 }
                 composable(
@@ -416,16 +434,15 @@ fun HomeScaffold(
                         onNavigateBack = { navController.popBackStack() },
                         onManualInput = {
                             navController.popBackStack()
-                            navController.navigate(HomeRoutes.TRANSFER_MONEY) {
+                            navController.navigate(HomeRoutes.transferMoneyRoute()) {
                                 launchSingleTop = true
                             }
                         },
                         onScanned = { rawValue ->
-                            // Pass QR raw value back to the previous screen (Wallet) so it can open payout/transfer UI.
-                            navController.previousBackStackEntry
-                                ?.savedStateHandle
-                                ?.set("qr_scanned_raw", rawValue)
                             navController.popBackStack()
+                            navController.navigate(HomeRoutes.transferMoneyRoute(rawValue)) {
+                                launchSingleTop = true
+                            }
                         },
                     )
                 }
