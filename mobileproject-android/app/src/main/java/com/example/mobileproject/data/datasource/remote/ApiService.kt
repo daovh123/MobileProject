@@ -42,6 +42,8 @@ import com.example.mobileproject.data.model.remote.WalletResponse
 import com.example.mobileproject.data.model.transaction.IncomeRequestDto
 import com.example.mobileproject.data.model.transaction.TopUpCreateRequestDto
 import com.example.mobileproject.data.model.transaction.TopUpResponseDto
+import com.example.mobileproject.data.model.transaction.PayoutCreateRequestDto
+import com.example.mobileproject.data.model.transaction.PayoutResponseDto
 import com.example.mobileproject.data.model.transaction.TransactionDto
 import com.example.mobileproject.data.model.transaction.TransactionRequestDto
 import com.example.mobileproject.data.model.transaction.TransactionResponseDto
@@ -184,6 +186,18 @@ interface ApiService {
         @Header("Authorization") authorization: String,
         @Path("id") id: String,
     ): Response<TopUpResponseDto>
+
+    @POST("api/v1/payouts")
+    suspend fun createPayout(
+        @Header("Authorization") authorization: String,
+        @Body request: PayoutCreateRequestDto,
+    ): Response<PayoutResponseDto>
+
+    @GET("api/v1/payouts/{id}")
+    suspend fun getPayout(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: String,
+    ): Response<PayoutResponseDto>
 
     // Transaction APIs
     @POST("api/v1/transactions")
