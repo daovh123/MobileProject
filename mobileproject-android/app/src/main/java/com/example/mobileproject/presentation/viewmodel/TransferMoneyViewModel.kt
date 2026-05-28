@@ -89,7 +89,7 @@ class TransferMoneyViewModel @Inject constructor(
                             isWaitingBankConfirmation = true,
                             payoutId = payout.id,
                             transferCode = payout.transferCode,
-                            statusText = summary,
+                            statusText = "$summary Dang cho ban chuyen tien that trong app ngan hang, sau do SePay xac nhan webhook tien ra.",
                         )
                     }
                     pollPayoutStatus(payout.id)
@@ -135,7 +135,7 @@ class TransferMoneyViewModel @Inject constructor(
                         }
                         else -> {
                             _uiState.update {
-                                it.copy(statusText = "Dang cho SePay xac nhan giao dich tien ra...")
+                                it.copy(statusText = "Dang cho ban chuyen tien that trong app ngan hang va SePay xac nhan giao dich tien ra...")
                             }
                         }
                     }
@@ -154,4 +154,3 @@ class TransferMoneyViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 }
-
