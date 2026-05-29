@@ -7,10 +7,12 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Eco
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -69,15 +73,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AuthSession
-import com.example.mobileproject.domain.entity.PostLoginDestination
-import com.example.mobileproject.domain.entity.resolvePostLoginDestination
-import com.example.mobileproject.presentation.ui.icons.LucideEye
-import com.example.mobileproject.presentation.ui.icons.LucideEyeOff
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
-import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
-import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -103,9 +101,10 @@ class LoginActivity : ComponentActivity() {
 
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
-            val intent = when (savedSession.resolvePostLoginDestination()) {
-                PostLoginDestination.PROFILE -> Intent(this, PersonalInfoActivity::class.java)
-                PostLoginDestination.HOME -> Intent(this, HomeActivity::class.java)
+            val intent = if (!savedSession.profileCompleted) {
+                Intent(this, PersonalInfoActivity::class.java)
+            } else {
+                Intent(this, HomeActivity::class.java)
             }.apply {
                 putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
                 putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
@@ -119,15 +118,23 @@ class LoginActivity : ComponentActivity() {
         setContent {
             val themeViewModel: ThemeModeViewModel = hiltViewModel()
             val themeMode by themeViewModel.themeMode.collectAsState()
-            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+            val darkTheme = when (themeMode) {
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.LIGHT -> false
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.DARK -> true
+            }
 
-            MobileProjectTheme(darkTheme = darkTheme, dynamicColor = false) {
+            com.example.mobileproject.presentation.ui.theme.MobileProjectTheme(
+                darkTheme = darkTheme,
+                dynamicColor = false
+            ) {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
                     onLoginSuccess = { session ->
-                        val intent = when (session.resolvePostLoginDestination()) {
-                            PostLoginDestination.PROFILE -> Intent(this, PersonalInfoActivity::class.java)
-                            PostLoginDestination.HOME -> Intent(this, HomeActivity::class.java)
+                        val intent = if (!session.profileCompleted) {
+                            Intent(this, PersonalInfoActivity::class.java)
+                        } else {
+                            Intent(this, HomeActivity::class.java)
                         }.apply {
                             putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, session.token)
                             putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, session.token)
@@ -170,6 +177,7 @@ private fun LoginScreen(
     val uiState by authViewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+    val contentModifier = Modifier
 
     LaunchedEffect(uiState.authSession) {
         val session = uiState.authSession
@@ -186,13 +194,13 @@ private fun LoginScreen(
         )
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFBFB))
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // FOOTER ILLUSTRATIONS LAYER (BOTTOM ABSOLUTE POSITIONING)
-        // Left Mascot (img_register_and_login_rabbit)
+        val enableScroll = maxHeight < 760.dp
+
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_rabbit),
             contentDescription = null,
@@ -203,7 +211,6 @@ private fun LoginScreen(
             contentScale = ContentScale.Fit
         )
 
-        // Right Mascot (img_register_and_login_fox)
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_fox),
             contentDescription = null,
@@ -214,35 +221,48 @@ private fun LoginScreen(
             contentScale = ContentScale.Fit
         )
 
-        // INPUT FORM AREA (TOP TO MIDDLE)
         Column(
-            modifier = Modifier
+            modifier = contentModifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(scrollState)
+                .then(if (enableScroll) Modifier.verticalScroll(scrollState) else Modifier)
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = if (enableScroll) Arrangement.Top else Arrangement.Center,
         ) {
-            Spacer(modifier = Modifier.height(28.dp))
 
             // Floating Card wrapping the form content
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(Color.White.copy(alpha = 0.55f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(36.dp)
+                    )
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Title: Welcome Back
                 Text(
-                    text = "Welcome Back",
-                    color = Color(0xFF3D1F1F),
+                    text = stringResource(R.string.login_welcome_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
+                )
+
+                Text(
+                    text = stringResource(R.string.login_welcome_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -251,7 +271,7 @@ private fun LoginScreen(
                 AnimatedVisibility(visible = showRegistrationSuccess) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFFFE3E5).copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp),
@@ -259,7 +279,7 @@ private fun LoginScreen(
                         Text(
                             text = stringResource(R.string.login_after_register_hint),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF3D1F1F),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -275,12 +295,12 @@ private fun LoginScreen(
                         email = it
                         authViewModel.clearError()
                     },
-                    label = "EMAIL ADDRESS",
+                    label = stringResource(R.string.login_email_label).uppercase(),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Email,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -298,20 +318,24 @@ private fun LoginScreen(
                         password = it
                         authViewModel.clearError()
                     },
-                    label = "PASSWORD",
+                    label = stringResource(R.string.login_password_label).uppercase(),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Lock,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                imageVector = if (passwordVisible) LucideEyeOff else LucideEye,
+                                imageVector = if (passwordVisible) {
+                                    Icons.Rounded.VisibilityOff
+                                } else {
+                                    Icons.Rounded.Visibility
+                                },
                                 contentDescription = null,
-                                tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
@@ -337,7 +361,7 @@ private fun LoginScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.login_forgot_password),
-                        color = Color(0xFF944649),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         modifier = Modifier.clickable { /* Reset password action or dummy */ }
@@ -349,8 +373,8 @@ private fun LoginScreen(
                     onClick = onSubmitLogin,
                     enabled = !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF944649),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(50.dp),
                     modifier = Modifier
@@ -364,11 +388,15 @@ private fun LoginScreen(
                         Icon(
                             imageVector = Icons.Rounded.Eco,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
-                            text = if (uiState.isLoading) "SIGNING IN..." else stringResource(R.string.login_button),
+                            text = if (uiState.isLoading) {
+                                stringResource(R.string.login_signing_in)
+                            } else {
+                                stringResource(R.string.login_button)
+                            },
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -398,12 +426,12 @@ private fun LoginScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.login_no_account),
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
                     Text(
                         text = stringResource(R.string.login_sign_up),
-                        color = Color(0xFF944649),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         modifier = Modifier
@@ -413,8 +441,6 @@ private fun LoginScreen(
                 }
             }
 
-            // Bottom spacer for Z-index overlapping prevention
-            Spacer(modifier = Modifier.height(220.dp))
         }
     }
 }
@@ -433,7 +459,7 @@ private fun LoginInputField(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            color = Color(0xFF3D1F1F),
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             modifier = Modifier.padding(start = 16.dp, bottom = 6.dp)
@@ -451,17 +477,17 @@ private fun LoginInputField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFFFE3E5),
-                unfocusedContainerColor = Color(0xFFFFE3E5),
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
-                cursorColor = Color(0xFF3D1F1F),
-                focusedTextColor = Color(0xFF3D1F1F),
-                unfocusedTextColor = Color(0xFF3D1F1F),
-                unfocusedLeadingIconColor = Color(0xFF3D1F1F).copy(alpha = 0.6f),
-                focusedLeadingIconColor = Color(0xFF3D1F1F),
-                unfocusedTrailingIconColor = Color(0xFF3D1F1F).copy(alpha = 0.6f),
-                focusedTrailingIconColor = Color(0xFF3D1F1F)
+                cursorColor = MaterialTheme.colorScheme.onSurface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface
             ),
             shape = RoundedCornerShape(50.dp)
         )

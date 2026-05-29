@@ -7,10 +7,12 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +35,8 @@ import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -69,11 +73,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.icons.LucideEye
-import com.example.mobileproject.presentation.ui.icons.LucideEyeOff
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
-import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
-import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -87,12 +87,22 @@ class RegisterActivity : ComponentActivity() {
         setContent {
             val themeViewModel: ThemeModeViewModel = hiltViewModel()
             val themeMode by themeViewModel.themeMode.collectAsState()
-            val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
+            val darkTheme = when (themeMode) {
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.LIGHT -> false
+                com.example.mobileproject.presentation.ui.theme.ThemeMode.DARK -> true
+            }
 
-            MobileProjectTheme(darkTheme = darkTheme, dynamicColor = false) {
+            com.example.mobileproject.presentation.ui.theme.MobileProjectTheme(
+                darkTheme = darkTheme,
+                dynamicColor = false
+            ) {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 RegisterScreen(
-                    onBackToLogin = { finish() },
+                    onBackToLogin = {
+                        startActivity(Intent(this, LoginActivity::class.java))
+                        finish()
+                    },
                     onRegisterSuccess = { registeredEmail ->
                         startActivity(
                             Intent(this, LoginActivity::class.java).apply {
@@ -166,13 +176,13 @@ private fun RegisterScreen(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFBFB))
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // FOOTER ILLUSTRATIONS LAYER (BOTTOM ABSOLUTE POSITIONING)
-        // Left Mascot (img_register_and_login_rabbit)
+        val enableScroll = maxHeight < 860.dp
+
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_rabbit),
             contentDescription = null,
@@ -183,7 +193,6 @@ private fun RegisterScreen(
             contentScale = ContentScale.Fit
         )
 
-        // Right Mascot (img_register_and_login_fox)
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_fox),
             contentDescription = null,
@@ -194,35 +203,47 @@ private fun RegisterScreen(
             contentScale = ContentScale.Fit
         )
 
-        // INPUT FORM AREA (TOP TO MIDDLE)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(scrollState)
+                .then(if (enableScroll) Modifier.verticalScroll(scrollState) else Modifier)
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Floating Card wrapping the form content to stand out
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(Color.White.copy(alpha = 0.55f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(36.dp)
+                    )
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Title: Welcome
                 Text(
-                    text = "Welcome",
-                    color = Color(0xFF3D1F1F),
+                    text = stringResource(R.string.register_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
+                )
+
+                Text(
+                    text = stringResource(R.string.register_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -235,12 +256,12 @@ private fun RegisterScreen(
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = "EMAIL ADDRESS",
+                    label = stringResource(R.string.register_email_label),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Email,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -259,12 +280,12 @@ private fun RegisterScreen(
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = "NICKNAME",
+                    label = stringResource(R.string.register_nickname_label),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Favorite,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -283,20 +304,24 @@ private fun RegisterScreen(
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = "CREATE PASSWORD",
+                    label = stringResource(R.string.register_password_label),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Lock,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                imageVector = if (passwordVisible) LucideEyeOff else LucideEye,
+                                imageVector = if (passwordVisible) {
+                                    Icons.Rounded.VisibilityOff
+                                } else {
+                                    Icons.Rounded.Visibility
+                                },
                                 contentDescription = null,
-                                tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
@@ -317,12 +342,12 @@ private fun RegisterScreen(
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = "BIRTHDAY",
+                    label = stringResource(R.string.register_birthday_label),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.CalendarToday,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -341,12 +366,12 @@ private fun RegisterScreen(
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = "PHONE NUMBER",
+                    label = stringResource(R.string.register_phone_label),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Rounded.Phone,
                             contentDescription = null,
-                            tint = Color(0xFF3D1F1F).copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -368,8 +393,8 @@ private fun RegisterScreen(
                     onClick = submitRegistration,
                     enabled = !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF944649),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(50.dp),
                     modifier = Modifier
@@ -383,11 +408,15 @@ private fun RegisterScreen(
                         Icon(
                             imageVector = Icons.Rounded.Eco,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
-                            text = if (uiState.isLoading) "CREATING ACCOUNT..." else "Create Account",
+                            text = if (uiState.isLoading) {
+                                stringResource(R.string.register_loading)
+                            } else {
+                                stringResource(R.string.register_button)
+                            },
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -412,8 +441,8 @@ private fun RegisterScreen(
 
                 // Terms Text
                 Text(
-                    text = "BY SIGNING UP, YOU AGREE TO OUR TERMS OF INTIMACY AND SOUL DATA POLICY.",
-                    color = Color.Black,
+                    text = stringResource(R.string.register_terms),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
@@ -432,12 +461,12 @@ private fun RegisterScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.register_have_account),
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp
                     )
                     Text(
                         text = stringResource(R.string.register_login),
-                        color = Color(0xFF944649),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         modifier = Modifier
@@ -447,8 +476,6 @@ private fun RegisterScreen(
                 }
             }
 
-            // Bottom spacer for Z-index overlapping prevention
-            Spacer(modifier = Modifier.height(220.dp))
         }
     }
 }
@@ -467,7 +494,7 @@ private fun RegisterInputField(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            color = Color(0xFF3D1F1F),
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             modifier = Modifier.padding(start = 16.dp, bottom = 6.dp)
@@ -485,17 +512,17 @@ private fun RegisterInputField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFFFE3E5),
-                unfocusedContainerColor = Color(0xFFFFE3E5),
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
-                cursorColor = Color(0xFF3D1F1F),
-                focusedTextColor = Color(0xFF3D1F1F),
-                unfocusedTextColor = Color(0xFF3D1F1F),
-                unfocusedLeadingIconColor = Color(0xFF3D1F1F).copy(alpha = 0.6f),
-                focusedLeadingIconColor = Color(0xFF3D1F1F),
-                unfocusedTrailingIconColor = Color(0xFF3D1F1F).copy(alpha = 0.6f),
-                focusedTrailingIconColor = Color(0xFF3D1F1F)
+                cursorColor = MaterialTheme.colorScheme.onSurface,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface
             ),
             shape = RoundedCornerShape(50.dp)
         )

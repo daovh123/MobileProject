@@ -15,6 +15,7 @@
     <string name="login_forgot_password">Quên mật khẩu?</string>
     <string name="login_no_account">Chưa có tài khoản?</string>
     <string name="login_sign_up">Đăng ký</string>
+    <string name="login_signing_in">ĐANG ĐĂNG NHẬP...</string>
 
     <string name="register_title">Tạo tài khoản</string>
     <string name="register_subtitle">Bắt đầu hành trình cùng Affinity</string>
@@ -33,6 +34,13 @@
     <string name="register_button">Đăng ký</string>
     <string name="register_have_account">Đã có tài khoản?</string>
     <string name="register_login">Đăng nhập</string>
+    <string name="register_email_label">ĐỊA CHỈ EMAIL</string>
+    <string name="register_nickname_label">BIỆT DANH</string>
+    <string name="register_password_label">TẠO MẬT KHẨU</string>
+    <string name="register_birthday_label">NGÀY SINH</string>
+    <string name="register_phone_label">SỐ ĐIỆN THOẠI</string>
+    <string name="register_loading">ĐANG ĐĂNG KÝ...</string>
+    <string name="register_terms">BẰNG VIỆC ĐĂNG KÝ, BẠN ĐỒNG Ý VỚI ĐIỀU KHOẢN SỬ DỤNG VÀ CHÍNH SÁCH BẢO MẬT CỦA AFFINITY.</string>
     <string name="auth_required_fields">Vui lòng nhập đầy đủ thông tin</string>
     <string name="login_after_register_hint">Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.</string>
     <string name="profile_setup_title">Thông tin cá nhân</string>
