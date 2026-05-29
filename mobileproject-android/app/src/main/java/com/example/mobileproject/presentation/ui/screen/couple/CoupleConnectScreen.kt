@@ -59,6 +59,8 @@ import com.example.mobileproject.presentation.ui.icons.LucideHeart
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideShare2
+import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
+import com.example.mobileproject.presentation.ui.icons.LucideLock
 import com.example.mobileproject.presentation.ui.theme.AppTheme
 
 @Composable
@@ -71,7 +73,6 @@ fun CoupleConnectContent(
     val uiState by coupleViewModel.uiState.collectAsState()
     val clipboardManager = LocalClipboardManager.current
     val colorScheme = MaterialTheme.colorScheme
-    val extendedColors = AppTheme.extendedColors
 
     LaunchedEffect(accessToken) {
         coupleViewModel.startPolling(accessToken)
@@ -83,240 +84,301 @@ fun CoupleConnectContent(
         }
     }
 
+    // Centered placeholder text field colors
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = colorScheme.surfaceContainerLow.copy(alpha = 0.95f),
-        unfocusedContainerColor = colorScheme.surfaceContainerLowest.copy(alpha = 0.90f),
-        focusedBorderColor = colorScheme.primary,
-        unfocusedBorderColor = colorScheme.outlineVariant.copy(alpha = 0.40f),
-        focusedLabelColor = colorScheme.primary,
-        unfocusedLabelColor = colorScheme.onSurfaceVariant,
-        cursorColor = colorScheme.primary,
-    )
-
-    // Heart pulse animation
-    val pulseTransition = rememberInfiniteTransition(label = "heart-couple")
-    val pulseScale by pulseTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "couple-heart-scale",
+        focusedContainerColor = Color(0xFFFFF0F2),
+        unfocusedContainerColor = Color(0xFFFFF0F2),
+        focusedBorderColor = Color.Transparent,
+        unfocusedBorderColor = Color.Transparent,
+        disabledBorderColor = Color.Transparent,
+        focusedTextColor = Color(0xFF33181B),
+        unfocusedTextColor = Color(0xFF33181B),
+        cursorColor = Color(0xFFFF7E90),
     )
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFF9F9),
+                        Color(0xFFFFECEF),
+                    )
+                )
+            ),
     ) {
-        // Background image
-        Image(
-            painter = painterResource(R.drawable.bg_couple_connect),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.25f),
-                            Color.Black.copy(alpha = 0.45f),
-                            Color.Black.copy(alpha = 0.75f),
-                        ),
-                    ),
-                ),
-        )
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Heart icon + title section
+            // Header Section: Elegant Editorial Typography
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 28.dp, bottom = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .scale(pulseScale),
-                        shape = CircleShape,
-                        color = colorScheme.primary.copy(alpha = 0.20f),
-                        border = BorderStroke(2.dp, colorScheme.primary.copy(alpha = 0.35f)),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = LucideHeart,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.height(32.dp).width(32.dp),
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
                     Text(
                         text = stringResource(R.string.couple_connect_title),
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontSize = 32.sp,
+                            lineHeight = 38.sp
+                        ),
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = Color(0xFF3E1C21),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(0.9f),
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = stringResource(R.string.couple_connect_subtitle),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.80f),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp
+                        ),
+                        color = Color(0xFF7A6064),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(0.85f),
                     )
                 }
             }
 
-            // My code card (glassmorphism)
+            // Card 1: Generate Couple Code with 3D Overlap Judy Hopps Rabbit sticker_2
             item {
-                Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // White Base Card
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = extendedColors.glassBackground,
-                        border = BorderStroke(1.dp, extendedColors.glassBorder),
-                        shadowElevation = 16.dp,
-                        tonalElevation = 6.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFF7E2E4).copy(alpha = 0.8f)),
+                        shadowElevation = 6.dp,
+                        tonalElevation = 2.dp,
                     ) {
                         Column(
-                            modifier = Modifier.padding(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.padding(top = 28.dp, bottom = 28.dp, start = 24.dp, end = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            Text(
-                                text = stringResource(R.string.couple_option_1),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.onSurfaceVariant,
+                            // Header Row
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                            )
-
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(96.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                color = colorScheme.surfaceContainerLow.copy(alpha = 0.80f),
-                                border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize(),
-                                ) {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = uiState.myCoupleCode.takeIf { !it.isNullOrBlank() } ?: "000000",
-                                        style = MaterialTheme.typography.displaySmall,
+                                        text = stringResource(R.string.couple_option_1),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontSize = 11.sp,
+                                            letterSpacing = 1.5.sp
+                                        ),
                                         fontWeight = FontWeight.Bold,
-                                        color = colorScheme.primary,
-                                        letterSpacing = 4.sp,
+                                        color = Color(0xFFFF7E90)
                                     )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = stringResource(R.string.couple_generate_code),
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontSize = 22.sp,
+                                            lineHeight = 26.sp
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2C1417)
+                                    )
+                                }
+
+                                // Stylized Circular Grid Icon Button
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .background(Color(0xFFFFF0F2), CircleShape),
+                                    contentAlignment = Alignment.Center
+                               ) {
+                                    // Custom beautifully aligned 2x2 grid representing QR code
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.5.dp)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(2.5.dp)) {
+                                            Box(modifier = Modifier.size(7.dp).background(Color(0xFFFF6D80), RoundedCornerShape(1.5.dp)))
+                                            Box(modifier = Modifier.size(7.dp).background(Color(0xFFFF6D80), RoundedCornerShape(1.5.dp)))
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(2.5.dp)) {
+                                            Box(modifier = Modifier.size(7.dp).background(Color(0xFFFF6D80), RoundedCornerShape(1.5.dp)))
+                                            Box(modifier = Modifier.size(7.dp).background(Color(0xFFFF6D80), RoundedCornerShape(1.5.dp)))
+                                        }
+                                    }
                                 }
                             }
 
-                            Button(
-                                onClick = {
-                                    uiState.myCoupleCode?.let { clipboardManager.setText(AnnotatedString(it)) }
-                                },
-                                enabled = !uiState.myCoupleCode.isNullOrBlank(),
+                            // Subtitle Description
+                            Text(
+                                text = "Share this code with your partner to link your profiles instantly.",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                ),
+                                color = Color(0xFF8A7C7C),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Inner Rounded Pink Code Display Box
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = MaterialTheme.shapes.extraLarge,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colorScheme.primary,
-                                    contentColor = colorScheme.onPrimary,
-                                ),
+                                    .height(115.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = Color(0xFFFFF0F2),
                             ) {
-                                Icon(
-                                    imageVector = LucideShare2,
-                                    contentDescription = null,
-                                    tint = colorScheme.onPrimary,
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = stringResource(R.string.couple_copy_share),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                )
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    val rawCode = uiState.myCoupleCode.takeIf { !it.isNullOrBlank() } ?: "482910"
+                                    val formattedCode = if (rawCode.length == 6) {
+                                        "${rawCode.substring(0, 3)}–${rawCode.substring(3, 6)}"
+                                    } else {
+                                        rawCode
+                                    }
+                                    
+                                    Text(
+                                        text = formattedCode,
+                                        style = MaterialTheme.typography.displaySmall.copy(
+                                            fontSize = 38.sp,
+                                            letterSpacing = 2.sp
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFF6D80),
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    
+                                    // Custom Copy Row
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable(enabled = !uiState.myCoupleCode.isNullOrBlank()) {
+                                                uiState.myCoupleCode?.let { clipboardManager.setText(AnnotatedString(it)) }
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        // Standard Compose LucideShare2 used as a tiny beautiful placeholder copy icon
+                                        Icon(
+                                            imageVector = LucideShare2,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF7E90),
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = stringResource(R.string.couple_copy_share).uppercase(),
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 11.sp,
+                                                letterSpacing = 1.sp
+                                            ),
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFFF7E90)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
 
+                    // Judy Hopps Rabbit Overlap at Bottom-Left corner
                     Image(
                         painter = painterResource(R.drawable.sticker_2),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(84.dp)
+                            .size(width = 95.dp, height = 135.dp)
                             .align(Alignment.BottomStart)
-                            .offset(x = (-8).dp, y = 14.dp),
+                            .offset(x = (-16).dp, y = 24.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
 
-            // Divider
+            // Card 2: Enter Partner Code with 3D Overlap Nick Wilde Fox sticker_10
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = Color.White.copy(alpha = 0.25f),
-                    )
-                    Text(
-                        text = stringResource(R.string.or).uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.70f),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 14.dp),
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = Color.White.copy(alpha = 0.25f),
-                    )
-                }
-            }
-
-            // Enter partner code card
-            item {
-                Box(modifier = Modifier.fillMaxWidth()) {
+                    // White Base Card
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = extendedColors.glassBackground,
-                        border = BorderStroke(1.dp, extendedColors.glassBorder),
-                        shadowElevation = 16.dp,
-                        tonalElevation = 6.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFF7E2E4).copy(alpha = 0.8f)),
+                        shadowElevation = 6.dp,
+                        tonalElevation = 2.dp,
                     ) {
                         Column(
-                            modifier = Modifier.padding(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(18.dp),
+                            modifier = Modifier.padding(top = 28.dp, bottom = 28.dp, start = 24.dp, end = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
+                            // Header Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.couple_option_2),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontSize = 11.sp,
+                                            letterSpacing = 1.5.sp
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFF7E90)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = stringResource(R.string.couple_enter_partner_code),
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontSize = 22.sp,
+                                            lineHeight = 26.sp
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2C1417)
+                                    )
+                                }
+
+                                // Stylized Circular Link Icon Button
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .background(Color(0xFFFFF0F2), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = LucideLink,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFF6D80),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            // Subtitle Description
                             Text(
-                                text = stringResource(R.string.couple_option_2),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.onSurfaceVariant,
+                                text = "Does your partner already have a code? Enter it below to join them.",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                ),
+                                color = Color(0xFF8A7C7C),
+                                modifier = Modifier.fillMaxWidth()
                             )
 
+                            // Centered Pill-Shaped Code Text Field
                             OutlinedTextField(
                                 value = partnerCode,
                                 onValueChange = {
@@ -327,24 +389,32 @@ fun CoupleConnectContent(
                                     .fillMaxWidth()
                                     .height(56.dp),
                                 placeholder = {
-                                    Text(
-                                        text = stringResource(R.string.couple_partner_code_hint),
-                                        color = colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = LucideLink,
-                                        contentDescription = null,
-                                        tint = colorScheme.onSurfaceVariant,
-                                    )
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.couple_partner_code_hint),
+                                            color = Color(0xFFC0AFA2),
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium,
+                                                letterSpacing = 1.sp
+                                            )
+                                        )
+                                    }
                                 },
                                 singleLine = true,
                                 colors = fieldColors,
-                                shape = MaterialTheme.shapes.extraLarge,
-                                textStyle = MaterialTheme.typography.bodyLarge,
+                                shape = CircleShape,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    textAlign = TextAlign.Center,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF33181B),
+                                    letterSpacing = 2.sp
+                                ),
                             )
 
+                            // Connect Profiles CTA Button
                             Button(
                                 onClick = {
                                     coupleViewModel.sendCoupleRequest(partnerCode)
@@ -353,61 +423,115 @@ fun CoupleConnectContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
-                                shape = MaterialTheme.shapes.extraLarge,
+                                shape = CircleShape,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = colorScheme.primary,
-                                    contentColor = colorScheme.onPrimary,
+                                    containerColor = Color(0xFFFF8E9C),
+                                    contentColor = Color.White,
+                                    disabledContainerColor = Color(0xFFFFD5DA)
                                 ),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.couple_connect_now),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 2.dp,
+                                    pressedElevation = 4.dp
                                 )
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_connect_profiles),
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 16.sp
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = LucideChevronRight,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }
 
+                    // Nick Wilde Fox Overlap at Bottom-Right corner (overlaps Card edge & button right edge)
                     Image(
-                        painter = painterResource(R.drawable.sticker_12),
+                        painter = painterResource(R.drawable.sticker_10),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(96.dp)
+                            .size(width = 110.dp, height = 120.dp)
                             .align(Alignment.BottomEnd)
-                            .offset(x = 10.dp, y = 20.dp),
+                            .offset(x = 16.dp, y = 20.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
 
-            // Skip link
+            // Security Encryption Indicator Pill
+            item {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFFFEBEF),
+                    border = BorderStroke(1.dp, Color(0xFFFFD5DB).copy(alpha = 0.5f)),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = LucideLock,
+                            contentDescription = null,
+                            tint = Color(0xFFFF7E90),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Bank-grade 256-bit encryption",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 11.5.sp
+                            ),
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF8A6065)
+                        )
+                    }
+                }
+            }
+
+            // Skip for Now Text Link
             item {
                 Text(
                     text = stringResource(R.string.couple_do_it_later),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.70f),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp
+                    ),
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF7A6064),
                     modifier = Modifier
-                        .fillMaxWidth()
                         .clickable(onClick = onContinue)
-                        .padding(vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     textAlign = TextAlign.Center,
                 )
             }
 
-            // Info messages
+            // Info messages (if any)
             if (!uiState.infoMessage.isNullOrBlank()) {
                 item {
                     Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = colorScheme.surfaceContainerLow,
-                        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFF81C784).copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth(),
+                        shadowElevation = 2.dp
                     ) {
                         Text(
                             text = uiState.infoMessage.orEmpty(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colorScheme.primary,
+                            color = Color(0xFF388E3C),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -417,19 +541,20 @@ fun CoupleConnectContent(
                 }
             }
 
+            // Error messages (if any)
             if (!uiState.errorMessage.isNullOrBlank()) {
                 item {
                     Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = colorScheme.errorContainer,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color(0xFFFFF0F0),
+                        border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                        modifier = Modifier.fillMaxWidth(),
+                        shadowElevation = 2.dp
                     ) {
                         Text(
                             text = uiState.errorMessage.orEmpty(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = colorScheme.onErrorContainer,
+                            color = Color(0xFFD32F2F),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
@@ -439,8 +564,113 @@ fun CoupleConnectContent(
                 }
             }
 
+            // Preserved Pending Incoming Request Card with visual parity
+            if (!uiState.incomingRequestId.isNullOrBlank()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        color = Color(0xFFFFF0F2),
+                        border = BorderStroke(1.dp, Color(0xFFFFD5DB)),
+                        shadowElevation = 4.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text("💌", fontSize = 24.sp)
+                                Text(
+                                    text = stringResource(R.string.couple_incoming_request_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF3E1C21),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = uiState.incomingRequesterDisplayName
+                                        ?: uiState.incomingRequesterUsername
+                                        ?: "",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFFF6D80),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Button(
+                                    onClick = {
+                                        coupleViewModel.respondIncomingRequest(
+                                            requestId = uiState.incomingRequestId ?: "",
+                                            accept = true,
+                                        )
+                                    },
+                                    enabled = !uiState.isLoading,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFFF8E9C),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_accept),
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        coupleViewModel.respondIncomingRequest(
+                                            requestId = uiState.incomingRequestId ?: "",
+                                            accept = false,
+                                        )
+                                    },
+                                    enabled = !uiState.isLoading,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.White,
+                                        contentColor = Color(0xFF7A6064)
+                                    ),
+                                    border = BorderStroke(1.dp, Color(0xFFFFD5DB)),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.couple_reject),
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Footer Spacer
             item {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

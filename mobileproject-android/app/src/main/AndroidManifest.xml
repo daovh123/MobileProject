@@ -63,7 +63,7 @@
             android:theme="@style/Theme.MobileProject.NoActionBar" />
 
         <activity
-            android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
+            android:name="com.example.mobileproject.presentation.ui.screen.welcome.WelcomeActivity"
             android:theme="@style/Theme.MobileProject.NoActionBar"
             android:exported="true">
             <intent-filter>
@@ -71,6 +71,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
+            android:theme="@style/Theme.MobileProject.NoActionBar"
+            android:exported="true" />
 
         <service
             android:name="com.example.mobileproject.presentation.service.MapShareForegroundService"
