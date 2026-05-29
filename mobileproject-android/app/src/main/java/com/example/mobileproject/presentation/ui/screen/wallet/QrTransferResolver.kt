@@ -59,7 +59,7 @@ suspend fun resolveTransferQr(
         }
         return ResolvedQrTransfer(
             rawContent = trimmed,
-            warning = "QR nay chi chua link anh, chua tach duoc thong tin chuyen khoan.",
+            warning = "QR này chỉ chứa link ảnh, chưa tách được thông tin chuyển khoản.",
         )
     }
 
@@ -71,7 +71,7 @@ suspend fun resolveTransferQr(
     return ResolvedQrTransfer(
         rawContent = trimmed,
         note = trimmed.take(160),
-        warning = "Khong nhan dien duoc VietQR de tu dong dien thong tin.",
+        warning = "Không nhận diện được VietQR để tự động điền thông tin.",
     )
 }
 
@@ -134,7 +134,7 @@ private fun parseVietQrPayload(raw: String): ResolvedQrTransfer? {
         amount = amount,
         note = note,
         rawContent = raw,
-        warning = if (bank == null) "Da doc QR nhung chua map duoc ngan hang tu ma $bankBin." else null,
+        warning = if (bank == null) "Đã đọc QR nhưng chưa tìm thấy ngân hàng tương ứng với mã BIN $bankBin." else null,
     )
 }
 

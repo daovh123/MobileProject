@@ -43,11 +43,11 @@ class TransferMoneyViewModel @Inject constructor(
         val session = authSessionStore.load()
         val coupleId = session?.coupleId
         if (coupleId.isNullOrBlank()) {
-            _uiState.update { it.copy(errorMessage = "Khong tim thay thong tin cap doi de tao lenh rut.") }
+            _uiState.update { it.copy(errorMessage = "Không tìm thấy thông tin cặp đôi để tạo lệnh rút.") }
             return
         }
         if (amount <= 0L) {
-            _uiState.update { it.copy(errorMessage = "So tien rut phai lon hon 0.") }
+            _uiState.update { it.copy(errorMessage = "Số tiền rút phải lớn hơn 0.") }
             return
         }
 
@@ -68,9 +68,9 @@ class TransferMoneyViewModel @Inject constructor(
                 is Resource.Success -> {
                     val payout = result.data
                     val summary = buildString {
-                        append("Da tao lenh rut ")
+                        append("Đã tạo lệnh rút ")
                         append(payout.transferCode)
-                        append(". Chuyen tien that theo thong tin ngan hang va ma nay.")
+                        append(". Chuyển tiền thật theo thông tin ngân hàng và mã này.")
                         if (!bankName.isBlank() && !accountNumber.isBlank()) {
                             append(" (")
                             append(bankName)
@@ -89,7 +89,7 @@ class TransferMoneyViewModel @Inject constructor(
                             isWaitingBankConfirmation = true,
                             payoutId = payout.id,
                             transferCode = payout.transferCode,
-                            statusText = "$summary Dang cho ban chuyen tien that trong app ngan hang, sau do SePay xac nhan webhook tien ra.",
+                            statusText = "$summary Đang chờ bạn chuyển tiền thật trong app ngân hàng, sau đó SePay xác nhận webhook tiền ra.",
                         )
                     }
                     pollPayoutStatus(payout.id)
@@ -98,7 +98,7 @@ class TransferMoneyViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isSubmitting = false,
-                            errorMessage = result.throwable.message ?: "Khong the tao yeu cau rut tien.",
+                            errorMessage = result.throwable.message ?: "Không thể tạo yêu cầu rút tiền.",
                         )
                     }
                 }
@@ -118,7 +118,7 @@ class TransferMoneyViewModel @Inject constructor(
                                 it.copy(
                                     isWaitingBankConfirmation = false,
                                     isSuccess = true,
-                                    statusText = "Rut tien thanh cong. Quy da duoc cap nhat.",
+                                    statusText = "Rút tiền thành công. Quỹ đã được cập nhật.",
                                 )
                             }
                             return
@@ -127,22 +127,22 @@ class TransferMoneyViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     isWaitingBankConfirmation = false,
-                                    statusText = "Lenh rut tien that bai.",
-                                    errorMessage = "SePay khong xac nhan duoc giao dich tien ra.",
+                                    statusText = "Lệnh rút tiền thật thất bại.",
+                                    errorMessage = "SePay không xác nhận được giao dịch tiền ra.",
                                 )
                             }
                             return
                         }
                         else -> {
                             _uiState.update {
-                                it.copy(statusText = "Dang cho ban chuyen tien that trong app ngan hang va SePay xac nhan giao dich tien ra...")
+                                it.copy(statusText = "Đang chờ bạn chuyển tiền thật trong app ngân hàng và SePay xác nhận giao dịch tiền ra...")
                             }
                         }
                     }
                 }
                 is Resource.Error -> {
                     _uiState.update {
-                        it.copy(statusText = "Da tao lenh rut, dang dong bo trang thai...")
+                        it.copy(statusText = "Đã tạo lệnh rút, đang đồng bộ trạng thái...")
                     }
                 }
                 is Resource.Loading -> Unit

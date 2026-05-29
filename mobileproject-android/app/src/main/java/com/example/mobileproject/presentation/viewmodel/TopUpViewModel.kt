@@ -41,7 +41,7 @@ sealed interface TopUpNavigationEvent {
 data class TopUpUiState(
     val amount: String = "",
     val note: String = "",
-    val destination: String = "Nap vao Vi chinh",
+    val destination: String = "Nạp vào Ví chính",
     val currentBalance: Long = 0L,
     val isLoading: Boolean = false,
     val isPolling: Boolean = false,
