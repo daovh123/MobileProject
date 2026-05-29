@@ -492,6 +492,8 @@
     <string name="home_fab_add_saving_goal">Thêm mục tiêu tiết kiệm</string>
     <string name="home_mini_metric_savings">TIẾT KIỆM</string>
     <string name="home_mini_metric_memories">KỶ NIỆM</string>
+    <string name="home_mini_metric_chat">CHAT</string>
+    <string name="home_mini_metric_chat_hint">Mở cuộc trò chuyện</string>
     <string name="home_mini_metric_new_format">%1$d mới</string>
     <string name="home_future_goals_title">Mục tiêu tương lai</string>
     <string name="home_saving_goals_title">Mục tiêu tiết kiệm</string>

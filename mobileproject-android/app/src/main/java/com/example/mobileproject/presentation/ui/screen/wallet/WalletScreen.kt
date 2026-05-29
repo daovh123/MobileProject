@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Savings
@@ -65,6 +66,7 @@ import java.text.DateFormatSymbols
 fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToTopUp: () -> Unit,
+    onNavigateToTransfer: () -> Unit,
     onSeeAllTransactions: () -> Unit,
     viewModel: WalletViewModel = hiltViewModel(),
     savingGoalViewModel: SavingGoalViewModel = hiltViewModel(),
@@ -206,7 +208,7 @@ fun WalletScreen(
                         },
                     ) {
                         Text(
-                            text = "Dong gop vao muc tieu",
+                            text = "Đóng góp vào mục tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -235,7 +237,7 @@ fun WalletScreen(
                         },
                     ) {
                         Text(
-                            text = "Them chi tieu",
+                            text = "Thêm chi tiêu",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -264,7 +266,7 @@ fun WalletScreen(
                         },
                     ) {
                         Text(
-                            text = "Nap tien",
+                            text = "Nạp tiền",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
@@ -281,6 +283,35 @@ fun WalletScreen(
                         shape = CircleShape,
                         modifier = Modifier.size(48.dp),
                     ) { Icon(imageVector = Icons.Default.Bolt, contentDescription = null) }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = colorScheme.surfaceContainerLowest,
+                        modifier = Modifier.clickable {
+                            isFabExpanded = false
+                            onNavigateToTransfer()
+                        },
+                    ) {
+                        Text(
+                            text = "Chuyển tiền",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FloatingActionButton(
+                        onClick = {
+                            isFabExpanded = false
+                            onNavigateToTransfer()
+                        },
+                        containerColor = colorScheme.surfaceContainerLowest,
+                        contentColor = colorScheme.primary,
+                        shape = CircleShape,
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null) }
                 }
             }
         }

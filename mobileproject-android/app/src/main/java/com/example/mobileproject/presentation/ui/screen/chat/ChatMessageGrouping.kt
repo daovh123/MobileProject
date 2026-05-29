@@ -2,10 +2,15 @@ package com.example.mobileproject.presentation.ui.screen.chat
 
 import com.example.mobileproject.domain.entity.ChatMessage
 
+enum class MessagePositionInGroup {
+    SINGLE, FIRST, MIDDLE, LAST
+}
+
 internal data class GroupedMessage(
     val message: ChatMessage,
     val showAvatar: Boolean,
     val showTimestamp: Boolean,
+    val positionInGroup: MessagePositionInGroup = MessagePositionInGroup.SINGLE,
 )
 
 internal fun groupMessages(
@@ -26,10 +31,43 @@ internal fun groupMessages(
             if (nextTime - currentTime > groupWindowMinutes * 60_000) break
             j++
         }
-        for (k in i until j) {
-            result.add(GroupedMessage(messages[k], showAvatar = false, showTimestamp = false))
+        if (i == j) {
+            result.add(
+                GroupedMessage(
+                    message = messages[i],
+                    showAvatar = true,
+                    showTimestamp = true,
+                    positionInGroup = MessagePositionInGroup.SINGLE
+                )
+            )
+        } else {
+            result.add(
+                GroupedMessage(
+                    message = messages[i],
+                    showAvatar = false,
+                    showTimestamp = false,
+                    positionInGroup = MessagePositionInGroup.FIRST
+                )
+            )
+            for (k in (i + 1) until j) {
+                result.add(
+                    GroupedMessage(
+                        message = messages[k],
+                        showAvatar = false,
+                        showTimestamp = false,
+                        positionInGroup = MessagePositionInGroup.MIDDLE
+                    )
+                )
+            }
+            result.add(
+                GroupedMessage(
+                    message = messages[j],
+                    showAvatar = true,
+                    showTimestamp = true,
+                    positionInGroup = MessagePositionInGroup.LAST
+                )
+            )
         }
-        result.add(GroupedMessage(messages[j], showAvatar = true, showTimestamp = true))
         i = j + 1
     }
     return result

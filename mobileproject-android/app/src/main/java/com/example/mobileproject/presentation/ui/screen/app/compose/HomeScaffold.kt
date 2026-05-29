@@ -61,6 +61,7 @@ import com.example.mobileproject.presentation.ui.screen.wallet.FutureGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
+import com.example.mobileproject.presentation.ui.screen.wallet.TransferMoneyScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
@@ -94,6 +95,7 @@ object HomeRoutes {
     const val ADD_FUTURE_GOAL: String = "add_future_goal"
     const val FUTURE_GOALS: String = "future_goals"
     const val NOTIFICATIONS: String = "notifications"
+    const val TRANSFER: String = "transfer_money"
 
     fun topUpQRRoute(topUpId: String): String {
         return "top_up_qr/${java.net.URLEncoder.encode(topUpId, "UTF-8")}"
@@ -144,6 +146,7 @@ fun HomeScaffold(
     val isSettingsNotificationsRoute = currentRoute == HomeRoutes.SETTINGS_NOTIFICATIONS
     val isSettingsAppearanceRoute = currentRoute == HomeRoutes.SETTINGS_APPEARANCE
     val isSettingsHelpRoute = currentRoute == HomeRoutes.SETTINGS_HELP
+    val isTransferRoute = currentRoute == HomeRoutes.TRANSFER
 
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
         isTopUpQRRoute || isTopUpBankRedirectRoute ||
@@ -151,7 +154,7 @@ fun HomeScaffold(
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
         isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute ||
         isSettingsPrivacyRoute || isSettingsNotificationsRoute ||
-        isSettingsAppearanceRoute || isSettingsHelpRoute
+        isSettingsAppearanceRoute || isSettingsHelpRoute || isTransferRoute
 
     val snackbarHostState = remember { SnackbarHostState() }
     val notifState by notificationViewModel.uiState.collectAsState()
@@ -303,6 +306,7 @@ fun HomeScaffold(
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
+                        onNavigateToTransfer = { navController.navigate(HomeRoutes.TRANSFER) { launchSingleTop = true } },
                         onNavigateToChat = {
                             navController.navigate(HomeRoutes.CHAT) {
                                 launchSingleTop = true
@@ -324,8 +328,12 @@ fun HomeScaffold(
                     WalletScreen(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
+                        onNavigateToTransfer = { navController.navigate(HomeRoutes.TRANSFER) { launchSingleTop = true } },
                         onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) }
                     )
+                }
+                composable(HomeRoutes.TRANSFER) {
+                    TransferMoneyScreen(onNavigateBack = { navController.popBackStack() })
                 }
                 composable(HomeRoutes.ADD_EXPENSE) {
                     AddExpenseScreen(onNavigateBack = { navController.popBackStack() })

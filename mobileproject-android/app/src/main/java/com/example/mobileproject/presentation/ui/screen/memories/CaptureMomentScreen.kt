@@ -1,4 +1,4 @@
-﻿package com.example.mobileproject.presentation.ui.screen.memories
+package com.example.mobileproject.presentation.ui.screen.memories
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -501,20 +501,46 @@ private fun MomentPhoto(
     model: String,
     contentDescription: String?,
 ) {
-    val imageData = remember(model) { decodeDataUrl(model) }
-    val imageModel = imageData ?: model
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageModel)
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
-            .build(),
-        contentDescription = contentDescription,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize(),
-    )
+    var imageModel by remember(model) { mutableStateOf<Any?>(null) }
+
+    LaunchedEffect(model) {
+        if (model.startsWith("data:")) {
+            val decoded = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                decodeDataUrl(model)
+            }
+            imageModel = decoded
+        } else {
+            imageModel = model
+        }
+    }
+
+    if (imageModel != null) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageModel)
+                .crossfade(true)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .networkCachePolicy(CachePolicy.ENABLED)
+                .build(),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 2.dp
+            )
+        }
+    }
 }
 
 private fun sortMomentsNewestFirst(moments: List<MomentDto>): List<MomentDto> {

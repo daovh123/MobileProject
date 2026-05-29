@@ -91,6 +91,7 @@ fun HomeScreen(
     onNavigateToAddSavingGoal: () -> Unit,
     onNavigateToAddFutureGoal: () -> Unit,
     onNavigateToTopUp: () -> Unit,
+    onNavigateToTransfer: () -> Unit,
     onNavigateToChat: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -342,7 +343,7 @@ fun HomeScreen(
             goals = sortedGoals,
             canContribute = savingGoals.isNotEmpty(),
             onTopUpClick = onNavigateToTopUp,
-            onTransferClick = { },
+            onTransferClick = onNavigateToTransfer,
             onContributeClick = { isContributeSheetVisible = true },
             onPairNow = {
                 if (accessToken.isNotBlank()) {

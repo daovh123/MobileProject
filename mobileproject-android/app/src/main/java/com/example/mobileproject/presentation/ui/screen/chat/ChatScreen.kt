@@ -83,6 +83,21 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.window.Popup
+import androidx.compose.foundation.layout.offset
+import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -92,8 +107,9 @@ import com.example.mobileproject.domain.entity.ReadStatus
 import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideRefreshCw
 import com.example.mobileproject.presentation.ui.icons.LucideReply
-import com.example.mobileproject.presentation.ui.icons.LucideSend
 import com.example.mobileproject.presentation.ui.icons.LucideUser
+import com.example.mobileproject.presentation.ui.icons.LucideImage
+import com.example.mobileproject.presentation.ui.icons.LucideCamera
 import com.example.mobileproject.presentation.viewmodel.ChatViewModel
 import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardParser
 import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardData
@@ -144,6 +160,11 @@ fun ChatScreen(
         mutableStateOf(TextFieldValue(""))
     }
 
+    val reactionsMap = remember { mutableStateMapOf<String, String>() }
+    var activeReactionMenuMessageId by remember { mutableStateOf<String?>(null) }
+    var quickEmoji by rememberSaveable { mutableStateOf("👍") }
+    var showEmojiCustomizerDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(accessToken) {
         viewModel.start(accessToken)
     }
@@ -163,18 +184,20 @@ fun ChatScreen(
         decodeBase64Avatar(resolvedPartnerAvatarUrl)
     }
 
+    // Find the latest read message from mine to show partner's tiny read avatar
+    val lastReadMessageId = remember(uiState.messages) {
+        uiState.messages.lastOrNull { it.mine && it.readStatus == com.example.mobileproject.domain.entity.ReadStatus.READ }?.id
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(colorScheme.background),
     ) {
         // ── TopBar ──────────────────────────────────────────────────
-        // Derive display name: prefer server-provided partnerName, else
-        // the username portion before '@' (e.g. "thaiviethoang2910" from email).
         val partnerRawUsername = uiState.messages.firstOrNull { !it.mine }?.senderUsername
         val rawPartnerName = uiState.partnerName ?: partnerRawUsername
         val displayPartnerName = rawPartnerName?.substringBefore("@")?.takeIf { it.isNotBlank() } ?: "Partner"
-        // Initial letter for fallback avatar (always available from username)
         val partnerInitial = displayPartnerName.firstOrNull()?.toString()
             ?: partnerRawUsername?.firstOrNull()?.toString()
 
@@ -183,6 +206,7 @@ fun ChatScreen(
             partnerBitmap = partnerBitmap,
             partnerInitial = partnerInitial,
             isTyping = uiState.isPartnerTyping,
+            onInfoClick = { showEmojiCustomizerDialog = true },
         )
 
         // ── Message list ────────────────────────────────────────────
@@ -220,10 +244,20 @@ fun ChatScreen(
                             message = item.grouped.message,
                             showAvatar = item.grouped.showAvatar,
                             showTimestamp = item.grouped.showTimestamp,
+                            positionInGroup = item.grouped.positionInGroup,
                             allMessages = messages,
                             partnerBitmap = partnerBitmap,
                             partnerInitial = partnerInitial,
                             partnerName = displayPartnerName,
+                            lastReadMessageId = lastReadMessageId,
+                            reactionsMap = reactionsMap,
+                            activeReactionMenuMessageId = activeReactionMenuMessageId,
+                            onReact = { emoji ->
+                                reactionsMap[item.grouped.message.id] = emoji
+                            },
+                            onShowReactionMenu = { show ->
+                                activeReactionMenuMessageId = if (show) item.grouped.message.id else null
+                            },
                             onSwipeToReply = { viewModel.setReplyTo(it) },
                         )
                     }
@@ -306,15 +340,82 @@ fun ChatScreen(
                     inputValue = TextFieldValue("")
                 }
             },
+            onSendLike = {
+                viewModel.send(accessToken, quickEmoji, uiState.replyingToMessage?.id)
+            },
+            quickEmoji = quickEmoji,
             isSending = uiState.isSending,
             accessToken = accessToken,
         )
+
+        if (showEmojiCustomizerDialog) {
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showEmojiCustomizerDialog = false }
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 6.dp,
+                    modifier = Modifier
+                        .width(280.dp)
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Thay đổi biểu tượng Chat",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        
+                        val customEmojis = listOf("👍", "❤️", "😂", "😮", "🔥", "🎉", "💩", "✨", "💯", "🎈", "😄", "🌟")
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            for (row in 0 until 4) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    for (col in 0 until 3) {
+                                        val idx = row * 3 + col
+                                        if (idx < customEmojis.size) {
+                                            val emoji = customEmojis[idx]
+                                            Text(
+                                                text = emoji,
+                                                style = androidx.compose.ui.text.TextStyle(fontSize = 32.sp),
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        quickEmoji = emoji
+                                                        showEmojiCustomizerDialog = false
+                                                    }
+                                                    .padding(6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text(
+                            text = "Hủy",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                            .clickable { showEmojiCustomizerDialog = false }
+                                            .padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TopBar
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ChatTopBar(
@@ -322,129 +423,197 @@ private fun ChatTopBar(
     partnerBitmap: Bitmap?,
     partnerInitial: String?,
     isTyping: Boolean,
+    onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = colorScheme.surface,
-        shadowElevation = 2.dp,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Avatar (no online dot)
-            AvatarImage(
-                bitmap = partnerBitmap,
-                size = 44,
-                initial = partnerInitial,
-            )
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(
+                    onClick = {
+                        (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Rounded.ArrowBack,
+                        contentDescription = "Back",
+                        tint = colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = partnerName ?: stringResource(R.string.chat_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (isTyping) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    AvatarImage(
+                        bitmap = partnerBitmap,
+                        size = 38,
+                        initial = partnerInitial,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(Color(0xFF31A24C), CircleShape)
+                            .border(1.5.dp, colorScheme.surface, CircleShape)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.chat_typing_indicator),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.primary,
+                        text = partnerName ?: stringResource(R.string.chat_title),
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = if (isTyping) "Đang nhập tin nhắn..." else "Đang hoạt động",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = if (isTyping) Color(0xFF31A24C) else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontWeight = if (isTyping) FontWeight.Medium else FontWeight.Normal,
+                    )
+                }
+
+                IconButton(
+                    onClick = onInfoClick,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Rounded.Info,
+                        contentDescription = "Info",
+                        tint = colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(0.5.dp)
+                    .background(colorScheme.outlineVariant.copy(alpha = 0.4f))
+            )
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Input bar
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ChatInputBar(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     onSend: () -> Unit,
+    onSendLike: () -> Unit,
+    quickEmoji: String,
     isSending: Boolean,
     accessToken: String,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val canSend = !isSending && accessToken.isNotBlank() && value.text.trim().isNotBlank()
+    val isTextEmpty = value.text.isEmpty()
+    val canSend = !isSending && accessToken.isNotBlank()
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = colorScheme.surface,
-        shadowElevation = 4.dp,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
+        Column {
+            Spacer(
                 modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp),
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.chat_input_placeholder),
-                        color = colorScheme.onSurfaceVariant,
-                    )
-                },
-                singleLine = false,
-                minLines = 1,
-                maxLines = 4,
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = colorScheme.onSurface,
-                    unfocusedTextColor = colorScheme.onSurface,
-                    focusedBorderColor = colorScheme.primary,
-                    unfocusedBorderColor = colorScheme.outlineVariant,
-                    focusedContainerColor = colorScheme.surfaceContainerLow,
-                    unfocusedContainerColor = colorScheme.surfaceContainerLow,
-                    cursorColor = colorScheme.primary,
-                ),
+                    .fillMaxWidth()
+                    .height(0.5.dp)
+                    .background(colorScheme.outlineVariant.copy(alpha = 0.4f))
             )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = if (canSend) colorScheme.primary else colorScheme.surfaceVariant,
-                        shape = CircleShape,
-                    )
-                    .clickable(enabled = canSend, onClick = onSend),
-                contentAlignment = Alignment.Center,
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.Bottom,
             ) {
-                Icon(
-                    imageVector = LucideSend,
-                    contentDescription = stringResource(R.string.chat_send),
-                    tint = if (canSend) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp),
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 40.dp)
+                        .padding(start = 4.dp),
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.chat_input_placeholder),
+                            color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    },
+                    singleLine = false,
+                    minLines = 1,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5),
+                        unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5),
+                        cursorColor = colorScheme.primary,
+                    ),
                 )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Box(
+                    modifier = Modifier
+                        .height(40.dp)
+                        .then(
+                            if (isTextEmpty) Modifier.width(40.dp)
+                            else Modifier.padding(horizontal = 8.dp)
+                        )
+                        .background(
+                            color = Color.Transparent,
+                            shape = CircleShape,
+                        )
+                        .clickable(
+                            enabled = canSend,
+                            onClick = {
+                                if (isTextEmpty) {
+                                    onSendLike()
+                                } else {
+                                    onSend()
+                                }
+                            }
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isTextEmpty) {
+                        Text(
+                            text = quickEmoji,
+                            fontSize = 24.sp,
+                        )
+                    } else {
+                        Text(
+                            text = "Gửi",
+                            color = colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Date separator
 // ─────────────────────────────────────────────────────────────────────────────
 
 private sealed interface ChatListItem {
@@ -518,10 +687,16 @@ private fun SwipeableReplyBubble(
     message: ChatMessage,
     showAvatar: Boolean,
     showTimestamp: Boolean,
+    positionInGroup: MessagePositionInGroup,
     allMessages: List<ChatMessage>,
     partnerBitmap: Bitmap?,
     partnerInitial: String?,
     partnerName: String?,
+    lastReadMessageId: String?,
+    reactionsMap: Map<String, String>,
+    activeReactionMenuMessageId: String?,
+    onReact: (String) -> Unit,
+    onShowReactionMenu: (Boolean) -> Unit,
     onSwipeToReply: (ChatMessage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -538,18 +713,20 @@ private fun SwipeableReplyBubble(
         enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = false,
         backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 12.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Icon(
-                    imageVector = LucideReply,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
+            if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 12.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Icon(
+                        imageVector = LucideReply,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         },
     ) {
@@ -557,10 +734,16 @@ private fun SwipeableReplyBubble(
             message = message,
             showAvatar = showAvatar,
             showTimestamp = showTimestamp,
+            positionInGroup = positionInGroup,
             allMessages = allMessages,
             partnerBitmap = partnerBitmap,
             partnerInitial = partnerInitial,
             partnerName = partnerName,
+            lastReadMessageId = lastReadMessageId,
+            reactionsMap = reactionsMap,
+            showReactionMenu = activeReactionMenuMessageId == message.id,
+            onReact = onReact,
+            onShowReactionMenu = onShowReactionMenu,
         )
     }
 }
@@ -569,23 +752,53 @@ private fun SwipeableReplyBubble(
 // Chat bubble
 // ─────────────────────────────────────────────────────────────────────────────
 
+private fun getBubbleShape(mine: Boolean, position: MessagePositionInGroup): RoundedCornerShape {
+    val defaultRadius = 18.dp
+    val flatRadius = 4.dp
+    return if (mine) {
+        when (position) {
+            MessagePositionInGroup.SINGLE -> RoundedCornerShape(defaultRadius, defaultRadius, defaultRadius, defaultRadius)
+            MessagePositionInGroup.FIRST -> RoundedCornerShape(defaultRadius, defaultRadius, defaultRadius, flatRadius)
+            MessagePositionInGroup.MIDDLE -> RoundedCornerShape(defaultRadius, flatRadius, defaultRadius, flatRadius)
+            MessagePositionInGroup.LAST -> RoundedCornerShape(defaultRadius, flatRadius, defaultRadius, defaultRadius)
+        }
+    } else {
+        when (position) {
+            MessagePositionInGroup.SINGLE -> RoundedCornerShape(defaultRadius, defaultRadius, defaultRadius, defaultRadius)
+            MessagePositionInGroup.FIRST -> RoundedCornerShape(defaultRadius, defaultRadius, flatRadius, defaultRadius)
+            MessagePositionInGroup.MIDDLE -> RoundedCornerShape(flatRadius, defaultRadius, flatRadius, defaultRadius)
+            MessagePositionInGroup.LAST -> RoundedCornerShape(flatRadius, defaultRadius, defaultRadius, defaultRadius)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ChatBubble(
     message: ChatMessage,
-    showAvatar: Boolean = true,
-    showTimestamp: Boolean = true,
-    allMessages: List<ChatMessage> = emptyList(),
-    partnerBitmap: Bitmap? = null,
-    partnerInitial: String? = null,
-    partnerName: String? = null,
+    showAvatar: Boolean,
+    showTimestamp: Boolean,
+    positionInGroup: MessagePositionInGroup,
+    allMessages: List<ChatMessage>,
+    partnerBitmap: Bitmap?,
+    partnerInitial: String?,
+    partnerName: String?,
+    lastReadMessageId: String?,
+    reactionsMap: Map<String, String>,
+    showReactionMenu: Boolean,
+    onReact: (String) -> Unit,
+    onShowReactionMenu: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mine = message.mine
     val colorScheme = MaterialTheme.colorScheme
 
-    val bubbleColor = if (mine) colorScheme.primary else colorScheme.surfaceContainerHigh
-    val textColor = if (mine) colorScheme.onPrimary else colorScheme.onSurface
-    val timeColor = if (mine) colorScheme.onPrimary.copy(alpha = 0.65f) else colorScheme.onSurfaceVariant
+    val bubbleShape = getBubbleShape(mine, positionInGroup)
+    val mineGradient = Brush.linearGradient(colors = listOf(colorScheme.primary, colorScheme.tertiary))
+    val partnerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5)
+
+    val textColor = if (mine) Color.White else colorScheme.onSurface
+    val timeColor = if (mine) Color.White.copy(alpha = 0.65f) else colorScheme.onSurfaceVariant
 
     val timeText = formatTimestamp(message.createdAt)
 
@@ -594,13 +807,13 @@ private fun ChatBubble(
     }
     val isAi = !mine && message.senderUsername?.equals("MiniAI", ignoreCase = true) == true
 
-    // Use partnerBitmap (decoded once at screen level) as primary.
-    // Only decode per-message avatar as fallback if partnerBitmap is not available.
     val msgAvatarBitmap = when {
         mine || isAi -> null
         partnerBitmap != null -> partnerBitmap
         else -> remember(message.senderAvatarUrl) { decodeBase64Avatar(message.senderAvatarUrl) }
     }
+
+    val reaction = reactionsMap[message.id]
 
     Row(
         modifier = modifier
@@ -626,7 +839,6 @@ private fun ChatBubble(
             modifier = Modifier.widthIn(max = 280.dp),
             horizontalAlignment = if (mine) Alignment.End else Alignment.Start,
         ) {
-            // Only show name label for AI bot — normal partner chat doesn't need it
             if (isAi && showAvatar) {
                 Text(
                     text = "MiniAI",
@@ -637,52 +849,130 @@ private fun ChatBubble(
                 )
             }
 
-            Surface(
-                color = bubbleColor,
-                shape = RoundedCornerShape(
-                    topStart = 18.dp,
-                    topEnd = 18.dp,
-                    bottomStart = if (mine) 18.dp else if (showAvatar) 4.dp else 18.dp,
-                    bottomEnd = if (mine) 4.dp else 18.dp,
-                ),
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    if (quotedMessage != null) {
-                        QuotedMessagePreview(
-                            quoted = quotedMessage,
-                            isOnMine = mine,
-                            modifier = Modifier.padding(bottom = 6.dp),
-                        )
-                    }
-                    MessageTextWithLinks(
-                        messageText = message.text,
-                        textColor = textColor,
-                    )
-                    if (showTimestamp && timeText.isNotBlank()) {
+            if (showReactionMenu) {
+                Popup(
+                    alignment = if (mine) Alignment.TopEnd else Alignment.TopStart,
+                    onDismissRequest = { onShowReactionMenu(false) }
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isSystemInDarkTheme()) Color(0xFF303030) else Color.White,
+                        shadowElevation = 6.dp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    ) {
                         Row(
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .padding(top = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(
-                                text = timeText,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = timeColor,
-                            )
-                            if (mine) {
+                            val emojis = listOf("👍", "❤️", "😂", "😮", "😢", "😡")
+                            emojis.forEach { emoji ->
                                 Text(
-                                    text = when (message.readStatus) {
-                                        ReadStatus.SENT -> "✓"
-                                        ReadStatus.DELIVERED -> "✓✓"
-                                        ReadStatus.READ -> "✓✓"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = if (message.readStatus == ReadStatus.READ) colorScheme.onPrimary
-                                    else colorScheme.onPrimary.copy(alpha = 0.65f),
+                                    text = emoji,
+                                    fontSize = 20.sp,
+                                    modifier = Modifier
+                                        .clickable {
+                                            onReact(emoji)
+                                            onShowReactionMenu(false)
+                                        }
+                                        .padding(2.dp)
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = if (mine) Alignment.BottomEnd else Alignment.BottomStart
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = if (mine) Alignment.End else Alignment.Start
+                ) {
+                    Surface(
+                        shape = bubbleShape,
+                        color = Color.Transparent,
+                        modifier = Modifier
+                            .then(
+                                if (mine) Modifier.background(mineGradient, bubbleShape)
+                                else Modifier.background(partnerColor, bubbleShape)
+                            )
+                            .combinedClickable(
+                                onClick = {
+                                    if (showReactionMenu) onShowReactionMenu(false)
+                                },
+                                onLongClick = {
+                                    onShowReactionMenu(true)
+                                }
+                            )
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                            if (quotedMessage != null) {
+                                QuotedMessagePreview(
+                                    quoted = quotedMessage,
+                                    isOnMine = mine,
+                                    modifier = Modifier.padding(bottom = 6.dp),
+                                )
+                            }
+                            MessageTextWithLinks(
+                                messageText = message.text,
+                                textColor = textColor,
+                            )
+                            if (showTimestamp && timeText.isNotBlank()) {
+                                Row(
+                                    modifier = Modifier
+                                        .align(Alignment.End)
+                                        .padding(top = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                ) {
+                                    Text(
+                                        text = timeText,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = timeColor,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (reaction != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSystemInDarkTheme()) Color(0xFF3E4042) else Color(0xFFF0F2F5),
+                        border = BorderStroke(1.dp, colorScheme.background),
+                        modifier = Modifier
+                            .offset(
+                                x = if (mine) (-12).dp else 12.dp,
+                                y = 6.dp
+                            )
+                    ) {
+                        Text(
+                            text = reaction,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            val isLatestReadMessage = message.id == lastReadMessageId
+            if (mine) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(end = 4.dp, top = 2.dp)
+                ) {
+                    when {
+                        message.readStatus == com.example.mobileproject.domain.entity.ReadStatus.READ && isLatestReadMessage -> {
+                            AvatarImage(
+                                bitmap = partnerBitmap,
+                                size = 14,
+                                initial = partnerInitial,
+                            )
                         }
                     }
                 }
