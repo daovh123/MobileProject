@@ -17,9 +17,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -56,10 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.icons.LucideHeart
-import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideShare2
 import com.example.mobileproject.presentation.ui.theme.AppTheme
+import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 
 @Composable
 fun CoupleConnectContent(
@@ -93,7 +93,6 @@ fun CoupleConnectContent(
         cursorColor = colorScheme.primary,
     )
 
-    // Heart pulse animation
     val pulseTransition = rememberInfiniteTransition(label = "heart-couple")
     val pulseScale by pulseTransition.animateFloat(
         initialValue = 1f,
@@ -108,7 +107,6 @@ fun CoupleConnectContent(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Background image
         Image(
             painter = painterResource(R.drawable.bg_couple_connect),
             contentDescription = null,
@@ -116,7 +114,6 @@ fun CoupleConnectContent(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Gradient overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,7 +135,6 @@ fun CoupleConnectContent(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Heart icon + title section
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -157,7 +153,9 @@ fun CoupleConnectContent(
                                 imageVector = LucideHeart,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.height(32.dp).width(32.dp),
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .width(32.dp),
                             )
                         }
                     }
@@ -185,7 +183,6 @@ fun CoupleConnectContent(
                 }
             }
 
-            // My code card (glassmorphism)
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
@@ -233,7 +230,9 @@ fun CoupleConnectContent(
 
                             Button(
                                 onClick = {
-                                    uiState.myCoupleCode?.replace("-", "")?.let { clipboardManager.setText(AnnotatedString(it)) }
+                                    uiState.myCoupleCode?.replace("-", "")?.let {
+                                        clipboardManager.setText(AnnotatedString(it))
+                                    }
                                 },
                                 enabled = !uiState.myCoupleCode.isNullOrBlank(),
                                 modifier = Modifier
@@ -310,7 +309,6 @@ fun CoupleConnectContent(
                 }
             }
 
-            // Divider
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -334,7 +332,6 @@ fun CoupleConnectContent(
                 }
             }
 
-            // Enter partner code card
             item {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
@@ -418,7 +415,6 @@ fun CoupleConnectContent(
                 }
             }
 
-            // Skip link
             item {
                 Text(
                     text = stringResource(R.string.couple_do_it_later),
@@ -432,7 +428,6 @@ fun CoupleConnectContent(
                 )
             }
 
-            // Info messages
             if (!uiState.infoMessage.isNullOrBlank()) {
                 item {
                     Surface(
@@ -505,7 +500,7 @@ fun CoupleConnectContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(20.dp),
                                 color = colorScheme.surfaceContainerLow.copy(alpha = 0.80f),
-                                border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                        border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
                             ) {
                                 Text(
                                     text = uiState.incomingRequesterDisplayName
