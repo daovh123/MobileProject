@@ -28,3 +28,19 @@ data class TopUpResponseDto(
     @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("paidAt") val paidAt: String?,
 )
+
+data class PayoutCreateRequestDto(
+    @SerializedName("coupleId") val coupleId: String,
+    @SerializedName("amount") val amount: Long,
+)
+
+data class PayoutResponseDto(
+    @SerializedName("id") val id: String?,
+    @SerializedName("coupleId") val coupleId: String?,
+    @SerializedName("amount") val amount: Long?,
+    @SerializedName("status") val status: String?,
+    @SerializedName("transferCode") val transferCode: String?,
+    @SerializedName("currentBalance") val currentBalance: Long?,
+    @SerializedName("createdAt") val createdAt: String?,
+    @SerializedName("paidAt") val paidAt: String?,
+)

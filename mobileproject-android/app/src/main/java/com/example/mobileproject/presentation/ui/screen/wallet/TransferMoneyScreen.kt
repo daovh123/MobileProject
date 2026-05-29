@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -48,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -62,12 +62,14 @@ import com.example.mobileproject.utils.formatSimpleAmount
 @Composable
 fun TransferMoneyScreen(
     onNavigateBack: () -> Unit,
+    scannedQrRaw: String = "",
     viewModel: TransferMoneyViewModel = hiltViewModel(),
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val banks = remember { VietnamBankCatalog.banks }
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val banks = remember { VietnamBankCatalog.banks }
 
     var accountNumber by remember { mutableStateOf("") }
     var selectedBank by remember { mutableStateOf<VietnamBank?>(null) }
@@ -76,7 +78,34 @@ fun TransferMoneyScreen(
     var bankMenuExpanded by remember { mutableStateOf(false) }
 
     val amountValue = amount.toLongOrNull() ?: 0L
-    val canConfirm = accountNumber.length >= 6 && selectedBank != null && amountValue > 0L && !uiState.isSubmitting
+    val canConfirm = accountNumber.length >= 6 &&
+        selectedBank != null &&
+        amountValue > 0L &&
+        !uiState.isSubmitting &&
+        !uiState.isWaitingBankConfirmation
+
+    LaunchedEffect(scannedQrRaw) {
+        if (scannedQrRaw.isBlank()) return@LaunchedEffect
+        val resolved = resolveTransferQr(context, scannedQrRaw)
+        if (resolved == null) {
+            note = scannedQrRaw.take(160)
+            snackbarHostState.showSnackbar("Khong doc duoc thong tin chuyen khoan tu QR.")
+            return@LaunchedEffect
+        }
+
+        resolved.accountNumber?.takeIf { it.isNotBlank() }?.let { accountNumber = it }
+        resolved.bank?.let { selectedBank = it }
+        resolved.amount?.takeIf { it > 0L }?.let { amount = it.toString() }
+        resolved.note?.takeIf { it.isNotBlank() }?.let { note = it }
+
+        if (note.isBlank() && resolved.note.isNullOrBlank()) {
+            note = resolved.rawContent.take(160)
+        }
+
+        snackbarHostState.showSnackbar(
+            resolved.warning ?: "Da doc QR va tu dong dien thong tin neu QR co chua du lieu VietQR."
+        )
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
@@ -92,7 +121,7 @@ fun TransferMoneyScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Chuyển tiền",
+                        text = "Chuyen tien",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -101,7 +130,7 @@ fun TransferMoneyScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = "Quay lai",
                         )
                     }
                 },
@@ -126,7 +155,7 @@ fun TransferMoneyScreen(
                 )
                 Spacer(modifier = Modifier.height(18.dp))
                 Text(
-                    text = "Đã tạo giao dịch chuyển tiền",
+                    text = "Rut tien da duoc xac nhan",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
@@ -159,19 +188,19 @@ fun TransferMoneyScreen(
                             }
                             HorizontalDivider()
                         }
-                        TransferSummaryRow("Số tài khoản", accountNumber)
+                        TransferSummaryRow("So tai khoan", accountNumber)
                         HorizontalDivider()
-                        TransferSummaryRow("Số tiền", formatSimpleAmount(amountValue))
+                        TransferSummaryRow("So tien", formatSimpleAmount(amountValue))
                         if (note.isNotBlank()) {
                             HorizontalDivider()
-                            TransferSummaryRow("Nội dung", note)
+                            TransferSummaryRow("Noi dung", note)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
-                    Text("Quay lại")
+                    Text("Quay lai")
                 }
             }
             return@Scaffold
@@ -185,6 +214,44 @@ fun TransferMoneyScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            if (uiState.isWaitingBankConfirmation || !uiState.statusText.isNullOrBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = if (uiState.isWaitingBankConfirmation) "Dang cho xac nhan tien ra" else "Trang thai lenh rut",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface,
+                        )
+                        uiState.transferCode?.takeIf { it.isNotBlank() }?.let {
+                            TransferSummaryRow("Ma giao dich", it)
+                        }
+                        uiState.statusText?.takeIf { it.isNotBlank() }?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (uiState.isWaitingBankConfirmation) {
+                            Text(
+                                text = "App chua tu chuyen tien trong ngan hang. Ban van can mo app bank, nhap mat khau/OTP va chuyen tien that.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
@@ -202,12 +269,12 @@ fun TransferMoneyScreen(
                     )
                     Column {
                         Text(
-                            text = "Chuyển khoản thủ công",
+                            text = "Chuyen khoan thu cong",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "Nhập tài khoản, chọn ngân hàng, nhập tiền và xác nhận.",
+                            text = "Nhap tai khoan, chon ngan hang, nhap tien va xac nhan.",
                             style = MaterialTheme.typography.bodySmall,
                             color = colorScheme.onSurfaceVariant,
                         )
@@ -219,7 +286,7 @@ fun TransferMoneyScreen(
                 value = accountNumber,
                 onValueChange = { input -> if (input.all(Char::isDigit)) accountNumber = input },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Số tài khoản") },
+                label = { Text("So tai khoan") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
@@ -230,7 +297,7 @@ fun TransferMoneyScreen(
                     onValueChange = {},
                     modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
-                    label = { Text("Ngân hàng") },
+                    label = { Text("Ngan hang") },
                     leadingIcon = {
                         if (selectedBank != null) {
                             BankLogo(bank = selectedBank, size = 24.dp)
@@ -238,7 +305,11 @@ fun TransferMoneyScreen(
                             Icon(Icons.Default.AccountBalance, contentDescription = null)
                         }
                     },
-                    trailingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { bankMenuExpanded = true }) {
+                            Icon(Icons.Default.AccountBalance, contentDescription = "Chon ngan hang")
+                        }
+                    },
                 )
                 DropdownMenu(
                     expanded = bankMenuExpanded,
@@ -247,8 +318,15 @@ fun TransferMoneyScreen(
                 ) {
                     banks.forEach { bank ->
                         DropdownMenuItem(
-                            text = { Text(bank.name) },
-                            leadingIcon = { BankLogo(bank = bank, size = 22.dp) },
+                            text = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    BankLogo(bank = bank, size = 24.dp)
+                                    Text(bank.name)
+                                }
+                            },
                             onClick = {
                                 selectedBank = bank
                                 bankMenuExpanded = false
@@ -256,18 +334,13 @@ fun TransferMoneyScreen(
                         )
                     }
                 }
-                Surface(
-                    modifier = Modifier.matchParentSize(),
-                    color = Color.Transparent,
-                    onClick = { bankMenuExpanded = true },
-                ) {}
             }
 
             OutlinedTextField(
                 value = amount,
                 onValueChange = { input -> if (input.all(Char::isDigit)) amount = input },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Số tiền") },
+                label = { Text("So tien") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
@@ -280,20 +353,25 @@ fun TransferMoneyScreen(
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Nội dung") },
-                placeholder = { Text("Nhập nội dung chuyển tiền") },
-                minLines = 2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp),
+                label = { Text("Noi dung") },
             )
 
             TextButton(
-                onClick = { if (note.isBlank()) note = "Chuyển khoản nội bộ" },
+                onClick = {
+                    note = buildString {
+                        append("Rut tien ")
+                        append(selectedBank?.shortName ?: "BANK")
+                        append(" ")
+                        append(accountNumber)
+                    }
+                },
                 modifier = Modifier.align(Alignment.End),
             ) {
-                Text("Dùng nội dung mặc định")
+                Text("Dung noi dung mac dinh", color = Color(0xFFFF3B6B))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
@@ -302,16 +380,19 @@ fun TransferMoneyScreen(
                         amount = amountValue,
                         bankName = bank.name,
                         accountNumber = accountNumber,
-                        note = note.takeIf { it.isNotBlank() },
+                        note = note.ifBlank { null },
                     )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
                 enabled = canConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
             ) {
-                Text(if (uiState.isSubmitting) "Đang xử lý..." else "Xác nhận")
+                Text(
+                    if (uiState.isSubmitting) "Dang tao lenh rut..." else "Xac nhan",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
@@ -322,6 +403,7 @@ private fun TransferSummaryRow(
     label: String,
     value: String,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -330,13 +412,14 @@ private fun TransferSummaryRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = colorScheme.onSurface,
         )
     }
 }
+

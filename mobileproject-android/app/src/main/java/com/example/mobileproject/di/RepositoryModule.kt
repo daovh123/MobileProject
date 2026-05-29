@@ -77,4 +77,10 @@ abstract class RepositoryModule {
     abstract fun bindTopUpRepository(
         impl: TopUpRepositoryImpl,
     ): TopUpRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPayoutRepository(
+        impl: PayoutRepositoryImpl,
+    ): PayoutRepository
 }

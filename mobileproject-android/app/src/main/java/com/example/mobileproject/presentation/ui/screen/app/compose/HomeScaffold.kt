@@ -61,8 +61,6 @@ import com.example.mobileproject.presentation.ui.screen.wallet.FutureGoalsScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
-import com.example.mobileproject.presentation.ui.screen.wallet.QRScannerScreen
-import com.example.mobileproject.presentation.ui.screen.wallet.TransferMoneyScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
 import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.ui.icons.LucideClose
@@ -88,10 +86,8 @@ object HomeRoutes {
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
-    const val TRANSFER_MONEY: String = "transfer_money"
     const val TOP_UP_QR: String = "top_up_qr/{topUpId}"
     const val TOP_UP_BANK_REDIRECT: String = "top_up_bank_redirect/{topUpId}"
-    const val QR_SCANNER: String = "qr_scanner"
     const val RECENT_TRANSACTIONS: String = "recent_transactions"
     const val SAVING_GOALS: String = "saving_goals"
     const val ADD_SAVING_GOAL: String = "add_saving_goal"
@@ -106,6 +102,7 @@ object HomeRoutes {
     fun topUpBankRedirectRoute(topUpId: String): String {
         return "top_up_bank_redirect/${java.net.URLEncoder.encode(topUpId, "UTF-8")}"
     }
+
 }
 
 data class AppNotification(
@@ -134,10 +131,8 @@ fun HomeScaffold(
     val isChatRoute = currentRoute == HomeRoutes.CHAT
     val isAddExpenseRoute = currentRoute == HomeRoutes.ADD_EXPENSE
     val isTopUpRoute = currentRoute == HomeRoutes.TOP_UP
-    val isTransferMoneyRoute = currentRoute == HomeRoutes.TRANSFER_MONEY
     val isTopUpQRRoute = currentRoute.startsWith("top_up_qr/")
     val isTopUpBankRedirectRoute = currentRoute.startsWith("top_up_bank_redirect/")
-    val isQRScannerRoute = currentRoute == HomeRoutes.QR_SCANNER
     val isRecentTransactionsRoute = currentRoute == HomeRoutes.RECENT_TRANSACTIONS
     val isSavingGoalsRoute = currentRoute == HomeRoutes.SAVING_GOALS
     val isAddSavingGoalRoute = currentRoute == HomeRoutes.ADD_SAVING_GOAL
@@ -150,8 +145,8 @@ fun HomeScaffold(
     val isSettingsAppearanceRoute = currentRoute == HomeRoutes.SETTINGS_APPEARANCE
     val isSettingsHelpRoute = currentRoute == HomeRoutes.SETTINGS_HELP
 
-    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute || isTransferMoneyRoute ||
-        isTopUpQRRoute || isTopUpBankRedirectRoute || isQRScannerRoute ||
+    val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
+        isTopUpQRRoute || isTopUpBankRedirectRoute ||
         isRecentTransactionsRoute || isSavingGoalsRoute ||
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
         isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute ||
@@ -308,8 +303,6 @@ fun HomeScaffold(
                         onNavigateToAddSavingGoal = { navController.navigate(HomeRoutes.ADD_SAVING_GOAL) },
                         onNavigateToAddFutureGoal = { navController.navigate(HomeRoutes.ADD_FUTURE_GOAL) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
-                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
-                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) },
                         onNavigateToChat = {
                             navController.navigate(HomeRoutes.CHAT) {
                                 launchSingleTop = true
@@ -331,9 +324,7 @@ fun HomeScaffold(
                     WalletScreen(
                         onNavigateToAddExpense = { navController.navigate(HomeRoutes.ADD_EXPENSE) },
                         onNavigateToTopUp = { navController.navigate(HomeRoutes.TOP_UP) },
-                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) },
-                        onNavigateToTransferMoney = { navController.navigate(HomeRoutes.TRANSFER_MONEY) },
-                        onNavigateToQRScanner = { navController.navigate(HomeRoutes.QR_SCANNER) }
+                        onSeeAllTransactions = { navController.navigate(HomeRoutes.RECENT_TRANSACTIONS) }
                     )
                 }
                 composable(HomeRoutes.ADD_EXPENSE) {
@@ -352,11 +343,6 @@ fun HomeScaffold(
                                 HomeRoutes.topUpBankRedirectRoute(topUpId)
                             )
                         }
-                    )
-                }
-                composable(HomeRoutes.TRANSFER_MONEY) {
-                    TransferMoneyScreen(
-                        onNavigateBack = { navController.popBackStack() },
                     )
                 }
                 composable(
@@ -409,17 +395,6 @@ fun HomeScaffold(
                                 }
                             }
                         }
-                    )
-                }
-                composable(HomeRoutes.QR_SCANNER) {
-                    QRScannerScreen(
-                        onNavigateBack = { navController.popBackStack() },
-                        onManualInput = {
-                            navController.popBackStack()
-                            navController.navigate(HomeRoutes.TRANSFER_MONEY) {
-                                launchSingleTop = true
-                            }
-                        },
                     )
                 }
                 composable(HomeRoutes.RECENT_TRANSACTIONS) {

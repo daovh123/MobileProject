@@ -37,6 +37,7 @@ public class SecurityConfig {
                                  "/api/v1/transactions/**",
                                  "/api/v1/top-ups/**",
                                  "/api/v1/topups/**",
+                                 "/api/v1/payouts/**",
                                  "/api/v1/goals/**",
                                  "/api/v1/analytics/**",
                                  "/api/v1/wallet/**",
