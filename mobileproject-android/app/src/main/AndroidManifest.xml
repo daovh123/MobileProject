@@ -63,7 +63,7 @@
             android:theme="@style/Theme.MobileProject.NoActionBar" />
 
         <activity
-            android:name="com.example.mobileproject.presentation.ui.screen.welcome.WelcomeActivity"
+            android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
             android:theme="@style/Theme.MobileProject.NoActionBar"
             android:exported="true">
             <intent-filter>
@@ -75,7 +75,7 @@
         <activity
             android:name="com.example.mobileproject.presentation.ui.screen.login.LoginActivity"
             android:theme="@style/Theme.MobileProject.NoActionBar"
-            android:exported="false" />
+            android:exported="true" />
 
         <service
             android:name="com.example.mobileproject.presentation.service.MapShareForegroundService"
