@@ -512,18 +512,18 @@ private fun ProfileMenuCard(
                 icon = LucideShield,
                 trailingText = stringResource(R.string.profile_privacy_rights_count),
             ) {
-                SwitchInfoRow(
-                    title = stringResource(R.string.settings_show_activity_title),
-                    subtitle = stringResource(R.string.settings_show_activity_subtitle),
-                    checked = showActivityStatus,
-                    onCheckedChange = onShowActivityStatusChange,
-                )
-                SwitchInfoRow(
-                    title = stringResource(R.string.settings_searchable_by_email_title),
-                    subtitle = stringResource(R.string.settings_searchable_by_email_subtitle),
-                    checked = searchableByEmail,
-                    onCheckedChange = onSearchableByEmailChange,
-                )
+//                SwitchInfoRow(
+//                    title = stringResource(R.string.settings_show_activity_title),
+//                    subtitle = stringResource(R.string.settings_show_activity_subtitle),
+//                    checked = showActivityStatus,
+//                    onCheckedChange = onShowActivityStatusChange,
+//                )
+//                SwitchInfoRow(
+//                    title = stringResource(R.string.settings_searchable_by_email_title),
+//                    subtitle = stringResource(R.string.settings_searchable_by_email_subtitle),
+//                    checked = searchableByEmail,
+//                    onCheckedChange = onSearchableByEmailChange,
+//                )
             }
             ProfileMenuDropdownItem(
                 title = stringResource(R.string.settings_notifications_section_title),
@@ -603,10 +603,6 @@ private fun ProfileMenuCard(
                 trailingText = BuildConfig.VERSION_NAME,
             ) {
                 Text(
-                    text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 Button(
                     onClick = onOpenTerms,
                     modifier = Modifier
