@@ -9,7 +9,10 @@ public record CouplePartnerProfileResponse(
         String nickName,
         String avatarUrl,
         String startAt,
-        Long daysTogether) {
+        Long daysTogether,
+        String birthDate,
+        String gender,
+        String phoneNumber) {
     public static CouplePartnerProfileResponse success(String message,
             boolean paired,
             String username,
@@ -17,7 +20,10 @@ public record CouplePartnerProfileResponse(
             String nickName,
             String avatarUrl,
             String startAt,
-            Long daysTogether) {
+            Long daysTogether,
+            String birthDate,
+            String gender,
+            String phoneNumber) {
         return new CouplePartnerProfileResponse(
                 true,
                 message,
@@ -27,6 +33,9 @@ public record CouplePartnerProfileResponse(
                 nickName,
                 avatarUrl,
                 startAt,
-                daysTogether);
+                daysTogether,
+                birthDate,
+                gender,
+                phoneNumber);
     }
 }

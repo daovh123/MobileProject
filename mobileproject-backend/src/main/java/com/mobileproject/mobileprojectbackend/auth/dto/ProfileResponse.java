@@ -9,6 +9,7 @@ public record ProfileResponse(
         String birthDate,
         String gender,
         String email,
+        String phoneNumber,
         boolean profileCompleted,
         boolean coupleConnected,
         String avatarUrl,
@@ -21,11 +22,12 @@ public record ProfileResponse(
                                           String birthDate,
                                           String gender,
                                           String email,
+                                          String phoneNumber,
                                           boolean profileCompleted,
                                           boolean coupleConnected,
                                           String avatarUrl,
                                           String avatarFrameId) {
-        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, email,
+        return new ProfileResponse(true, message, username, fullName, nickName, birthDate, gender, email, phoneNumber,
                 profileCompleted, coupleConnected, avatarUrl, avatarFrameId);
     }
 }

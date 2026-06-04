@@ -104,6 +104,7 @@ public class ProfileService {
                 user.getBirthDate(),
                 user.getGender(),
                 user.getEmail(),
+                user.getPhoneNumber(),
                 user.isProfileCompleted(),
                 user.getPartnerUserId() != null && !user.getPartnerUserId().isBlank(),
                 user.getAvatarUrl(),

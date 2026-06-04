@@ -71,7 +71,7 @@ class ProfileServiceTest {
 
                 ProfileResponse response = profileService.upsertProfile(
                                 "Bearer token",
-                                new ProfileUpsertRequest("  Nguyen Van A  ", "  ", "01/04/2026", "nam", null));
+                                new ProfileUpsertRequest("  Nguyen Van A  ", "  ", "01/04/2026", "nam", null, null));
 
                 assertTrue(response.success());
                 assertEquals("demo", response.username());
@@ -101,7 +101,7 @@ class ProfileServiceTest {
                                 ResponseStatusException.class,
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
-                                                new ProfileUpsertRequest("   ", "Ani", "2026-12-31", "female", null)));
+                                                new ProfileUpsertRequest("   ", "Ani", "2026-12-31", "female", null, null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
@@ -116,7 +116,7 @@ class ProfileServiceTest {
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
                                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026/31/12",
-                                                                "female", null)));
+                                                                "female", null, null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
@@ -131,7 +131,7 @@ class ProfileServiceTest {
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
                                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-12-31",
-                                                                "unknown", null)));
+                                                                "unknown", null, null)));
 
                 assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         }
@@ -147,7 +147,7 @@ class ProfileServiceTest {
                 ProfileResponse response = profileService.upsertProfile(
                                 "Bearer token",
                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female",
-                                                "  New@Example.com  "));
+                                                "  New@Example.com  ", null));
 
                 assertEquals("new@example.com", response.email());
                 assertEquals("new@example.com", user.getEmail());
@@ -167,7 +167,7 @@ class ProfileServiceTest {
                                 () -> profileService.upsertProfile(
                                                 "Bearer token",
                                                 new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female",
-                                                                "taken@example.com")));
+                                                                "taken@example.com", null)));
 
                 assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         }
@@ -181,7 +181,7 @@ class ProfileServiceTest {
 
                 ProfileResponse response = profileService.upsertProfile(
                                 "Bearer token",
-                                new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female", "   "));
+                                new ProfileUpsertRequest("Nguyen Van A", "Ani", "2026-04-01", "female", "   ", null));
 
                 assertEquals("keep@example.com", response.email());
                 assertEquals("keep@example.com", user.getEmail());

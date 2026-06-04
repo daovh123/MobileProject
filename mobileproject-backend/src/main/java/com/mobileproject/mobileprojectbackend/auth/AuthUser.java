@@ -20,6 +20,7 @@ public class AuthUser {
     private String nickName;
     private String birthDate;
     private String gender;
+    private String phoneNumber;
     private boolean profileCompleted;
     private String partnerUserId;
     private String avatarUrl;

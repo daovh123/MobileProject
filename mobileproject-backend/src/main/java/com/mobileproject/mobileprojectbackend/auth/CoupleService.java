@@ -249,6 +249,9 @@ public class CoupleService {
                     null,
                     null,
                     null,
+                    null,
+                    null,
+                    null,
                     null);
         }
 
@@ -257,6 +260,9 @@ public class CoupleService {
             return CouplePartnerProfileResponse.success(
                     "Partner profile is currently unavailable",
                     false,
+                    null,
+                    null,
+                    null,
                     null,
                     null,
                     null,
@@ -284,7 +290,10 @@ public class CoupleService {
                 partner.getNickName(),
                 partner.getAvatarUrl(),
                 startAt,
-                daysTogether);
+                daysTogether,
+                partner.getBirthDate(),
+                partner.getGender(),
+                partner.getPhoneNumber());
     }
 
     private DaysTogetherResult computeDaysTogether(String startAt) {
