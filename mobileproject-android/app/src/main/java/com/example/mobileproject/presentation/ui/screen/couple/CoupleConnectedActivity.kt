@@ -1,3 +1,15 @@
+/**
+ * CoupleConnectedActivity - Activity host cho màn hình chúc mừng kết nối thành công.
+ *
+ * Mục đích:
+ * - Hiển thị thông báo kết nối cặp đôi thành công với ngày bắt đầu mối quan hệ.
+ * - Cung cấp nút "Về trang chủ" để chuyển đến [HomeActivity].
+ *
+ * Navigation:
+ * - Nhấn "Về trang chủ" → [HomeActivity] (với EXTRA_ACCESS_TOKEN).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 package com.example.mobileproject.presentation.ui.screen.couple
 
 import android.content.Intent
@@ -38,10 +50,24 @@ import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 
+/**
+ * CoupleConnectedActivity - Activity host cho màn hình chúc mừng kết nối thành công.
+ *
+ * Mục đích:
+ * - Hiển thị thông báo kết nối cặp đôi thành công với ngày bắt đầu mối quan hệ.
+ * - Cung cấp nút "Về trang chủ" để chuyển đến [HomeActivity].
+ *
+ * Navigation:
+ * - Nhấn "Về trang chủ" → [HomeActivity] (với EXTRA_ACCESS_TOKEN).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 class CoupleConnectedActivity : ComponentActivity() {
 
     companion object {
+        /** Extra key cho access token */
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
+        /** Extra key cho ngày bắt đầu mối quan hệ */
         const val EXTRA_RELATIONSHIP_START_DATE: String = "extra_relationship_start_date"
     }
 
@@ -75,6 +101,17 @@ class CoupleConnectedActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable màn hình chúc mừng kết nối thành công.
+ *
+ * Hiển thị icon heart lớn, tiêu đề chúc mừng, ngày bắt đầu mối quan hệ,
+ * và nút "Về trang chủ".
+ *
+ * Layout: Column căn giữa với gradient nền.
+ *
+ * @param relationshipStartDate Ngày bắt đầu mối quan hệ (chuỗi).
+ * @param onGoHome Callback khi nhấn "Về trang chủ" → chuyển đến HomeActivity.
+ */
 @Composable
 private fun CoupleConnectedScreen(
     relationshipStartDate: String,

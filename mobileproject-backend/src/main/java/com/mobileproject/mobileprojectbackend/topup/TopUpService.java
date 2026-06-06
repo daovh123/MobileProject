@@ -24,6 +24,30 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service xử lý logic nghiệp vụ nạp tiền vào ví chung thông qua SePay.
+ *
+ * <p><b>Nghiệp vụ chính:</b></p>
+ * <ul>
+ *   <li>Tạo yêu cầu nạp tiền với mã chuyển khoản duy nhất và mã QR</li>
+ *   <li>Xử lý webhook từ SePay để xác nhận thanh toán</li>
+ * </ul>
+ *
+ * <p><b>Xử lý webhook (idempotent):</b></p>
+ * <ol>
+ *   <li>Kiểm tra trùng lặp qua {@code sepayId} hoặc {@code referenceCode}</li>
+ *   <li>Chỉ chấp nhận giao dịch incoming ({@code transferType = "in"})</li>
+ *   <li>Đối soát yêu cầu nạp tiền dựa trên mã chuyển khoản trong nội dung/description</li>
+ *   <li>Verify số tiền khớp với yêu cầu gốc</li>
+ *   <li>Atomic claim: sử dụng {@link MongoTemplate#findAndModify} chuyển trạng thái
+ *       PENDING → PROCESSING (chỉ thành công nếu vẫn đang PENDING)</li>
+ *   <li>Gọi {@link TransactionService#saveTransaction} để ghi giao dịch INCOME</li>
+ *   <li>Nếu thành công → đánh dấu PAID; nếu thất bại → release claim về PENDING</li>
+ * </ol>
+ *
+ * <p><b>Transfer code generation:</b> Sinh mã duy nhất với prefix (mặc định "YMW") + 10 ký tự UUID.
+ * Có retry tối đa 5 lần nếu trùng lặp (rất hiếm).</p>
+ */
 @Service
 public class TopUpService {
 
@@ -48,6 +72,20 @@ public class TopUpService {
         this.sePayProperties = sePayProperties;
     }
 
+    /**
+     * Tạo yêu cầu nạp tiền mới.
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Validate coupleId, amount và xác nhận cặp đôi tồn tại</li>
+     *   <li>Sinh mã chuyển khoản duy nhất (prefix + UUID)</li>
+     *   <li>Xây dựng nội dung chuyển khoản và URL mã QR</li>
+     *   <li>Lưu yêu cầu vào collection {@code top_up_requests} (retry nếu trùng transferCode)</li>
+     * </ol>
+     *
+     * @param request {@link CreateTopUpRequest} chứa coupleId, amount, bankId, bankName, note
+     * @return {@link TopUpResponse} chứa thông tin yêu cầu và mã QR; hoặc thông báo lỗi
+     */
     public TopUpResponse createTopUpRequest(CreateTopUpRequest request) {
         if (request.coupleId() == null || request.coupleId().isBlank()) {
             return TopUpResponse.failure("Couple ID is required");
@@ -87,6 +125,28 @@ public class TopUpService {
         return TopUpResponse.failure("Could not generate a unique transfer code");
     }
 
+    /**
+     * Xử lý webhook từ SePay khi có giao dịch chuyển khoản đến.
+     *
+     * <p><b>Luồng xử lý chi tiết:</b></p>
+     * <ol>
+     *   <li>Validate webhook có {@code id}</li>
+     *   <li>Kiểm tra deduplication: nếu đã xử lý theo sepayId hoặc referenceCode → trả về success</li>
+     *   <li>Chỉ chấp nhận {@code transferType = "in"} (chuyển tiền đến)</li>
+     *   <li>Validate số tiền &gt; 0</li>
+     *   <li>Log warning nếu số tài khoản nhận không khớp (không reject vì BIDV/VA có thể khác format)</li>
+     *   <li>Tìm yêu cầu nạp tiền phù hợp qua transferCode trong code/content/description</li>
+     *   <li>Verify số tiền khớp với yêu cầu gốc</li>
+     *   <li>Verify mã chuyển khoản khớp</li>
+     *   <li>Atomic claim: PENDING → PROCESSING (dùng {@code findAndModify})</li>
+     *   <li>Gọi {@code TransactionService.saveTransaction} để ghi giao dịch INCOME</li>
+     *   <li>Nếu giao dịch thất bại → release claim về PENDING</li>
+     *   <li>Nếu thành công → đánh dấu PAID</li>
+     * </ol>
+     *
+     * @param webhook {@link SePayWebhookRequest} từ SePay
+     * @return {@link TopUpWebhookResult} kết quả xử lý
+     */
     public TopUpWebhookResult handleSePayWebhook(SePayWebhookRequest webhook) {
         if (webhook == null || webhook.id() == null) {
             return TopUpWebhookResult.failure("Missing SePay transaction id");
@@ -187,21 +247,36 @@ public class TopUpService {
         );
     }
 
+    /**
+     * Tìm và trả về thông tin yêu cầu nạp tiền theo ID.
+     *
+     * @param id ID yêu cầu nạp tiền
+     * @return {@link TopUpResponse} nếu tìm thấy
+     */
     public Optional<TopUpResponse> findTopUpRequest(String id) {
         return topUpRequestRepository.findById(id).map(this::toResponse);
     }
 
+    /**
+     * Sinh mã chuyển khoản duy nhất: prefix (mặc định "YMW") + 10 ký tự UUID uppercase.
+     */
     private String generateTransferCode() {
         String prefix = hasText(sePayProperties.transferPrefix()) ? sePayProperties.transferPrefix() : "YMW";
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase(Locale.ROOT);
         return prefix.toUpperCase(Locale.ROOT) + suffix;
     }
 
+    /**
+     * Xây dựng nội dung chuyển khoản: "transferCode note" hoặc "transferCode NAP VI CHUNG".
+     */
     private String buildTransferContent(String transferCode, String note) {
         String suffix = hasText(note) ? " " + note.trim() : " NAP VI CHUNG";
         return (transferCode + suffix).trim();
     }
 
+    /**
+     * Xây dựng URL mã QR từ SePay với thông tin tài khoản, số tiền và nội dung.
+     */
     private String buildQrUrl(Long amount, String transferContent) {
         String query = "acc=" + encode(sePayProperties.accountNumber())
                 + "&bank=" + encode(sePayProperties.bankCode())
@@ -215,6 +290,10 @@ public class TopUpService {
         return URLEncoder.encode(nullToEmpty(value), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Tìm yêu cầu nạp tiền phù hợp với webhook.
+     * Ưu tiên match theo code, sau đó tìm trong content/description.
+     */
     private Optional<TopUpRequest> findMatchingRequest(SePayWebhookRequest webhook) {
         if (hasText(webhook.code())) {
             Optional<TopUpRequest> byCode = topUpRequestRepository.findByTransferCode(webhook.code().trim());
@@ -241,6 +320,9 @@ public class TopUpService {
                 .findFirst();
     }
 
+    /**
+     * Kiểm tra mã chuyển khoản khớp: match trực tiếp qua code hoặc tìm trong content/description.
+     */
     private boolean matchesTransferCode(SePayWebhookRequest webhook, String transferCode) {
         if (!hasText(transferCode)) {
             return false;
@@ -268,6 +350,12 @@ public class TopUpService {
         return configured.equalsIgnoreCase(accountNumber) || configured.equalsIgnoreCase(subAccount);
     }
 
+    /**
+     * Atomic claim: chuyển trạng thái PENDING → PROCESSING chỉ khi request vẫn đang PENDING
+     * và số tiền khớp. Sử dụng findAndModify để đảm bảo chỉ một webhook xử lý được.
+     *
+     * @return request đã được claim (PROCESSING), hoặc null nếu không claim được
+     */
     private TopUpRequest claimPendingRequest(TopUpRequest request, SePayWebhookRequest webhook) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(TopUpRequestStatus.PENDING)
@@ -284,6 +372,10 @@ public class TopUpService {
         return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), TopUpRequest.class);
     }
 
+    /**
+     * Release claim: hoàn tác PROCESSING → PENDING khi ghi giao dịch thất bại.
+     * Xóa sepayId/referenceCode để webhook khác có thể retry.
+     */
     private void releaseClaim(TopUpRequest request, String error) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(TopUpRequestStatus.PROCESSING));
@@ -296,6 +388,9 @@ public class TopUpService {
         mongoTemplate.updateFirst(query, update, TopUpRequest.class);
     }
 
+    /**
+     * Đánh dấu yêu cầu nạp tiền đã thanh toán: PROCESSING → PAID.
+     */
     private void markPaid(TopUpRequest request, String transactionId) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(TopUpRequestStatus.PROCESSING));

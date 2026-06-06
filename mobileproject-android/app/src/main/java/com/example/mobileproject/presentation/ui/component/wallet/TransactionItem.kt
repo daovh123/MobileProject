@@ -1,3 +1,10 @@
+/**
+ * Component hiển thị giao dịch và dialog chi tiết.
+ *
+ * Cung cấp [TransactionItem] composable hiển thị thông tin giao dịch tóm tắt,
+ * [TransactionDetailDialog] cho chi tiết đầy đủ, và [DetailRow] helper.
+ * Tự động khớp giao dịch với mục tiêu tiết kiệm dựa trên trường note.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.background
@@ -28,6 +35,21 @@ import com.example.mobileproject.utils.formatSimpleAmount
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Hiển thị một giao dịch trong danh sách trên màn hình ví.
+ *
+ * Component này render một card chứa:
+ * - Icon danh mục (trùng khớp với [ExpenseCategory]).
+ * - Tên hiển thị (ưu tiên tên mục tiêu tiết kiệm nếu khớp,否则 là tên danh mục).
+ * - Ngày giao dịch (định dạng dd/MM/yyyy).
+ * - Số tiền với dấu +/- và màu tương ứng (đỏ cho chi tiêu, xanh cho thu nhập).
+ *
+ * Khi nhấn vào item, mở [TransactionDetailDialog] hiển thị chi tiết đầy đủ.
+ * Component tự động tìm [SavingGoal] liên quan dựa trên trường `note` của giao dịch.
+ *
+ * @param transaction [Transaction] cần hiển thị.
+ * @param goals Danh sách [SavingGoal] để khớp giao dịch với mục tiêu tiết kiệm.
+ */
 @Composable
 fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyList()) {
     var showDetail by remember { mutableStateOf(false) }
@@ -134,6 +156,18 @@ fun TransactionItem(transaction: Transaction, goals: List<SavingGoal> = emptyLis
     }
 }
 
+/**
+ * Dialog hiển thị chi tiết đầy đủ của một giao dịch.
+ *
+ * Bao gồm icon danh mục, số tiền, loại giao dịch (thu nhập/chi tiêu),
+ * tên hoạt động, ghi chú, ngày giờ, và mã chủ sở hữu.
+ *
+ * @param transaction [Transaction] cần hiển thị chi tiết.
+ * @param displayTitle Tên hiển thị đã được xử lý (ưu tiên tên mục tiêu).
+ * @param formattedDate Ngày đã được định dạng.
+ * @param categoryInfo Thông tin danh mục chi tiêu chứa icon tương ứng.
+ * @param onDismiss Callback khi đóng dialog.
+ */
 @Composable
 fun TransactionDetailDialog(
     transaction: Transaction,
@@ -229,6 +263,12 @@ fun TransactionDetailDialog(
     }
 }
 
+/**
+ * Hàng hiển thị cặp nhãn-giá trị trong dialog chi tiết giao dịch.
+ *
+ * @param label Nhãn mô tả (ví dụ: "Hoạt động", "Ngày").
+ * @param value Giá trị tương ứng.
+ */
 @Composable
 private fun DetailRow(label: String, value: String) {
     val colorScheme = MaterialTheme.colorScheme

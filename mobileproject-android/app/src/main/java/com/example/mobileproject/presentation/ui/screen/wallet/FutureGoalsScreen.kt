@@ -1,4 +1,22 @@
-﻿package com.example.mobileproject.presentation.ui.screen.wallet
+﻿/**
+ * # FutureGoalsScreen - Màn hình mục tiêu tương lai
+ *
+ * Hiển thị danh sách mục tiêu tương lai (FutureGoal) của người dùng.
+ * Khác với SavingGoalsScreen, màn hình này hiển thị FutureGoal có hỗ trợ
+ * đánh dấu hoàn thành task con (onTaskToggle).
+ *
+ * ## ViewModel bindings
+ * - [GoalViewModel]: tải mục tiêu, toggle task con trong mục tiêu
+ *
+ * ## Layout
+ * - Scaffold với TopAppBar "Mục tiêu tương lai"
+ * - LazyColumn hiển thị GoalCard với callback onTaskToggle
+ * - Sắp xếp: chưa hoàn thành lên trước, theo deadline
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại màn hình trước
+ */
+package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +38,13 @@ import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
 
+/**
+ * Màn hình mục tiêu tương lai.
+ * Hiển thị FutureGoal với khả năng đánh dấu task con hoàn thành.
+ *
+ * @param onNavigateBack quay lại
+ * @param viewModel GoalViewModel
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FutureGoalsScreen(
@@ -29,6 +54,7 @@ fun FutureGoalsScreen(
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
+    // Tải danh sách mục tiêu khi composable mount
     LaunchedEffect(Unit) {
         viewModel.loadGoals()
     }

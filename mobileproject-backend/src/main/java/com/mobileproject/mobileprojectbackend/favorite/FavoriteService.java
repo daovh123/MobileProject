@@ -14,6 +14,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Service xử lý yêu thích địa điểm.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Toggle yêu thích: nếu đã yêu thích → xóa, nếu chưa → thêm mới</li>
+ *   <li>Lấy danh sách yêu thích: batch load từ cache để tối ưu performance</li>
+ *   <li>Kiểm tra trạng thái yêu thích: query theo (userId, placeId)</li>
+ * </ul>
+ *
+ * <p>Sử dụng {@link PlaceCacheService} để load thông tin địa điểm từ cache.</p>
+ */
 @Service
 public class FavoriteService {
 
@@ -26,6 +38,14 @@ public class FavoriteService {
         this.placeCacheService = placeCacheService;
     }
 
+    /**
+     * Toggle yêu thích: nếu đã tồn tại → xóa, nếu chưa → thêm.
+     *
+     * @param userId  ID người dùng
+     * @param placeId ID địa điểm
+     * @return response thông báo trạng thái
+     * @throws ResponseStatusException 404 nếu place không tồn tại
+     */
     public FavoriteResponse toggleFavorite(String userId, String placeId) {
         // Sử dụng placeCacheService để kiểm tra sự tồn tại của địa điểm
         if (placeCacheService.findById(placeId).isEmpty()) {
@@ -42,6 +62,9 @@ public class FavoriteService {
         return new FavoriteResponse(true, "Added to favorites", saved.getId(), placeId, saved.getCreatedAt());
     }
 
+    /**
+     * Lấy danh sách địa điểm yêu thích (mới nhất trước), batch load từ cache.
+     */
     public FavoriteListResponse getUserFavorites(String userId) {
         List<UserFavorite> favorites = favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId);
         List<String> placeIds = favorites.stream().map(UserFavorite::getPlaceId).toList();
@@ -58,6 +81,9 @@ public class FavoriteService {
         return new FavoriteListResponse(true, "Favorites retrieved", places);
     }
 
+    /**
+     * Kiểm tra user có yêu thích địa điểm hay không.
+     */
     public boolean isFavorite(String userId, String placeId) {
         return favoriteRepository.findByUserIdAndPlaceId(userId, placeId).isPresent();
     }

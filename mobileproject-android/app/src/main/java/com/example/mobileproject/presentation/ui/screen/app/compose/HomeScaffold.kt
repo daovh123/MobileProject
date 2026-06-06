@@ -71,6 +71,10 @@ import com.example.mobileproject.presentation.ui.components.core.DraggableChatFa
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
+/**
+ * Các route constants cho NavHost trong HomeScaffold.
+ * Định nghĩa tất cả destination ID và helper functions cho parameterized routes.
+ */
 object HomeRoutes {
     const val HOME: String = "home"
     const val WALLET: String = "wallet"
@@ -115,6 +119,37 @@ data class AppNotification(
     val isUnread: Boolean,
 )
 
+/**
+ * HomeScaffold – scaffold chính của ứng dụng, chứa NavHost điều hướng tất cả màn hình
+ * và thanh điều hướng dưới cùng (bottom navigation bar).
+ *
+ * NavHost routing:
+ * - Định nghĩa tất cả route trong [HomeRoutes] object (HOME, WALLET, EXPLORE,
+ *   MEMORIES, SETTINGS, PROFILE, CHAT, ADD_EXPENSE, TOP_UP…).
+ * - Mỗi composable()映射到 một screen composable.
+ * - Truyền accessToken và callback điều hướng vào từng screen.
+ *
+ * BackHandler:
+ * - Nếu đang ở sub-screen (hideTopAndBottomBar) → popBackStack.
+ * - Nếu ở tab khác HOME → navigate về HOME (saveState/restoreState).
+ * - Nếu ở HOME → finish Activity.
+ *
+ * TopBar/BottomBar visibility:
+ * - Ẩn khi ở các route đặc biệt: CHAT, ADD_EXPENSE, TOP_UP, PROFILE_EDIT,
+ *   MEMORIES_CAPTURE, NOTIFICATIONS, SETTINGS detail screens…
+ *
+ * Chat in-app notification:
+ * - Lắng nghe [ChatInAppNotificationBus] events → hiện Snackbar với action "Mở".
+ * - [NotificationRefreshBus] → refresh badge đếm thông báo.
+ * - [ChatNotificationGate] tắt notification popup khi đang ở ChatScreen.
+ *
+ * Layout: Scaffold với gradient background + 2 Box trang trí (radial gradient)
+ * ở góc trên-phải và dưới-trái tạo hiệu ứng visual depth.
+ *
+ * @param accessToken JWT token xác thực.
+ * @param apiService API service instance.
+ * @param onNavControllerReady callback khi NavController sẵn sàng (để Activity truy cập).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScaffold(
@@ -213,6 +248,10 @@ fun HomeScaffold(
     }
 
     val context = LocalContext.current
+    // BackHandler: xử lý nút back hệ thống
+    // 1. Sub-screen → popBackStack (quay lại screen trước)
+    // 2. Tab khác HOME → navigate về HOME (saveState/restoreState để giữ state tab)
+    // 3. HOME → finish Activity (thoát app)
     BackHandler {
         if (hideTopAndBottomBar) {
             navController.popBackStack()
@@ -292,6 +331,9 @@ fun HomeScaffold(
                     ),
             )
 
+            // NavHost routing: định nghĩa tất cả composable destinations
+            // startDestination = HOME, mỗi route映射到 screen composable
+            // Truyền accessToken và navigation callbacks vào từng screen
             NavHost(
                 navController = navController,
                 startDestination = HomeRoutes.HOME,

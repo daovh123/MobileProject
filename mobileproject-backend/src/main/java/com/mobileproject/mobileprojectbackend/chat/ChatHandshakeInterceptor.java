@@ -14,6 +14,20 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import java.net.URI;
 import java.util.Map;
 
+/**
+ * Handshake interceptor xác thực WebSocket kết nối chat.
+ *
+ * <p><strong>Connection lifecycle – Phase: Handshake</strong></p>
+ * <ol>
+ *   <li>Trích xuất token từ header Authorization hoặc query param {@code ?token=...}</li>
+ *   <li>Xác thực user qua {@link AuthIdentityService}</li>
+ *   <li>Kiểm tra user có partner hay không</li>
+ *   <li>Tạo coupleId deterministic: {@code couple:{min(userId,partnerId)}:{max(...)}}</li>
+ *   <li>Đặt attributes vào session: userId, username, avatarUrl, partnerUserId, partnerUsername, partnerAvatarUrl, coupleId</li>
+ * </ol>
+ *
+ * <p>Trả về 401 nếu token không hợp lệ, 409 nếu user chưa kết nối partner.</p>
+ */
 @Component
 public class ChatHandshakeInterceptor implements HandshakeInterceptor {
 

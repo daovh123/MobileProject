@@ -21,6 +21,24 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Service xử lý logic nghiệp vụ cho mục tiêu (Goals) của cặp đôi.
+ *
+ * <p><b>Nghiệp vụ chính:</b></p>
+ * <ul>
+ *   <li>Tạo mục tiêu mới (SAVING hoặc FUTURE)</li>
+ *   <li>Đóng góp tiền vào mục tiêu tiết kiệm từ ví chung hoặc trực tiếp</li>
+ *   <li>Quản lý tasks trong mục tiêu tương lai (toggle completion)</li>
+ *   <li>Tra cứu mục tiêu theo cặp đôi hoặc ID</li>
+ * </ul>
+ *
+ * <p><b>Bảo toàn dữ liệu:</b></p>
+ * <ul>
+ *   <li>Sử dụng {@link MongoTemplate#updateFirst} cho atomic increment trên cả
+ *       {@code CoupleInfo.totalBalance} và {@code SavingGoal.currentAmount}</li>
+ *   <li>Kiểm tra và cập nhật trạng thái {@code ACHIEVED} khi {@code currentAmount >= targetAmount}</li>
+ * </ul>
+ */
 @Service
 public class GoalService {
 
@@ -45,6 +63,32 @@ public class GoalService {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Tạo mục tiêu mới cho cặp đôi.
+     *
+     * <p><b>Khi type = SAVING:</b></p>
+     * <ul>
+     *   <li>Yêu cầu targetAmount &gt; 0</li>
+     *   <li>Tạo {@link SavingGoal} trong collection {@code saving_goals}</li>
+     * </ul>
+     *
+     * <p><b>Khi type = FUTURE:</b></p>
+     * <ul>
+     *   <li>Tạo {@link FutureGoal} với danh sách tasks ban đầu</li>
+     *   <li>Mỗi task được gán UUID nếu chưa có taskId</li>
+     * </ul>
+     *
+     * <p>Gửi thông báo "Mục tiêu mới được tạo" cho cả hai thành viên.</p>
+     *
+     * @param coupleId     ID cặp đôi
+     * @param name         tên mục tiêu
+     * @param category     danh mục
+     * @param type         loại mục tiêu (SAVING / FUTURE)
+     * @param targetAmount số tiền mục tiêu (bắt buộc cho SAVING)
+     * @param deadline     thời hạn
+     * @param tasks        danh sách tasks (chỉ dùng cho FUTURE)
+     * @return {@link GoalResponse} chứa thông tin mục tiêu đã tạo
+     */
     public GoalResponse createGoal(String coupleId, String name, String category,
                                     GoalType type, Long targetAmount,
                                     Instant deadline, List<TaskDto> tasks) {
@@ -122,6 +166,25 @@ public class GoalService {
         return GoalResponse.failure("Invalid goal type");
     }
 
+    /**
+     * Đóng góp tiền vào mục tiêu tiết kiệm từ ví chung.
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Validate goalId, amount</li>
+     *   <li>Tìm mục tiêu và kiểm tra trạng thái IN_PROGRESS</li>
+     *   <li>Kiểm tra số dư ví chung đủ</li>
+     *   <li>Atomic: trừ tiền ví chung và cộng vào mục tiêu</li>
+     *   <li>Kiểm tra nếu mục tiêu đạt được → cập nhật ACHIEVED</li>
+     *   <li>Lưu bản ghi {@link GoalContribution}</li>
+     *   <li>Gửi thông báo cho cả hai thành viên</li>
+     * </ol>
+     *
+     * @param goalId ID mục tiêu tiết kiệm
+     * @param amount số tiền đóng góp (VND)
+     * @param note   ghi chú
+     * @return {@link ContributeResponse} với thông tin đóng góp và số dư cập nhật
+     */
     public ContributeResponse contributeFromWallet(String goalId, Long amount, String note) {
         if (goalId == null || goalId.isBlank()) {
             return ContributeResponse.failure("Goal ID is required");
@@ -191,6 +254,18 @@ public class GoalService {
         );
     }
 
+    /**
+     * Đóng góp tiền trực tiếp vào mục tiêu (không trừ từ ví chung).
+     *
+     * <p>Dùng khi nạp tiền trực tiếp vào mục tiêu qua hệ thống thanh toán
+     * (ví dụ: SePay top-up với targetType = "GOAL").</p>
+     *
+     * @param goalId        ID mục tiêu tiết kiệm
+     * @param amount        số tiền đóng góp (VND)
+     * @param contributorId ID người đóng góp
+     * @param note          ghi chú
+     * @return {@link ContributeResponse} với thông tin đóng góp
+     */
     public ContributeResponse contributeToGoalDirect(String goalId, Long amount, String contributorId, String note) {
         if (goalId == null || goalId.isBlank()) {
             return ContributeResponse.failure("Goal ID is required");
@@ -244,6 +319,12 @@ public class GoalService {
         );
     }
 
+    /**
+     * Lấy tất cả mục tiêu (cả SAVING và FUTURE) của một cặp đôi.
+     *
+     * @param coupleId ID cặp đôi
+     * @return danh sách mục tiêu gộp từ cả hai loại
+     */
     public List<Goal> getGoalsByCouple(String coupleId) {
         if (coupleId == null || coupleId.isBlank()) {
             return List.of();
@@ -257,6 +338,12 @@ public class GoalService {
         ).collect(Collectors.toList());
     }
 
+    /**
+     * Tìm mục tiêu theo ID (thử cả SavingGoal và FutureGoal).
+     *
+     * @param goalId ID mục tiêu
+     * @return {@link Goal} nếu tìm thấy, null nếu không
+     */
     public Goal getGoalById(String goalId) {
         return savingGoalRepository.findById(goalId)
                 .map(goal -> (Goal) goal)
@@ -271,6 +358,21 @@ public class GoalService {
         return futureGoalRepository.findById(goalId).orElse(null);
     }
 
+    /**
+     * Toggle trạng thái hoàn thành của task trong mục tiêu tương lai.
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Tìm FutureGoal theo goalId</li>
+     *   <li>Tìm task theo taskId trong danh sách tasks</li>
+     *   <li>Đảo trạng thái completed → tự động tính lại progress</li>
+     *   <li>Nếu progress ≥ 100% → gửi thông báo "Mục tiêu hoàn thành"</li>
+     * </ol>
+     *
+     * @param goalId ID mục tiêu tương lai
+     * @param taskId ID công việc cần toggle
+     * @return {@link ToggleTaskResponse} với tiến độ cập nhật
+     */
     public ToggleTaskResponse toggleTask(String goalId, String taskId) {
         if (goalId == null || goalId.isBlank()) {
             return ToggleTaskResponse.failure("Goal ID is required");

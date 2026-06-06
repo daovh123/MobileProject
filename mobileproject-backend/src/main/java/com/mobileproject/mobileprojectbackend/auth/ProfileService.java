@@ -14,6 +14,25 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+/**
+ * Service xử lý nghiệp vụ hồ sơ cá nhân (profile).
+ *
+ * <p>Nghiệp vụ chính:</p>
+ * <ul>
+ *   <li><b>Xem hồ sơ</b> - Lấy thông tin profile người dùng hiện tại</li>
+ *   <li><b>Cập nhật hồ sơ</b> - Lưu fullName, nickName, birthDate, gender, email;
+ *       đánh dấu {@code profileCompleted = true}</li>
+ *   <li><b>Cập nhật avatar</b> - Lưu URL avatar (Base64 Data URL)</li>
+ *   <li><b>Cập nhật khung avatar</b> - Chọn khung viền từ catalog</li>
+ * </ul>
+ *
+ * <p>Validation nghiệp vụ:</p>
+ * <ul>
+ *   <li>Ngày sinh hỗ trợ nhiều định dạng: yyyy-MM-dd, dd/MM/yyyy, d/M/yyyy, dd-MM-yyyy</li>
+ *   <li>Giới tính hỗ trợ cả tiếng Việt (nam/nữ/khác) và tiếng Anh</li>
+ *   <li>Email được validate format và kiểm tra trùng lặp</li>
+ * </ul>
+ */
 @Service
 public class ProfileService {
 
@@ -41,6 +60,14 @@ public class ProfileService {
         this.avatarFrameCatalog = avatarFrameCatalog;
     }
 
+    /**
+     * Tạo mới hoặc cập nhật hồ sơ cá nhân.
+     * Normalize birthDate, gender, kiểm tra email trùng lặp, đánh dấu profileCompleted.
+     *
+     * @param authorizationHeader header Authorization
+     * @param request             thông tin hồ sơ cần cập nhật
+     * @return ProfileResponse chứa thông tin hồ sơ đã cập nhật
+     */
     public ProfileResponse upsertProfile(String authorizationHeader, ProfileUpsertRequest request) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
 
@@ -64,11 +91,24 @@ public class ProfileService {
         return toProfileResponse(savedUser, "Profile saved successfully");
     }
 
+    /**
+     * Lấy thông tin hồ sơ cá nhân của người dùng hiện tại.
+     *
+     * @param authorizationHeader header Authorization
+     * @return ProfileResponse chứa thông tin hồ sơ
+     */
     public ProfileResponse getProfile(String authorizationHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
         return toProfileResponse(user, "Profile fetched successfully");
     }
 
+    /**
+     * Cập nhật URL avatar (Base64 Data URL) cho người dùng.
+     *
+     * @param authorizationHeader header Authorization
+     * @param avatarUrl           URL avatar dạng data:image/...;base64,...
+     * @return ProfileResponse chứa thông tin hồ sơ đã cập nhật
+     */
     public ProfileResponse updateAvatarUrl(String authorizationHeader, String avatarUrl) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
         user.setAvatarUrl(avatarUrl);
@@ -76,6 +116,14 @@ public class ProfileService {
         return toProfileResponse(saved, "Avatar updated successfully");
     }
 
+    /**
+     * Cập nhật khung viền avatar. Xóa khung nếu frameId là null hoặc rỗng.
+     *
+     * @param authorizationHeader header Authorization
+     * @param frameId             ID khung viền (phải tồn tại trong {@link AvatarFrameCatalog})
+     * @return ProfileResponse chứa thông tin hồ sơ đã cập nhật
+     * @throws ResponseStatusException HTTP 400 nếu frameId không tồn tại
+     */
     public ProfileResponse updateAvatarFrame(String authorizationHeader, String frameId) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
 

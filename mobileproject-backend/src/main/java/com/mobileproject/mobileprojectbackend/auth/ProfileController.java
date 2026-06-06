@@ -21,6 +21,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Controller REST quản lý hồ sơ cá nhân, avatar và khung viền avatar.
+ *
+ * <p>Base path: {@code /api/auth/profile}</p>
+ * <p>Tất cả các endpoint đều yêu cầu xác thực (Bearer token trong header Authorization).</p>
+ */
 @RestController
 @RequestMapping("/api/auth/profile")
 public class ProfileController {
@@ -37,12 +43,37 @@ public class ProfileController {
         this.avatarFrameCatalog = avatarFrameCatalog;
     }
 
+    /**
+     * Lấy thông tin hồ sơ cá nhân.
+     *
+     * <ul>
+     *   <li>HTTP Method: {@code GET}</li>
+     *   <li>Path: {@code /api/auth/profile}</li>
+     *   <li>Auth: Yêu cầu Bearer token</li>
+     *   <li>Response: {@link ProfileResponse}</li>
+     *   <li>HTTP 200: Thành công</li>
+     * </ul>
+     */
     @GetMapping
     public ResponseEntity<ProfileResponse> getProfile(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
         return ResponseEntity.ok(profileService.getProfile(authorizationHeader));
     }
 
+    /**
+     * Tạo mới hoặc cập nhật hồ sơ cá nhân.
+     *
+     * <ul>
+     *   <li>HTTP Method: {@code PUT}</li>
+     *   <li>Path: {@code /api/auth/profile}</li>
+     *   <li>Auth: Yêu cầu Bearer token</li>
+     *   <li>Request body: {@link ProfileUpsertRequest} (fullName, nickName, birthDate, gender, email, phoneNumber)</li>
+     *   <li>Response: {@link ProfileResponse}</li>
+     *   <li>HTTP 200: Thành công</li>
+     *   <li>HTTP 400: Dữ liệu không hợp lệ</li>
+     *   <li>HTTP 409: Email đã được sử dụng bởi tài khoản khác</li>
+     * </ul>
+     */
     @PutMapping
     public ResponseEntity<ProfileResponse> upsertProfile(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
@@ -63,6 +94,17 @@ public class ProfileController {
         return ResponseEntity.ok(new AvatarUploadResponse(true, "Avatar uploaded successfully", dataUrl));
     }
 
+    /**
+     * Lấy danh sách tất cả khung viền avatar có sẵn.
+     *
+     * <ul>
+     *   <li>HTTP Method: {@code GET}</li>
+     *   <li>Path: {@code /api/auth/profile/frames}</li>
+     *   <li>Auth: Không yêu cầu</li>
+     *   <li>Response: Danh sách {@link AvatarFrameResponse}</li>
+     *   <li>HTTP 200: Thành công</li>
+     * </ul>
+     */
     @GetMapping("/frames")
     public ResponseEntity<List<AvatarFrameResponse>> getFrames() {
         List<AvatarFrameResponse> frames = avatarFrameCatalog.getAll().stream()
@@ -71,6 +113,19 @@ public class ProfileController {
         return ResponseEntity.ok(frames);
     }
 
+    /**
+     * Cập nhật khung viền avatar của người dùng.
+     *
+     * <ul>
+     *   <li>HTTP Method: {@code PUT}</li>
+     *   <li>Path: {@code /api/auth/profile/frame}</li>
+     *   <li>Auth: Yêu cầu Bearer token</li>
+     *   <li>Request body: {@link AvatarFrameRequest} (frameId)</li>
+     *   <li>Response: {@link ProfileResponse}</li>
+     *   <li>HTTP 200: Thành công</li>
+     *   <li>HTTP 400: frameId không hợp lệ</li>
+     * </ul>
+     */
     @PutMapping("/frame")
     public ResponseEntity<ProfileResponse> setFrame(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,

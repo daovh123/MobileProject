@@ -21,6 +21,26 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service xử lý logic nghiệp vụ rút tiền (payout) từ ví chung ra ngân hàng qua SePay.
+ *
+ * <p><b>Nghiệp vụ chính:</b></p>
+ * <ul>
+ *   <li>Tạo yêu cầu rút tiền với xác nhận số dư đủ</li>
+ *   <li>Xử lý webhook từ SePay để xác nhận chuyển tiền thành công</li>
+ * </ul>
+ *
+ * <p><b>Xử lý webhook (idempotent):</b></p>
+ * <ol>
+ *   <li>Chỉ chấp nhận giao dịch outgoing ({@code transferType = "out"})</li>
+ *   <li>Kiểm tra deduplication qua sepayId/referenceCode</li>
+ *   <li>Tìm yêu cầu phù hợp qua transferCode trong code/content/description</li>
+ *   <li>Verify số tiền khớp</li>
+ *   <li>Atomic claim: PENDING → PROCESSING (dùng {@code findAndModify})</li>
+ *   <li>Gọi {@link TransactionService#saveTransaction} để ghi giao dịch EXPENSE</li>
+ *   <li>Nếu thành công → PAID; nếu thất bại → release claim về PENDING</li>
+ * </ol>
+ */
 @Service
 public class PayoutService {
 
@@ -44,6 +64,20 @@ public class PayoutService {
         this.sePayProperties = sePayProperties;
     }
 
+    /**
+     * Tạo yêu cầu rút tiền mới.
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Validate coupleId, amount</li>
+     *   <li>Kiểm tra cặp đôi tồn tại và số dư đủ</li>
+     *   <li>Sinh mã chuyển khoản duy nhất (prefix + UUID, retry tối đa 5 lần)</li>
+     *   <li>Lưu yêu cầu vào collection {@code payout_requests}</li>
+     * </ol>
+     *
+     * @param request {@link CreatePayoutRequest} chứa coupleId, amount
+     * @return {@link PayoutResponse} chứa thông tin yêu cầu; hoặc thông báo lỗi
+     */
     public PayoutResponse createPayoutRequest(CreatePayoutRequest request) {
         if (request.coupleId() == null || request.coupleId().isBlank()) {
             return PayoutResponse.failure("Couple ID is required");
@@ -74,10 +108,33 @@ public class PayoutService {
         return PayoutResponse.failure("Could not generate a unique transfer code");
     }
 
+    /**
+     * Tìm và trả về thông tin yêu cầu rút tiền theo ID.
+     *
+     * @param id ID yêu cầu rút tiền
+     * @return {@link PayoutResponse} nếu tìm thấy
+     */
     public Optional<PayoutResponse> findPayoutRequest(String id) {
         return payoutRequestRepository.findById(id).map(this::toResponse);
     }
 
+    /**
+     * Xử lý webhook từ SePay khi có giao dịch chuyển khoản đi (payout confirmed).
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Chỉ chấp nhận {@code transferType = "out"}</li>
+     *   <li>Kiểm tra deduplication qua sepayId/referenceCode</li>
+     *   <li>Tìm yêu cầu phù hợp qua transferCode</li>
+     *   <li>Verify số tiền khớp</li>
+     *   <li>Atomic claim: PENDING → PROCESSING</li>
+     *   <li>Ghi giao dịch EXPENSE vào hệ thống</li>
+     *   <li>Nếu thành công → PAID; nếu thất bại → release claim</li>
+     * </ol>
+     *
+     * @param webhook {@link SePayWebhookRequest} từ SePay
+     * @return {@link PayoutWebhookResult} kết quả xử lý
+     */
     public PayoutWebhookResult handleSePayWebhook(SePayWebhookRequest webhook) {
         if (webhook == null || webhook.id() == null) {
             return PayoutWebhookResult.failure("Missing SePay transaction id");
@@ -136,6 +193,9 @@ public class PayoutService {
         return PayoutWebhookResult.success("Payout processed");
     }
 
+    /**
+     * Chuyển đổi entity thành response DTO.
+     */
     private PayoutResponse toResponse(PayoutRequest request) {
         Long currentBalance = coupleInfoRepository.findById(request.getCoupleId())
                 .map(couple -> couple.getTotalBalance())
@@ -154,6 +214,10 @@ public class PayoutService {
         );
     }
 
+    /**
+     * Tìm yêu cầu rút tiền phù hợp với webhook.
+     * Ưu tiên match theo code, sau đó tìm trong content/description.
+     */
     private Optional<PayoutRequest> findMatchingRequest(SePayWebhookRequest webhook) {
         if (hasText(webhook.code())) {
             Optional<PayoutRequest> byCode = payoutRequestRepository.findByTransferCode(webhook.code().trim());
@@ -178,6 +242,12 @@ public class PayoutService {
                 .findFirst();
     }
 
+    /**
+     * Atomic claim: chuyển trạng thái PENDING → PROCESSING chỉ khi request vẫn đang PENDING
+     * và số tiền khớp. Sử dụng findAndModify để đảm bảo chỉ một webhook xử lý được.
+     *
+     * @return request đã được claim (PROCESSING), hoặc null nếu không claim được
+     */
     private PayoutRequest claimPendingRequest(PayoutRequest request, SePayWebhookRequest webhook) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(PayoutRequestStatus.PENDING)
@@ -193,6 +263,9 @@ public class PayoutService {
         return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), PayoutRequest.class);
     }
 
+    /**
+     * Release claim: hoàn tác PROCESSING → PENDING khi ghi giao dịch thất bại.
+     */
     private void releaseClaim(PayoutRequest request, String error) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(PayoutRequestStatus.PROCESSING));
@@ -205,6 +278,9 @@ public class PayoutService {
         mongoTemplate.updateFirst(query, update, PayoutRequest.class);
     }
 
+    /**
+     * Đánh dấu yêu cầu rút tiền đã thanh toán: PROCESSING → PAID.
+     */
     private void markPaid(PayoutRequest request, String transactionId) {
         Query query = new Query(Criteria.where("id").is(request.getId())
                 .and("status").is(PayoutRequestStatus.PROCESSING));
@@ -216,6 +292,9 @@ public class PayoutService {
         mongoTemplate.updateFirst(query, update, PayoutRequest.class);
     }
 
+    /**
+     * Sinh mã chuyển khoản duy nhất: prefix + 10 ký tự UUID uppercase.
+     */
     private String generateTransferCode() {
         String prefix = hasText(sePayProperties.transferPrefix()) ? sePayProperties.transferPrefix() : "YMW";
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase(Locale.ROOT);

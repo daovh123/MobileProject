@@ -7,29 +7,45 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
+/**
+ * Entity đại diện cho bình luận của user trên một kỷ niệm.
+ * Ánh xạ tới collection {@code moment_comments}.
+ *
+ * <p><strong>Index:</strong></p>
+ * <ul>
+ *   <li>{@code moment_id} – truy vấn bình luận theo moment</li>
+ *   <li>{@code id_couple} – truy vấn bình luận theo couple</li>
+ * </ul>
+ */
 @Document(collection = "moment_comments")
 public class MomentComment {
 
     @Id
     private String id;
 
+    /** ID kỷ niệm. */
     @Indexed
     @Field("moment_id")
     private String momentId;
 
+    /** ID cặp đôi. */
     @Indexed
     @Field("id_couple")
     private String coupleId;
 
+    /** ID người bình luận. */
     @Field("user_id")
     private String userId;
 
+    /** Tên hiển thị của người bình luận. */
     @Field("author_username")
     private String authorUsername;
 
+    /** Nội dung bình luận (tối đa 300 ký tự). */
     @Field("content")
     private String content;
 
+    /** Thời điểm bình luận. */
     @Field("created_at")
     private Instant createdAt;
 

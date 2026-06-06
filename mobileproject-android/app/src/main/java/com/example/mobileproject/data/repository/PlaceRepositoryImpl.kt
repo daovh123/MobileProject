@@ -10,10 +10,32 @@ import com.example.mobileproject.domain.entity.PlaceSearchPage
 import com.example.mobileproject.domain.repository.PlaceRepository
 import javax.inject.Inject
 
+/**
+ * Implementation của [PlaceRepository], xử lý tìm kiếm và khám phá địa điểm.
+ *
+ * ## Caching strategy
+ * Không có cache local, tất cả dữ liệu lấy từ remote API.
+ * Phù hợp vì dữ liệu địa điểm thay đổi theo vị trí và thời gian thực.
+ *
+ * ## Data transformation
+ * Chuyển đổi DTO -> domain entity qua mapper extension:
+ * - `PlaceDto.toDomain()` -> [Place]
+ * - `PlaceSearchResponseDto` -> [PlaceSearchPage]
+ * - `ExplorePlanResponseDto.toDomain()` -> [ExplorePlan]
+ * - `List<VietnamProvinceDto>.toProvinceNames()` -> `List<String>`
+ *
+ * ## Threading
+ * Tất cả hàm `suspend` chạy trên IO dispatcher (Retrofit default).
+ */
 class PlaceRepositoryImpl @Inject constructor(
     private val placeRemoteDataSource: PlaceRemoteDataSource,
 ) : PlaceRepository {
 
+    /**
+     * Tìm kiếm địa điểm với phân trang và bộ lọc.
+     *
+     * @return [PlaceSearchPage] chứa danh sách địa điểm và metadata phân trang
+     */
     override suspend fun searchPlaces(
         query: String?,
         province: String?,
@@ -49,6 +71,11 @@ class PlaceRepositoryImpl @Inject constructor(
         )
     }
 
+    /**
+     * Lấy ngẫu nhiên một địa điểm theo bộ lọc (tính năng "Đi đâu?").
+     *
+     * @return [Place] một địa điểm ngẫu nhiên
+     */
     override suspend fun getRandomPlace(
         query: String?,
         province: String?,
@@ -71,6 +98,11 @@ class PlaceRepositoryImpl @Inject constructor(
         ).toDomain()
     }
 
+    /**
+     * Tạo kế hoạch khám phá theo ngân sách và bộ lọc.
+     *
+     * @return [ExplorePlan] chứa danh sách gợi ý địa điểm
+     */
     override suspend fun getExplorePlan(
         randomSeed: Long?,
         budget: Long,
@@ -111,10 +143,20 @@ class PlaceRepositoryImpl @Inject constructor(
         ).toDomain()
     }
 
+    /**
+     * Lấy danh sách tùy chọn bộ lọc (loại địa điểm, khoảng giá, ...).
+     *
+     * @return [PlaceFilterOptions]
+     */
     override suspend fun getFilterOptions(): PlaceFilterOptions {
         return placeRemoteDataSource.getFilterOptions().toDomain()
     }
 
+    /**
+     * Lấy danh sách tên tỉnh/thành phố Việt Nam.
+     *
+     * @return `List<String>` danh sách tên tỉnh/thành phố
+     */
     override suspend fun getVietnamProvinces(): List<String> {
         return placeRemoteDataSource.getVietnamProvinces().toProvinceNames()
     }

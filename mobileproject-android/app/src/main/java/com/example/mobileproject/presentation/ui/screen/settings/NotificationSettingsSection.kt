@@ -20,8 +20,13 @@ import com.example.mobileproject.presentation.ui.icons.LucideBell
 import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
 /**
- * Phần cài đặt thông báo theo từng nhóm trong SettingsScreen.
- * Mỗi toggle kiểm soát việc nhận push notification của nhóm đó.
+ * Phần cài đặt thông báo theo nhóm – component tái sử dụng hiển thị
+ * các toggle cho từng loại thông báo.
+ *
+ * Bao gồm 5 nhóm: Tin nhắn, Nạp tiền, Chi tiêu, Mục tiêu, Kỷ niệm.
+ * Mỗi nhóm dùng [NotifGroupToggle] (ListItem + Switch).
+ *
+ * ViewModel: [NotificationViewModel] – notifChat/Payment/Transaction/Goal/Memory states.
  */
 @Composable
 fun NotificationSettingsSection() {

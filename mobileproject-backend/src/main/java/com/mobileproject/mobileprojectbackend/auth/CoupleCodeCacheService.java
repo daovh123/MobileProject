@@ -14,6 +14,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Service quản lý mã ghép đôi (couple code) với chiến lược 2 tầng: Redis (chính) → In-memory (dự phòng).
+ *
+ * <p>Nghiệp vụ:</p>
+ * <ul>
+ *   <li><b>Tạo mã</b> - Sinh mã 6 số dạng XXX-XXX, có hiệu lực 15 phút</li>
+ *   <li><b>Tra cứu</b> - Tìm userId từ mã ghép đôi</li>
+ *   <li><b>Vô hiệu hóa</b> - Xóa mã khi người dùng đã ghép đôi thành công</li>
+ * </ul>
+ *
+ * <p>Đảm bảo tính duy nhất: Mỗi userId chỉ có một mã tại một thời điểm.
+ * Mã được sinh ngẫu nhiên bằng SecureRandom, tối đa 20 lần thử nếu trùng.</p>
+ *
+ * <p>Key pattern trên Redis:</p>
+ * <ul>
+ *   <li>{@code couple:code:user:{userId}} - String mapping userId → code</li>
+ *   <li>{@code couple:code:lookup:{code}} - String mapping code → userId</li>
+ * </ul>
+ */
 @Service
 public class CoupleCodeCacheService {
 
@@ -33,6 +52,12 @@ public class CoupleCodeCacheService {
         this.secureRandom = new SecureRandom();
     }
 
+    /**
+     * Lấy hoặc tạo mã ghép đôi cho người dùng. Nếu mã cũ còn hiệu lực thì trả về.
+     *
+     * @param userId ID người dùng
+     * @return CoupleCodeLease chứa mã và thời điểm hết hạn
+     */
     public CoupleCodeLease getOrCreateCode(String userId) {
         try {
             return getOrCreateCodeFromRedis(userId);
@@ -46,6 +71,12 @@ public class CoupleCodeCacheService {
         }
     }
 
+    /**
+     * Tìm userId từ mã ghép đôi.
+     *
+     * @param code mã ghép đôi (định dạng XXX-XXX)
+     * @return Optional chứa userId nếu mã hợp lệ và chưa hết hạn
+     */
     public Optional<String> findUserIdByCode(String code) {
         try {
             String userId = redisTemplate.opsForValue().get(lookupKey(code));
@@ -60,6 +91,11 @@ public class CoupleCodeCacheService {
         }
     }
 
+    /**
+     * Vô hiệu hóa mã ghép đôi của người dùng (xóa cả 2 key trên Redis).
+     *
+     * @param userId ID người dùng cần vô hiệu hóa mã
+     */
     public void invalidateCodeByUserId(String userId) {
         try {
             String userKey = userKey(userId);

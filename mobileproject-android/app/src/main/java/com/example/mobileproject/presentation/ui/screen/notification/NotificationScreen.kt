@@ -19,6 +19,28 @@ import com.example.mobileproject.data.model.notification.AppNotificationDto
 import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
+/**
+ * Màn hình Thông báo – hiển thị danh sách thông báo phân trang với infinite scroll.
+ *
+ * Cấu trúc UI chính:
+ * - CenterAlignedTopAppBar: tiêu đề "Thông báo" + nút đóng.
+ * - LazyColumn danh sách [NotificationItem]: mỗi item hiển thị emoji icon theo type
+ *   (💰 PAYMENT, 💸 TRANSACTION, 🎯 GOAL, 💬 CHAT, 📸 MEMORY…),
+ *   tiêu đề, nội dung, thời gian.
+ * - Unread items: nền primaryContainer (nổi bật hơn).
+ * - Loading indicator ở cuối danh sách khi đang tải trang tiếp.
+ *
+ * Paging (snapshotFlow):
+ * - Sử dụng snapshotFlow { listState.layoutInfo } để theo dõi vị trí cuộn.
+ * - Khi lastVisibleItem >= totalItems - 3 && hasNextPage → gọi loadNextPage().
+ * - Đây là kỹ thuật infinite scroll hiệu quả, tránh re-composition không cần thiết.
+ *
+ * ViewModel: [NotificationViewModel] – uiState, markAllRead(), loadNextPage().
+ *
+ * Navigation: navController.popBackStack() khi nhấn nút đóng.
+ *
+ * Layout: Scaffold + LazyColumn, contentPadding 16dp, spacing 10dp.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
@@ -35,6 +57,9 @@ fun NotificationScreen(
         }
     }
 
+    // snapshotFlow paging: theo dõi LazyListState layout info để load thêm trang
+    // Khi item cuối cùng hiển thị gần cuối danh sách (còn ≤3 items) → load next page
+    // Tránh gọi loadNextPage nhiều lần bằng cách kiểm tra !isLoading
     LaunchedEffect(listState, notifState.hasNextPage, notifState.isLoading) {
         snapshotFlow { listState.layoutInfo }
             .collect { layoutInfo ->
@@ -114,6 +139,11 @@ fun NotificationScreen(
     }
 }
 
+/**
+ * Item thông báo đơn lẻ – hiển thị emoji icon theo type, tiêu đề, nội dung, thời gian.
+ * Unread: nền primaryContainer (nổi bật). Read: nền surfaceVariant nhạt.
+ * Thời gian hiển thị tương đối: "Vừa xong", "X phút trước", "X giờ trước"…
+ */
 @Composable
 private fun NotificationItem(item: AppNotificationDto) {
     val colorScheme = MaterialTheme.colorScheme

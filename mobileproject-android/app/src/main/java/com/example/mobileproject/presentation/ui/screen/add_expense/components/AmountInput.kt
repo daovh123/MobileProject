@@ -18,6 +18,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Ô nhập số tiền – hiển thị số tiền lớn ở giữa với font size tự động co giãn.
+ *
+ * Cấu trúc UI:
+ * - Card bo góc 32dp, nền hồng nhạt (FFE4E1 alpha 0.5).
+ * - Label "How much did you spend?" ở trên.
+ * - BasicTextField với keyboardType Decimal, textAlign Center.
+ * - Font size tự động giảm khi số dài: 64sp (≤6 digits) → 56sp → 44sp → 32sp (>12 digits).
+ * - Placeholder "0.00" màu hồng nhạt khi trống.
+ *
+ * @param amount chuỗi số tiền hiện tại.
+ * @param onAmountChange callback khi thay đổi số tiền.
+ */
 @Composable
 fun AmountInput(
     amount: String,

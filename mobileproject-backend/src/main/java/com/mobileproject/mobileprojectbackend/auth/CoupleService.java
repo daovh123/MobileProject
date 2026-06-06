@@ -20,6 +20,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service xử lý nghiệp vụ ghép đôi (couple) giữa hai người dùng.
+ *
+ * <p>Nghiệp vụ chính:</p>
+ * <ul>
+ *   <li><b>Tạo mã ghép đôi</b> - Sinh mã 6 số (XXX-XXX) có hiệu lực 15 phút, lưu trên Redis</li>
+ *   <li><b>Gửi yêu cầu ghép đôi</b> - Người dùng nhập mã đối tác, tạo CoupleRequest PENDING</li>
+ *   <li><b>Chấp nhận/Từ chối</b> - Đối tác quyết định, nếu chấp nhận thì liên kết 2 user
+ *       và tạo CoupleInfo</li>
+ *   <li><b>Xem trạng thái</b> - Trả về thông tin ghép đôi, mã cá nhân, yêu cầu đang chờ,
+ *       số ngày bên nhau, kỷ niệm</li>
+ *   <li><b>Xem hồ sơ đối tác</b> - Lấy thông tin cá nhân của partner đã ghép đôi</li>
+ * </ul>
+ *
+ * <p>Logic tính ngày bên nhau:</p>
+ * <ul>
+ *   <li>Ngày bắt đầu được suy từ CoupleInfo.startAt hoặc CoupleRequest.accepted time</li>
+ *   <li>{@code daysTogether} = số ngày từ startAt đến hôm nay + 1 (tính cả ngày đầu)</li>
+ *   <li>{@code anniversaryTomorrow} = true nếu hôm nay là ngày kỷ niệm (cùng ngày/tháng)</li>
+ * </ul>
+ *
+ * <p>CoupleInfo ID được tạo canonical: {@code couple:{min(userId1,userId2)}:{max(userId1,userId2)}}</p>
+ */
 @Service
 public class CoupleService {
 
@@ -43,6 +66,13 @@ public class CoupleService {
         this.coupleInfoRepository = coupleInfoRepository;
     }
 
+    /**
+     * Tạo hoặc lấy mã ghép đôi của người dùng hiện tại.
+     * Yêu cầu profile đã hoàn thành và chưa ghép đôi.
+     *
+     * @param authorizationHeader header Authorization
+     * @return CoupleCodeResponse chứa mã và thời gian hết hạn
+     */
     public CoupleCodeResponse generateMyCode(String authorizationHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
         ensureProfileCompleted(user);
@@ -53,6 +83,15 @@ public class CoupleService {
         return CoupleCodeResponse.success("Couple code is ready", lease.code(), lease.expiresAt().toString());
     }
 
+    /**
+     * Tạo yêu cầu ghép đôi mới bằng mã đối tác.
+     * Kiểm tra: profile hoàn thành, chưa ghép, không có yêu cầu đang chờ,
+     * mã đối tác hợp lệ, đối tác chưa ghép.
+     *
+     * @param authorizationHeader header Authorization
+     * @param request             chứa partnerCode (mã 6 số)
+     * @return CoupleRequestActionResponse với thông tin yêu cầu đã tạo
+     */
     public CoupleRequestActionResponse createRequest(String authorizationHeader, CoupleRequestCreateRequest request) {
         AuthUser requester = authIdentityService.requireCurrentUser(authorizationHeader);
         ensureProfileCompleted(requester);
@@ -95,6 +134,15 @@ public class CoupleService {
                 savedRequest.getRecipientUsername());
     }
 
+    /**
+     * Quyết định (chấp nhận/từ chối) yêu cầu ghép đôi.
+     * Khi chấp nhận: liên kết 2 user, tạo CoupleInfo, vô hiệu hóa mã ghép đôi của cả 2.
+     *
+     * @param authorizationHeader header Authorization
+     * @param requestId           ID của yêu cầu ghép đôi
+     * @param request             chứa accept (true/false)
+     * @return CoupleRequestActionResponse với trạng thái mới
+     */
     public CoupleRequestActionResponse decideRequest(String authorizationHeader,
             String requestId,
             CoupleRequestDecisionRequest request) {
@@ -170,6 +218,13 @@ public class CoupleService {
                 savedRequest.getRecipientUsername());
     }
 
+    /**
+     * Lấy trạng thái ghép đôi tổng hợp của người dùng hiện tại.
+     * Bao gồm: mã cá nhân, thông tin partner, CoupleInfo, yêu cầu đang chờ, ngày bên nhau.
+     *
+     * @param authorizationHeader header Authorization
+     * @return CoupleStatusResponse với toàn bộ trạng thái ghép đôi
+     */
     public CoupleStatusResponse getStatus(String authorizationHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
 
@@ -237,6 +292,13 @@ public class CoupleService {
                 anniversaryTomorrow);
     }
 
+    /**
+     * Lấy thông tin hồ sơ của đối tác đã ghép đôi.
+     * Trả về thông tin rỗng nếu chưa ghép đôi hoặc đối tác không tồn tại.
+     *
+     * @param authorizationHeader header Authorization
+     * @return CouplePartnerProfileResponse với thông tin đối tác
+     */
     public CouplePartnerProfileResponse getPartnerProfile(String authorizationHeader) {
         AuthUser user = authIdentityService.requireCurrentUser(authorizationHeader);
 

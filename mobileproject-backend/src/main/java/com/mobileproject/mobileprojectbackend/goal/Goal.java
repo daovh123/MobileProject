@@ -6,32 +6,68 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
+/**
+ * Entity trừu tượng cơ sở cho tất cả các loại mục tiêu (Goal) của cặp đôi.
+ *
+ * <p>Là lớp cha của {@link SavingGoal} (mục tiêu tiết kiệm) và {@link FutureGoal} (mục tiêu tương lai).
+ * Không ánh xạ trực tiếp tới collection riêng – mỗi subclass có collection riêng.</p>
+ *
+ * <h3>Indexes:</h3>
+ * <ul>
+ *   <li>{@code id_couple} – indexed, truy vấn nhanh theo cặp đôi</li>
+ * </ul>
+ *
+ * <h3>Mối quan hệ:</h3>
+ * <ul>
+ *   <li>{@code coupleId} → tham chiếu đến {@code CoupleInfo.id}</li>
+ * </ul>
+ */
 public abstract class Goal {
 
+    /** ID duy nhất của mục tiêu (MongoDB ObjectId). */
     @Id
     private String id;
 
+    /** ID cặp đôi sở hữu mục tiêu. Được index. */
     @Indexed
     @Field("id_couple")
     private String coupleId;
 
+    /** Tên mục tiêu. */
     private String name;
 
+    /** Danh mục mục tiêu. */
     private String category;
 
+    /** Loại mục tiêu (lưu dạng String: "SAVING" hoặc "FUTURE"). */
     private String type;
 
+    /** Trạng thái hiện tại của mục tiêu. */
     private GoalStatus status;
 
+    /** Thời hạn hoàn thành mục tiêu. */
     @Field("deadline")
     private Instant deadline;
 
+    /** Thời điểm tạo mục tiêu. */
     @Field("created_at")
     private Instant createdAt;
 
+    /**
+     * Constructor mặc định bảo vệ cho subclass.
+     */
     protected Goal() {
     }
 
+    /**
+     * Tạo mục tiêu mới với trạng thái mặc định là {@code IN_PROGRESS}.
+     *
+     * @param coupleId ID cặp đôi
+     * @param name     tên mục tiêu
+     * @param category danh mục
+     * @param type     loại mục tiêu {@link GoalType}
+     * @param deadline thời hạn
+     */
     protected Goal(String coupleId, String name, String category, GoalType type, Instant deadline) {
         this.coupleId = coupleId;
         this.name = name;
@@ -74,6 +110,12 @@ public abstract class Goal {
         this.category = category;
     }
 
+    /**
+     * Lấy loại mục tiêu dưới dạng String, có fallback về {@code "SAVING"} nếu giá trị
+     * trong DB không hợp lệ (hỗ trợ legacy data).
+     *
+     * @return loại mục tiêu hợp lệ
+     */
     public String getType() {
         try {
             if (type != null) {
@@ -90,6 +132,12 @@ public abstract class Goal {
         this.type = type;
     }
 
+    /**
+     * Lấy loại mục tiêu dưới dạng enum {@link GoalType}, fallback về {@code SAVING}
+     * nếu giá trị trong DB không hợp lệ.
+     *
+     * @return {@link GoalType} enum
+     */
     public GoalType getGoalTypeEnum() {
         try {
             return type != null ? GoalType.valueOf(type) : GoalType.SAVING;

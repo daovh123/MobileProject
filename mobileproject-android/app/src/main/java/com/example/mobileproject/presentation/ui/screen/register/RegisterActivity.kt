@@ -1,3 +1,26 @@
+/**
+ * RegisterActivity - Activity host cho màn hình đăng ký tài khoản mới.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo tài khoản với 5 trường: email, nickname, password, birthday, phone.
+ * - Validate phía client (kiểm tra rỗng) trước khi gọi API.
+ * - Sau khi đăng ký thành công → chuyển đến [LoginActivity] với email pre-fill.
+ *
+ * Layout:
+ * - BoxWithConstraints responsive: màn hình nhỏ (< 860dp) sẽ bật scroll (ngưỡng cao hơn login vì form dài hơn).
+ * - Floating card (bo tròn 36dp, nền semi-transparent) chứa form.
+ * - Hình ảnh trang trí thỏ + cáo ở góc dưới.
+ *
+ * ViewModels:
+ * - [AuthViewModel]: xử lý register, quan sát uiState (loading, error, authSession).
+ * - [ThemeModeViewModel]: đọc theme mode.
+ *
+ * Navigation:
+ * - Đăng ký thành công → [LoginActivity] (với EXTRA_PREFILLED_EMAIL + EXTRA_REGISTERED_SUCCESS).
+ * - "Đã có tài khoản" → [LoginActivity].
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 package com.example.mobileproject.presentation.ui.screen.register
 
 import android.content.Intent
@@ -78,6 +101,20 @@ import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * RegisterActivity - Activity host cho màn hình đăng ký.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo tài khoản mới với email, nickname, mật khẩu, ngày sinh, SĐT.
+ * - Sau khi đăng ký thành công → chuyển đến [LoginActivity] với email pre-fill.
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), tạo [AuthViewModel] và [ThemeModeViewModel].
+ *
+ * Navigation:
+ * - Đăng ký thành công → [LoginActivity] (với EXTRA_PREFILLED_EMAIL + EXTRA_REGISTERED_SUCCESS).
+ * - "Đã có tài khoản" → [LoginActivity].
+ */
 @AndroidEntryPoint
 class RegisterActivity : ComponentActivity() {
 
@@ -127,23 +164,39 @@ class RegisterActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable màn hình đăng ký.
+ *
+ * Hiển thị form với 5 trường: email, nickname, password, birthday, phone.
+ * Quan sát [AuthViewModel] để xử lý trạng thái loading, lỗi, thành công.
+ *
+ * @param onBackToLogin Callback khi nhấn "Đã có tài khoản" → quay về LoginActivity.
+ * @param onRegisterSuccess Callback khi đăng ký thành công, nhận email đã đăng ký.
+ * @param authViewModel ViewModel xử lý logic xác thực.
+ */
 @Composable
 private fun RegisterScreen(
     onBackToLogin: () -> Unit,
     onRegisterSuccess: (String) -> Unit,
     authViewModel: AuthViewModel,
 ) {
+    // rememberSaveable: cache tất cả field input qua config change.
+    // Không dùng key vì không cần reset khi giá trị thay đổi.
     var email by rememberSaveable { mutableStateOf("") }
     var nickname by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var birthday by rememberSaveable { mutableStateOf("") }
     var phoneNumber by rememberSaveable { mutableStateOf("") }
+    // Trạng thái ẩn/hiện mật khẩu
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    // Lỗi validation phía client (kiểm tra rỗng)
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
     val uiState by authViewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
+    // LaunchedEffect: theo dõi authSession. Khi đăng ký thành công → gọi onRegisterSuccess
+    // với email đã đăng ký và consume để không trigger lại.
     LaunchedEffect(uiState.authSession) {
         val session = uiState.authSession
         if (session != null) {
@@ -176,13 +229,17 @@ private fun RegisterScreen(
         }
     }
 
+    // BoxWithConstraints: phát hiện chiều cao để quyết định có bật scroll hay không.
+    // Màn hình đăng ký có nhiều trường hơn nên ngưỡng cao hơn (860dp vs 760dp).
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Điều kiện responsive: bật cuộn khi màn hình nhỏ (ngưỡng 860dp cho form dài)
         val enableScroll = maxHeight < 860.dp
 
+        // Hình ảnh trang trí thỏ và cáo ở góc dưới màn hình
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_rabbit),
             contentDescription = null,
@@ -423,7 +480,8 @@ private fun RegisterScreen(
                     }
                 }
 
-                // Error display
+                // AnimatedVisibility: hiện lỗi khi có validation error hoặc server error.
+                // Ưu tiên hiển thị validation error (client) trước, sau đó là error từ server.
                 val errorMessage = validationError ?: uiState.errorMessage
                 AnimatedVisibility(visible = !errorMessage.isNullOrBlank()) {
                     Text(
@@ -480,6 +538,21 @@ private fun RegisterScreen(
     }
 }
 
+/**
+ * Composable trường input dùng chung cho màn hình Register.
+ *
+ * Tương tự [LoginInputField] nhưng dùng cho form đăng ký với nhiều trường hơn.
+ * Style: bo tròn 50dp (pill shape), nền surfaceContainer.
+ *
+ * @param value Giá trị hiện tại của field.
+ * @param onValueChange Callback khi giá trị thay đổi.
+ * @param label Nhãn hiển thị phía trên field.
+ * @param leadingIcon Icon bên trái.
+ * @param trailingIcon Icon bên phải.
+ * @param visualTransformation Transform hiển thị.
+ * @param keyboardOptions Cấu hình bàn phím.
+ * @param keyboardActions Xử lý action bàn phím.
+ */
 @Composable
 private fun RegisterInputField(
     value: String,

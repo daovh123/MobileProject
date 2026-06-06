@@ -15,6 +15,20 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service xử lý logic nghiệp vụ cho giao dịch tài chính.
+ *
+ * <p><b>Nghiệp vụ chính:</b></p>
+ * <ul>
+ *   <li>Tạo giao dịch thu/chi và cập nhật số dư ví chung của cặp đôi</li>
+ *   <li>Xử lý nạp tiền vào ví hoặc đóng góp vào mục tiêu tiết kiệm</li>
+ *   <li>Gửi thông báo cho cả hai thành viên trong cặp đôi</li>
+ * </ul>
+ *
+ * <p><b>Bảo toàn dữ liệu:</b> Sử dụng {@link MongoTemplate#updateFirst} để cập nhật
+ * số dư nguyên tử (atomic increment), tránh race condition khi nhiều giao dịch
+ * xảy ra đồng thời.</p>
+ */
 @Service
 public class TransactionService {
 
@@ -39,6 +53,25 @@ public class TransactionService {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Tạo và lưu giao dịch tài chính (thu hoặc chi).
+     *
+     * <p><b>Luồng xử lý:</b></p>
+     * <ol>
+     *   <li>Kiểm tra đầu vào: coupleId, amount, type</li>
+     *   <li>Xác nhận cặp đôi tồn tại</li>
+     *   <li>Lưu giao dịch vào collection {@code transactions}</li>
+     *   <li>Cập nhật {@code totalBalance} của {@code CoupleInfo} bằng atomic increment</li>
+     *   <li>Gửi thông báo cho cả hai thành viên (INCOME → "Nạp tiền thành công", EXPENSE → "Chi tiêu mới")</li>
+     * </ol>
+     *
+     * @param coupleId ID cặp đôi
+     * @param amount   số tiền (phải &gt; 0)
+     * @param type     loại giao dịch (INCOME / EXPENSE)
+     * @param category danh mục giao dịch
+     * @param note     ghi chú
+     * @return {@link TransactionResponse} chứa kết quả và số dư hiện tại
+     */
     public TransactionResponse saveTransaction(String coupleId, Long amount, TransactionType type,
                                                String category, String note) {
         if (coupleId == null || coupleId.isBlank()) {
@@ -89,6 +122,30 @@ public class TransactionService {
         );
     }
 
+    /**
+     * Xử lý nạp tiền với hai đích đến: ví chung hoặc mục tiêu tiết kiệm.
+     *
+     * <p><b>Khi targetType = "WALLET":</b></p>
+     * <ul>
+     *   <li>Tạo giao dịch INCOME và cộng tiền vào {@code totalBalance} của cặp đôi</li>
+     *   <li>Gửi thông báo "Nạp tiền thành công"</li>
+     * </ul>
+     *
+     * <p><b>Khi targetType = "GOAL":</b></p>
+     * <ul>
+     *   <li>Yêu cầu {@code goalId} hợp lệ thuộc cặp đôi</li>
+     *   <li>Trừ tiền từ ví chung và cộng vào {@code currentAmount} của mục tiêu (atomic)</li>
+     *   <li>Lưu bản ghi {@link GoalContribution}</li>
+     *   <li>Kiểm tra nếu mục tiêu đã đạt được → cập nhật trạng thái {@code ACHIEVED} và gửi thông báo</li>
+     * </ul>
+     *
+     * @param coupleId   ID cặp đôi
+     * @param amount     số tiền (phải &gt; 0)
+     * @param targetType "WALLET" hoặc "GOAL"
+     * @param goalId     ID mục tiêu (bắt buộc khi targetType = "GOAL")
+     * @param note       ghi chú
+     * @return {@link TransactionResponse} chứa kết quả xử lý
+     */
     public TransactionResponse processIncome(String coupleId, Long amount, String targetType,
                                               String goalId, String note) {
         if (coupleId == null || coupleId.isBlank()) {

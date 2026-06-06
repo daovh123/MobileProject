@@ -1,3 +1,16 @@
+/**
+ * UI Kit cốt lõi (core) của ứng dụng.
+ *
+ * Cung cấp các composable基础 dùng chung trên toàn app:
+ * - [AppScreenBackground]: Background gradient chuẩn với decorative blobs.
+ * - [AppSurfaceCard]: Card surface tiêu chuẩn với border và shadow.
+ * - [AppSectionHeader]: Header tiêu đề section.
+ * - [AppPrimaryButton]: Nút primary tiêu chuẩn.
+ * - [AppFormTextField]: TextField cho biểu mẫu.
+ * - [AppStateMessage]: Thông báo trạng thái.
+ * - [AppMetricChip]: Chip hiển thị chỉ số.
+ * - [AppEmptyState]: Trạng thái rỗng.
+ */
 package com.example.mobileproject.presentation.ui.components.core
 
 import androidx.compose.foundation.BorderStroke
@@ -32,6 +45,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+/**
+ * Background gradient chuẩn cho toàn bộ màn hình trong ứng dụng.
+ *
+ * Render gradient dọc từ surface -> surfaceContainerLow -> surfaceContainer,
+ * kết hợp 2 hình tròn trang trí (radial gradient) ở góc trên phải và góc
+ * dưới trái để tạo chiều sâu và cảm giác mềm mại.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param content Nội dung composable hiển thị bên trên background.
+ */
 @Composable
 fun AppScreenBackground(
     modifier: Modifier = Modifier,
@@ -89,6 +112,15 @@ fun AppScreenBackground(
     }
 }
 
+/**
+ * Card surface tiêu chuẩn với border nhẹ và shadow.
+ *
+ * Dùng làm container chung cho các section nội dung,
+ * đảm bảo tính nhất quán về bo góc, shadow và border trên toàn app.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param content Nội dung composable bên trong card.
+ */
 @Composable
 fun AppSurfaceCard(
     modifier: Modifier = Modifier,
@@ -107,6 +139,16 @@ fun AppSurfaceCard(
     }
 }
 
+/**
+ * Header tiêu đề cho các section nội dung.
+ *
+ * Hiển thị tiêu đề lớn (titleLarge, Bold) và phụ đề optional (bodyMedium)
+ * bên dưới. Thường dùng kết hợp với [AppSurfaceCard].
+ *
+ * @param title Tiêu đề chính của section.
+ * @param subtitle Phụ đề optional.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun AppSectionHeader(
     title: String,
@@ -130,6 +172,18 @@ fun AppSectionHeader(
     }
 }
 
+/**
+ * Nút primary tiêu chuẩn của ứng dụng.
+ *
+ * Sử dụng màu primary từ MaterialTheme, bo góc large, và
+ * fontWeight Bold cho label. Hỗ trợ trạng thái disabled với
+ * màu surfaceContainerHigh.
+ *
+ * @param text Văn bản hiển thị trên nút.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param enabled Trạng thái bật/tắt của nút.
+ * @param onClick Callback khi nhấn nút.
+ */
 @Composable
 fun AppPrimaryButton(
     text: String,
@@ -157,6 +211,27 @@ fun AppPrimaryButton(
     }
 }
 
+/**
+ * TextFieldOutlined tiêu chuẩn cho biểu mẫu (form).
+ *
+ * Sử dụng OutlinedTextField của Material 3 với màu sắc tùy chỉnh:
+ * - Container: surfaceContainerLow (focused) / surfaceContainerLowest (unfocused).
+ * - Border: primary (focused) / outlineVariant nhẹ (unfocused).
+ * Hỗ trợ leading/trailing icon, placeholder, supporting text và keyboard options.
+ *
+ * @param value Giá trị hiện tại của trường nhập.
+ * @param onValueChange Callback khi giá trị thay đổi.
+ * @param label Nhãn hiển thị (label).
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param readOnly true nếu trường chỉ đọc.
+ * @param singleLine true nếu trường nhập một dòng.
+ * @param placeholder Composable placeholder optional.
+ * @param trailing Composable trailing icon optional.
+ * @param leading Composable leading icon optional.
+ * @param supporting Composable supporting text optional.
+ * @param keyboardOptions Tùy chọn bàn phím.
+ * @param keyboardActions Hành động bàn phím.
+ */
 @Composable
 fun AppFormTextField(
     value: String,
@@ -199,6 +274,18 @@ fun AppFormTextField(
     )
 }
 
+/**
+ * Hiển thị thông báo trạng thái với tiêu đề, nội dung và nút hành động optional.
+ *
+ * Dùng cho các trạng thái như lỗi, loading, hoặc thông báo hệ thống.
+ * Sử dụng [AppSurfaceCard] làm container.
+ *
+ * @param title Tiêu đề thông báo.
+ * @param message Nội dung chi tiết.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param actionText Văn bản nút hành động optional.
+ * @param onAction Callback khi nhấn nút hành động.
+ */
 @Composable
 fun AppStateMessage(
     title: String,
@@ -238,6 +325,16 @@ fun AppStateMessage(
     }
 }
 
+/**
+ * Chip hiển thị chỉ số (metric) với giá trị và nhãn.
+ *
+ * Sử dụng container secondaryContainer với border nhẹ,
+ * hiển thị giá trị lớn (titleMedium, Bold) và nhãn (labelMedium) bên dưới.
+ *
+ * @param value Giá trị số hoặc chuỗi cần hiển thị.
+ * @param label Nhãn mô tả giá trị.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun AppMetricChip(
     value: String,
@@ -270,6 +367,16 @@ fun AppMetricChip(
     }
 }
 
+/**
+ * Hiển thị trạng thái rỗng (empty state) với tiêu đề và phụ đề.
+ *
+ * Dùng khi danh sách không có dữ liệu hoặc màn hình chưa có nội dung.
+ * Sử dụng [Surface] với border nhẹ và bo góc large.
+ *
+ * @param title Tiêu đề thông báo trạng thái rỗng.
+ * @param subtitle Phụ đề mô tả chi tiết.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun AppEmptyState(
     title: String,

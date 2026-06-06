@@ -1,3 +1,23 @@
+/**
+ * # TopUpScreen - Màn hình nạp tiền vào ví
+ *
+ * Quy trình nạp tiền 2 bước (step-based flow):
+ * - **Bước 1 (AMOUNT)**: Nhập số tiền cần nạp, ghi chú, xem số dư dự kiến
+ * - **Bước 2 (BANK_SELECT)**: Chọn ngân hàng, chọn phương thức thanh toán (QR hoặc chuyển hướng ngân hàng)
+ *
+ * ## ViewModel bindings
+ * - [TopUpViewModel]: quản lý state multi-step, validate số tiền, tạo yêu cầu nạp tiền
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại (hỗ trợ back giữa các step trước khi thoát màn hình)
+ * - onNavigateToQR(topUpId): chuyển đến màn hình QR sau khi tạo yêu cầu nạp
+ * - onNavigateToBankRedirect(topUpId): chuyển đến màn hình redirect ngân hàng
+ *
+ * ## Layout
+ * - Sử dụng [AnimatedContent] cho transition mượt mà giữa các step (slide + fade)
+ * - Step 1: Column cuộn dọc với input số tiền lớn (BasicTextField, font tự co theo độ dài)
+ * - Step 2: LazyColumn danh sách ngân hàng + nút hành động
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.animation.AnimatedContent
@@ -72,6 +92,14 @@ import com.example.mobileproject.presentation.viewmodel.TopUpUiState
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 
+/**
+ * Màn hình nạp tiền 2 bước: nhập số tiền → chọn ngân hàng + phương thức thanh toán.
+ *
+ * @param onNavigateBack quay lại màn hình trước
+ * @param onNavigateToQR điều hướng đến màn hình QR sau khi tạo yêu cầu
+ * @param onNavigateToBankRedirect điều hướng đến màn hình redirect ngân hàng
+ * @param viewModel TopUpViewModel quản lý state multi-step
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopUpScreen(
@@ -83,6 +111,7 @@ fun TopUpScreen(
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
+    // LaunchedEffect: thu thập navigation events từ ViewModel để điều hướng đến QR hoặc BankRedirect
     LaunchedEffect(viewModel) {
         viewModel.navigationEvents.collect { event ->
             when (event) {
@@ -125,6 +154,7 @@ fun TopUpScreen(
             )
         },
     ) { paddingValues ->
+        // AnimatedContent: transition slide + fade giữa AmountStep và BankSelectStep
         AnimatedContent(
             targetState = uiState.currentStep,
             transitionSpec = {
@@ -155,6 +185,11 @@ fun TopUpScreen(
     }
 }
 
+/**
+ * Bước 1: Nhập số tiền nạp.
+ * Hiển thị input số tiền lớn (font tự co theo độ dài), ghi chú, số dư dự kiến.
+ * Layout Column cuộn dọc.
+ */
 @Composable
 private fun AmountStep(
     uiState: TopUpUiState,
@@ -297,6 +332,10 @@ private fun AmountStep(
     }
 }
 
+/**
+ * Bước 2: Chọn ngân hàng và phương thức thanh toán (QR hoặc redirect).
+ * Hiển thị banner số tiền, danh sách ngân hàng (LazyColumn), 2 nút thanh toán.
+ */
 @Composable
 private fun BankSelectStep(
     uiState: TopUpUiState,
@@ -420,6 +459,10 @@ private fun BankSelectStep(
     }
 }
 
+/**
+ * Item ngân hàng trong danh sách chọn, highlight khi được chọn.
+ * Hiển thị logo + tên ngân hàng + tên viết tắt.
+ */
 @Composable
 private fun BankItem(
     bank: VietnamBank,

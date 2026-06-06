@@ -80,6 +80,27 @@ import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import java.time.Instant
 import java.time.ZoneId
 
+/**
+ * Màn hình Chỉnh sửa Profile – cho phép cập nhật avatar, biệt danh, email, ngày sinh.
+ *
+ * Cấu trúc UI chính:
+ * - Header với nút back + tiêu đề "Sửa thông tin cá nhân".
+ * - [EditableAvatarCard]: avatar có viền màu theo frame, nút camera để chọn ảnh,
+ *   nút "Thay đổi khung" mở [ModalBottomSheet] chọn avatar frame.
+ * - [ProfileEditFields]: các trường nhập liệu (biệt danh, email, số điện thoại
+ *   readonly, ngày sinh mở DatePicker).
+ * - Card "Trạng thái tài khoản" hiển thị thông tin xác minh.
+ * - Nút Lưu (enabled khi isDirty, loading indicator khi đang lưu).
+ * - [DatePickerDialog] cho trường ngày sinh.
+ *
+ * ViewModel: [ProfileViewModel] – loadProfile(), updateDraft(), saveProfile(),
+ * uploadAvatar(), loadAvatarFrames(), selectFrame().
+ *
+ * Navigation: onNavigateBack quay lại, onLogout chuyển màn đăng nhập
+ * khi session hết hạn.
+ *
+ * Layout: Scaffold + Column dọc scrollable, spacing 14dp, padding ngang 16dp.
+ */
 @Composable
 fun ProfileEditScreen(
     accessToken: String,
@@ -290,6 +311,16 @@ fun ProfileEditScreen(
     }
 }
 
+/**
+ * Card hiển thị avatar có thể chỉnh sửa – cho phép chọn ảnh từ gallery
+ * hoặc thay đổi khung avatar (avatar frame).
+ *
+ * Tính năng:
+ * - Hiển thị avatar bitmap hoặc fallback chữ cái đầu.
+ * - Viền màu theo avatar frame đã chọn.
+ * - Nút camera mở image picker (ActivityResultContracts.GetContent).
+ * - Nút "Thay đổi khung" mở [ModalBottomSheet] với danh sách frame.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun EditableAvatarCard(

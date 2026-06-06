@@ -1,3 +1,9 @@
+/**
+ * Glance AppWidget hiển thị kỷ niệm mới nhất trên màn hình chính.
+ *
+ * Đọc dữ liệu từ DataStore, hiển thị ảnh hoặc tiêu đề kỷ niệm.
+ * Nhấn vào widget mở HomeActivity.
+ */
 package com.example.mobileproject.presentation.widget
 
 import android.content.Context
@@ -27,6 +33,20 @@ import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import kotlinx.coroutines.flow.first
 import java.io.File
 
+/**
+ * Glance AppWidget hiển thị kỷ niệm (moment) mới nhất trên màn hình chính.
+ *
+ * Widget đọc dữ liệu từ [momentWidgetDataStore] (DataStore Preferences):
+ * - title: Tiêu đề kỷ niệm.
+ * - imagePath: Đường dẫn file ảnh đã cache.
+ *
+ * Hiển thị 2 trạng thái:
+ * 1. **Có ảnh**: Hiển thị ảnh full-size với ContentScale.Crop.
+ * 2. **Không có ảnh**: Hiển thị tiêu đề, tên kỷ niệm và icon memories.
+ *
+ * Nhấn vào widget mở [HomeActivity].
+ * Background color: #F7F1EA (kem ấm).
+ */
 class MomentWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {

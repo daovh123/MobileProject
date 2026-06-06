@@ -19,6 +19,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+/**
+ * Service import dữ liệu địa điểm từ file JSON vào MongoDB.
+ *
+ * <p><strong>Quy trình import:</strong></p>
+ * <ol>
+ *   <li>Đọc file JSON, parse mảng {@code places}</li>
+ *   <li>Chuẩn hóa từng địa điểm (normalizePlace): trim, build searchString</li>
+ *   <li>Save theo batch 500 bản ghi để tối ưu I/O</li>
+ *   <li>Rebuild in-memory cache và evict Spring Cache ngay sau import</li>
+ * </ol>
+ *
+ * <p>File JSON đầu vào phải có cấu trúc: {@code {"places": [...]}}</p>
+ */
 @Service
 public class PlaceImportService {
 
@@ -44,6 +57,14 @@ public class PlaceImportService {
         this.placeCacheService = placeCacheService;
     }
 
+    /**
+     * Import địa điểm từ file JSON.
+     *
+     * @param filePath         đường dẫn file (null → dùng defaultImportFilePath)
+     * @param clearBeforeImport true → xóa toàn bộ collection trước khi import
+     * @return kết quả import
+     * @throws ResponseStatusException 400 nếu file không tồn tại hoặc sai format
+     */
     public PlaceImportResponse importFromFile(String filePath, boolean clearBeforeImport) {
         String sourceFile = resolveSourceFile(filePath);
         Path path = Path.of(sourceFile);

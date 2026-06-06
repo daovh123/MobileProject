@@ -15,6 +15,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 
+/**
+ * Service gửi push notification qua Firebase Cloud Messaging (FCM).
+ *
+ * <p><strong>FCM integration:</strong></p>
+ * <ul>
+ *   <li>Khởi động lazy: Firebase Admin SDK được init lần đầu khi cần gửi push</li>
+ *   <li>Hỗ trợ credentials từ: file path, classpath resource, Application Default Credentials</li>
+ *   <li>Tự động xóa token không hợp lệ (UNREGISTERED) khi gửi thất bại</li>
+ *   <li>Retry init cách nhau 15s nếu lần trước thất bại</li>
+ * </ul>
+ *
+ * <p><strong>Cấu hình:</strong></p>
+ * <ul>
+ *   <li>{@code firebase.credentials.path} – đường dẫn service account JSON
+ *       (hỗ trợ classpath: và absolute path)</li>
+ *   <li>{@code firebase.storage.bucket} – tên Firebase Storage bucket</li>
+ * </ul>
+ *
+ * <p><strong>Loại push:</strong></p>
+ * <ul>
+ *   <li>{@link #sendChatMessagePush} – push tin nhắn chat (data-only, channelId=chat_messages)</li>
+ *   <li>{@link #sendGeneralPush} – push thông báo chung (kèm notification payload)</li>
+ * </ul>
+ */
 @Service
 public class FcmPushService {
 
@@ -37,6 +61,9 @@ public class FcmPushService {
         this.credentialsPath = credentialsPath;
     }
 
+    /**
+     * Log trạng thái cấu hình Firebase khi khởi tạo bean.
+     */
     @PostConstruct
     void logFirebaseConfigStatus() {
         String path = credentialsPath == null ? "" : credentialsPath.trim();
@@ -67,6 +94,17 @@ public class FcmPushService {
         }
     }
 
+    /**
+     * Gửi FCM push cho tin nhắn chat (data-only message).
+     * Client quyết định cách hiển thị (foreground/background).
+     *
+     * @param receiverUserId ID người nhận
+     * @param coupleId       ID couple
+     * @param senderUsername tên người gửi
+     * @param text           nội dung tin nhắn
+     * @param messageId      ID tin nhắn
+     * @param createdAt      thời điểm gửi
+     */
     public void sendChatMessagePush(String receiverUserId, String coupleId, String senderUsername, String text,
             String messageId, Instant createdAt) {
         if (receiverUserId == null || receiverUserId.isBlank()) {
@@ -129,6 +167,14 @@ public class FcmPushService {
         }
     }
 
+    /**
+     * Gửi FCM push thông báo chung (kèm notification payload để hiển thị trên thanh thông báo).
+     *
+     * @param receiverUserId ID người nhận
+     * @param type           loại thông báo
+     * @param title          tiêu đề
+     * @param body           nội dung
+     */
     public void sendGeneralPush(String receiverUserId, String type, String title, String body) {
         if (receiverUserId == null || receiverUserId.isBlank()) return;
 

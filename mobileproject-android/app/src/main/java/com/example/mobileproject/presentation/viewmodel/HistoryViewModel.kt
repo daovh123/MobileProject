@@ -12,20 +12,46 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * UI state cho màn hình lịch sử xem địa điểm.
+ *
+ * @property isLoading Đang tải dữ liệu từ server
+ * @property history Danh sách địa điểm đã xem gần đây
+ * @property errorMessage Thông báo lỗi nếu có
+ */
 data class HistoryUiState(
     val isLoading: Boolean = false,
     val history: List<Place> = emptyList(),
     val errorMessage: String? = null,
 )
 
+/**
+ * ViewModel phục vụ màn hình lịch sử xem địa điểm.
+ *
+ * Xử lý business logic:
+ * - Tải danh sách địa điểm đã xem gần đây từ [HistoryRepository]
+ * - Ghi nhận lượt xem địa điểm (record view) mỗi khi người dùng xem chi tiết
+ * - Xóa toàn bộ lịch sử xem
+ *
+ * Tất cả các thao tác đều yêu cầu token xác thực hợp lệ.
+ */
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val historyRepository: HistoryRepository,
 ) : ViewModel() {
 
+    // StateFlow pattern: MutableStateFlow nội bộ + expose read-only asStateFlow
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
+    /**
+     * Tải danh sách lịch sử xem địa điểm từ server.
+     *
+     * Kiểm tra token trước khi gọi API. Nếu token rỗng, hiển thị thông báo
+     * yêu cầu đăng nhập lại.
+     *
+     * @param token JWT token xác thực người dùng
+     */
     fun loadHistory(token: String) {
         if (token.isBlank()) {
             _uiState.update {
@@ -62,6 +88,14 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Ghi nhận lượt xem một địa điểm.
+     *
+     * Fire-and-forget: không cập nhật UI state, chỉ gọi API trong background.
+     *
+     * @param token JWT token xác thực người dùng
+     * @param placeId ID địa điểm đã xem
+     */
     fun recordView(token: String, placeId: String) {
         if (token.isBlank() || placeId.isBlank()) {
             return
@@ -72,6 +106,13 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Xóa toàn bộ lịch sử xem địa điểm.
+     *
+     * Sau khi xóa thành công, đặt danh sách history về rỗng.
+     *
+     * @param token JWT token xác thực người dùng
+     */
     fun clearHistory(token: String) {
         if (token.isBlank()) {
             return

@@ -1,3 +1,16 @@
+/**
+ * # BankBrand - Component hiển thị thương hiệu ngân hàng
+ *
+ * Chứa các composable tái sử dụng để hiển thị logo và tên ngân hàng Việt Nam.
+ *
+ * ## Components
+ * - [BankLogo]: hiển thị logo ngân hàng dạng hình vuông bo góc. Nếu bank = null, hiển thị placeholder "B"
+ * - [BankNameWithLogo]: kết hợp logo + tên ngân hàng trên một hàng (Row)
+ *
+ * ## Layout
+ * - BankLogo sử dụng Image với ContentScale.Crop, clip RoundedCornerShape (1/4 kích thước)
+ * - Background trắng (Color.White) để logo hiển thị rõ trên mọi theme
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet.components
 
 import androidx.compose.foundation.Image
@@ -24,6 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobileproject.presentation.model.wallet.VietnamBank
 
+/**
+ * Hiển thị logo ngân hàng dạng hình vuông bo góc.
+ * Nếu bank = null, hiển thị placeholder hình tròn với chữ "B".
+ *
+ * @param bank đối tượng ngân hàng (có thể null)
+ * @param modifier Modifier tùy chỉnh
+ * @param size kích thước logo (mặc định 40dp)
+ */
 @Composable
 fun BankLogo(
     bank: VietnamBank?,
@@ -59,6 +80,14 @@ fun BankLogo(
     )
 }
 
+/**
+ * Hiển thị logo + tên ngân hàng trên một hàng (Row).
+ * Dùng trong các màn hình cần hiển thị thương hiệu ngân hàng đầy đủ.
+ *
+ * @param bank đối tượng ngân hàng (có thể null)
+ * @param modifier Modifier tùy chỉnh
+ * @param logoSize kích thước logo (mặc định 36dp)
+ */
 @Composable
 fun BankNameWithLogo(
     bank: VietnamBank?,

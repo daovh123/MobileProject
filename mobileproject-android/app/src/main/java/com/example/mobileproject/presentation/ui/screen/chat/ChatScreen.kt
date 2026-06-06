@@ -1,3 +1,31 @@
+/**
+ * Màn hình Chat – giao diện nhắn tin real-time giữa hai người dùng cặp đôi.
+ *
+ * Cấu trúc UI chính (từ trên xuống):
+ * - [ChatTopBar]: thanh tiêu đề hiển thị tên partner, avatar, trạng thái "đang nhập".
+ * - [LazyColumn] danh sách tin nhắn: sử dụng message grouping algorithm
+ *   (xem [ChatMessageGrouping]) để gom nhóm tin liên tiếp, chỉ hiện avatar/timestamp
+ *   ở tin đầu/cuối nhóm. Chèn [DateSeparator] phân cách theo ngày.
+ * - [SwipeableReplyBubble]: mỗi tin nhắn bọc trong [SwipeToDismissBox] cho phép
+ *   vuốt sang phải (StartToEnd) để trả lời nhanh.
+ * - [PendingMessageBubble]: hiển thị tin đang gửi (loading) hoặc gửi thất bại (retry).
+ * - [TypingIndicatorBubble]: hiệu ứng 3 chấm nhấp nháy khi partner đang gõ.
+ * - [ReplyQuoteBar]: thanh trích dẫn tin nhắn trả lời phía trên ô nhập.
+ * - [MiniAiSuggestionRow]: gợi ý @MiniAI khi người dùng gõ "@".
+ * - [ChatInputBar]: ô nhập tin nhắn + nút gửi/emoji nhanh.
+ * - [ExplorePlanChatCard]: card hiển thị kế hoạch du lịch (parsed từ tin nhắn MiniAI).
+ *
+ * WebSocket integration:
+ * - [ChatViewModel.start()] kết nối WebSocket để nhận tin nhắn real-time.
+ * - Typing events gửi qua [ChatViewModel.sendTypingEvent()].
+ * - Read status tracking: partner đã đọc tin nào.
+ *
+ * ViewModel: [ChatViewModel] (Hilt-injected).
+ *
+ * Layout: Column dọc, message list chiếm weight(1f), input bar cố định dưới cùng.
+ * Bong bóng tin nhắn của mình dùng gradient primary→tertiary, của partner dùng
+ * màu surfaceContainerHigh (sáng/tối tùy theme).
+ */
 package com.example.mobileproject.presentation.ui.screen.chat
 
 import android.graphics.Bitmap
@@ -417,6 +445,10 @@ fun ChatScreen(
     }
 }
 
+/**
+ * Thanh tiêu đề chat – hiển thị tên partner, avatar, trạng thái typing.
+ * Nút back (ArrowBack) + nút info (mở dialog đổi emoji nhanh).
+ */
 @Composable
 private fun ChatTopBar(
     partnerName: String?,
@@ -510,6 +542,12 @@ private fun ChatTopBar(
     }
 }
 
+/**
+ * Thanh nhập tin nhắn – OutlinedTextField + nút gửi/emoji.
+ * Khi text trống: hiển thị emoji nhanh (quickEmoji), nhấn để gửi emoji.
+ * Khi có text: hiển thị nút "Gửi" (primary color, bold).
+ * OutlinedTextField: bo góc 20dp, tối đa 4 dòng, nền xám nhạt.
+ */
 @Composable
 private fun ChatInputBar(
     value: TextFieldValue,
@@ -681,6 +719,14 @@ private fun DateSeparator(label: String, modifier: Modifier = Modifier) {
 // Swipeable bubble wrapper
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Wrapper cho phép vuốt tin nhắn sang phải (StartToEnd) để trả lời nhanh.
+ *
+ * SwipeToDismissBox integration:
+ * - Chỉ cho phép vuốt StartToEnd (phải), disable EndToStart.
+ * - confirmValueChange trả về false để không thực sự dismiss – chỉ trigger callback.
+ * - backgroundContent hiển thị icon reply ở bên trái khi đang vuốt.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeableReplyBubble(
@@ -772,6 +818,18 @@ private fun getBubbleShape(mine: Boolean, position: MessagePositionInGroup): Rou
     }
 }
 
+/**
+ * Hiển thị tin nhắn dưới dạng bong bóng chat với đầy đủ tính năng:
+ * - Gradient nền cho tin của mình (primary→tertiary), màu phẳng cho tin partner.
+ * - Bo góc thay đổi theo vị trí trong nhóm (FIRST/MIDDLE/LAST/SINGLE).
+ * - Quoted message preview (trích dẫn tin nhắn reply).
+ * - Long-press để mở reaction menu (popup với 6 emoji).
+ * - Hiển thị reaction badge ở góc bong bóng.
+ * - Read status: avatar nhỏ của partner hiện khi đã đọc tin mới nhất.
+ *
+ * Layout: Row ngang – avatar bên trái (partner) hoặc bên phải (mine),
+ * bong bóng tối đa 280dp width.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ChatBubble(

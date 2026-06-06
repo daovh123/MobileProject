@@ -14,6 +14,25 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * Client gọi Groq API (OpenAI-compatible) để tạo phản hồi AI cho chat.
+ *
+ * <p><strong>AI integration:</strong></p>
+ * <ul>
+ *   <li>Sử dụng model mặc định: {@code llama3-8b-8192}</li>
+ *   <li>Endpoint: {@code https://api.groq.com/openai/v1/chat/completions}</li>
+ *   <li>Temperature: 0.7 (cân bằng giữa sáng tạo và chính xác)</li>
+ *   <li>Timeout: 30s cho request, 10s cho kết nối</li>
+ * </ul>
+ *
+ * <p><strong>Cấu hình:</strong></p>
+ * <ul>
+ *   <li>{@code groq.api-key} – API key (env: GROQ_API_KEY)</li>
+ *   <li>{@code groq.model} – model name (mặc định: llama3-8b-8192)</li>
+ * </ul>
+ *
+ * <p>Nếu API key chưa cấu hình, ném {@link IllegalStateException}.</p>
+ */
 @Component
 public class GroqChatClient {
 
@@ -36,6 +55,14 @@ public class GroqChatClient {
                 .build();
     }
 
+    /**
+     * Gửi danh sách messages tới Groq API và nhận phản hồi.
+     *
+     * @param messages danh sách tin nhắn theo format OpenAI (role: system/user/assistant)
+     * @return nội dung phản hồi AI
+     * @throws IllegalStateException nếu API key chưa cấu hình
+     * @throws GroqApiException     nếu API trả về lỗi HTTP
+     */
     public String chat(List<Message> messages) throws Exception {
         if (apiKey.isBlank()) {
             throw new IllegalStateException(
@@ -118,6 +145,12 @@ public class GroqChatClient {
         return trimmed;
     }
 
+    /**
+     * Exception khi Groq API trả về lỗi HTTP.
+     *
+     * @param statusCode   mã HTTP (401, 403, 429, 5xx, ...)
+     * @param groqMessage  thông báo lỗi chi tiết từ Groq
+     */
     public static class GroqApiException extends Exception {
         private final int statusCode;
         private final String groqMessage;
@@ -137,6 +170,12 @@ public class GroqChatClient {
         }
     }
 
+    /**
+     * Record đại diện cho một message trong OpenAI chat format.
+     *
+     * @param role    vai trò: "system", "user", hoặc "assistant"
+     * @param content nội dung tin nhắn
+     */
     public record Message(String role, String content) {
     }
 }

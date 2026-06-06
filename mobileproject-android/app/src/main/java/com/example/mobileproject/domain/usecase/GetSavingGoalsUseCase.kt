@@ -7,6 +7,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * Use case lấy danh sách mục tiêu tiết kiệm (saving goals) của cặp đôi.
+ *
+ * Khác với [GetGoalsUseCase] trả về TẤT CẢ goals, use case này
+ * chỉ trả về các mục tiêu thuộc loại "saving" (tiết kiệm) bằng cách
+ * lọc và map từ List<Goal> sang List<SavingGoal>.
+ *
+ * Việc lọc ở domain layer (không phải data layer) giúp repository
+ * vẫn trả về dữ liệu đầy đủ, trong khi use case đảm bảo
+ * UI chỉ nhận đúng loại dữ liệu cần hiển thị.
+ */
 class GetSavingGoalsUseCase @Inject constructor(
     private val repository: GoalRepository
 ) {

@@ -1,3 +1,9 @@
+/**
+ * FloatingActionButton có thể kéo thả cho tính năng chat nhanh.
+ *
+ * Cung cấp [DraggableChatFab] composable với vị trí lưu trữ persist qua
+ * [rememberSaveable], hỗ trợ kéo tự do trong giới hạn parent container.
+ */
 package com.example.mobileproject.presentation.ui.components.core
 
 import androidx.compose.foundation.BorderStroke
@@ -28,6 +34,19 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.mobileproject.R
 
+/**
+ * FloatingActionButton có thể kéo thả tự do trên màn hình.
+ *
+ * Hiển thị một nút chat hình tròn có thể kéo đến bất kỳ vị trí nào
+ * trong giới hạn màn hình. Vị trí được lưu vào [rememberSaveable]
+ * để giữ nguyên khi xoay màn hình hoặc cấu hình thay đổi.
+ *
+ * Nút có shadow 12dp, border nhẹ và sử dụng màu primaryContainer.
+ * Nhãn hiển thị từ resource `R.string.chat_fab_label`.
+ *
+ * @param onClick Callback khi nhấn vào nút FAB.
+ * @param modifier [Modifier] tùy chỉnh, thường là `fillMaxSize()` để xác định vùng kéo.
+ */
 @Composable
 fun DraggableChatFab(
     onClick: () -> Unit,

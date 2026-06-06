@@ -1,3 +1,11 @@
+/**
+ * Component lịch tháng cho màn hình kỷ niệm.
+ *
+ * Cung cấp:
+ * - [MonthlyCalendarCard]: Lưới lịch 7×6 với ghi chú sự kiện.
+ * - [VietnamCalendarNotes]: Danh sách ngày lễ Việt Nam theo tháng.
+ * - [buildMonthCells]: Utility xây dựng mảng ô lịch.
+ */
 package com.example.mobileproject.presentation.ui.components.calendar
 
 import androidx.compose.foundation.BorderStroke
@@ -28,6 +36,17 @@ import com.example.mobileproject.R
 import java.util.Calendar
 import java.util.GregorianCalendar
 
+/**
+ * Card lịch tháng hiển thị các ngày trong tháng với ghi chú.
+ *
+ * Render lưới 7 cột (T2-CN) × 6 hàng, mỗi ô hiển thị số ngày
+ * và ghi chú (nếu có). Ghi chú hiển thị tối đa 2 dòng với màu primary.
+ *
+ * @param year Năm cần hiển thị.
+ * @param month Tháng cần hiển thị (1-12).
+ * @param notesByDay Map từ ngày (Int) sang danh sách ghi chú (List<String>).
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun MonthlyCalendarCard(
     year: Int,
@@ -112,6 +131,16 @@ fun MonthlyCalendarCard(
     }
 }
 
+/**
+ * Ô hiển thị một ngày trong tháng trên lịch.
+ *
+ * Render số ngày và ghi chú (nếu có) trong Surface bo góc.
+ * Nếu [dayOfMonth] là null (ô trống), hiển thị ô rỗng.
+ *
+ * @param dayOfMonth Số ngày trong tháng (1-31) hoặc null cho ô trống.
+ * @param noteLines Danh sách ghi chú cho ngày này.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 private fun CalendarDayCell(
     dayOfMonth: Int?,
@@ -161,6 +190,17 @@ private fun CalendarDayCell(
     }
 }
 
+/**
+ * Xây dựng mảng 42 ô (6 hàng × 7 cột) cho lưới lịch tháng.
+ *
+ * Các ô trống (trước ngày đầu tháng và sau ngày cuối tháng) có giá trị null.
+ * Tuần bắt đầu từ [weekStart] (mặc định Calendar.MONDAY = T2).
+ *
+ * @param year Năm.
+ * @param month Tháng (1-12).
+ * @param weekStart Ngày bắt đầu tuần (Calendar.MONDAY, Calendar.SUNDAY, ...).
+ * @return List 42 phần tử, mỗi phần tử là số ngày hoặc null.
+ */
 private fun buildMonthCells(
     year: Int,
     month: Int, // 1-12
@@ -191,7 +231,20 @@ private fun buildMonthCells(
     return cells
 }
 
+/**
+ * Cung cấp ghi chú các ngày lễ và sự kiện quan trọng của Việt Nam.
+ *
+ * Chỉ chứa các ngày lễ dương lịch cố định (không bao gồm âm lịch).
+ * Dữ liệu được hardcode, reserved để mở rộng theo năm trong tương lai.
+ */
 object VietnamCalendarNotes {
+    /**
+     * Lấy danh sách ghi chú cho một tháng cụ thể.
+     *
+     * @param year Năm (dùng cho future扩展, hiện tại chưa sử dụng).
+     * @param month Tháng (1-12).
+     * @return Map từ ngày sang danh sách ghi chú.
+     */
     fun notesForMonth(
         year: Int,
         month: Int,

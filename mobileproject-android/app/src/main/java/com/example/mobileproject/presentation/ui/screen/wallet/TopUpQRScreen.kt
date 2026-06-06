@@ -1,3 +1,26 @@
+/**
+ * # TopUpQRScreen - Màn hình thanh toán nạp tiền bằng QR
+ *
+ * Hiển thị mã QR để người dùng quét bằng ứng dụng ngân hàng và chuyển khoản.
+ * Bao gồm:
+ * - Mã QR được tạo từ ZXing ([generateQrBitmap]) hoặc tải từ URL (AsyncImage)
+ * - Badge trạng thái giao dịch (PENDING, PAID, FAILED, EXPIRED)
+ * - Đếm ngược thời gian hết hạn QR (5 phút)
+ * - Chi tiết chuyển khoản (ngân hàng, số tài khoản, chủ tài khoản, số tiền, mã giao dịch, nội dung)
+ * - Nút "kiểm tra trạng thái" kết hợp polling tự động
+ *
+ * ## ViewModel bindings
+ * - [TopUpViewModel]: polling trạng thái giao dịch qua [startTopUpStatusPolling]
+ *
+ * ## Key integrations
+ * - **ZXing QR**: [generateQrBitmap] tạo bitmap QR từ content string sử dụng QRCodeWriter
+ * - **Polling**: [LaunchedEffect] gọi startTopUpStatusPolling để tự động kiểm tra trạng thái
+ * - **Countdown**: [LaunchedEffect] đếm ngược 300 giây, chuyển màu đỏ khi còn < 60 giây
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại
+ * - onPaymentSuccess: chuyển về ví khi giao dịch thành công (uiState.isSuccess)
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import android.graphics.Bitmap
@@ -63,6 +86,14 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.delay
 
+/**
+ * Tạo bitmap QR code từ content string sử dụng ZXing QRCodeWriter.
+ * Mã hóa content thành bit matrix 512x512, chuyển thành Bitmap RGB_565.
+ *
+ * @param content nội dung mã QR (thường là VietQR payload)
+ * @param size kích thước bitmap (mặc định 512px)
+ * @return Bitmap chứa mã QR đen trắng
+ */
 private fun generateQrBitmap(content: String, size: Int = 512): Bitmap {
     val writer = QRCodeWriter()
     val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size)
@@ -75,6 +106,15 @@ private fun generateQrBitmap(content: String, size: Int = 512): Bitmap {
     return bitmap
 }
 
+/**
+ * Màn hình thanh toán QR cho giao dịch nạp tiền.
+ * Hiển thị mã QR, trạng thái, chi tiết chuyển khoản và nút kiểm tra trạng thái.
+ *
+ * @param topUpId ID của yêu cầu nạp tiền
+ * @param onNavigateBack quay lại
+ * @param onPaymentSuccess chuyển về ví khi thành công
+ * @param viewModel TopUpViewModel shared với TopUpScreen
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopUpQRScreen(
@@ -86,18 +126,22 @@ fun TopUpQRScreen(
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
     val topUp = uiState.activeTopUp
+    // remember: cache đối tượng ngân hàng đã chọn từ bankId
     val selectedBank = remember(topUp?.bankId) { topUp?.bankId?.let(TopUpViewModel::findBankById) }
 
+    // Polling: bắt đầu kiểm tra trạng thái giao dịch tự động khi có topUpId
     LaunchedEffect(topUpId) {
         viewModel.startTopUpStatusPolling(topUpId)
     }
 
+    // Tự động chuyển về ví khi giao dịch thành công
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onPaymentSuccess()
         }
     }
 
+    // Đếm ngược thời gian hết hạn QR (5 phút = 300 giây), giảm mỗi giây
     var remainingSeconds by remember(topUpId) { mutableIntStateOf(300) }
     LaunchedEffect(topUpId, topUp?.status) {
         while (remainingSeconds > 0 && topUp?.status == TopUpStatus.PENDING) {
@@ -176,6 +220,7 @@ fun TopUpQRScreen(
                             .padding(24.dp),
                         contentAlignment = Alignment.Center,
                     ) {
+                        // Hiển thị QR từ URL (server-generated image) hoặc tạo bitmap bằng ZXing
                         if (!topUp.qrImageUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = topUp.qrImageUrl,
@@ -183,6 +228,7 @@ fun TopUpQRScreen(
                                 modifier = Modifier.size(240.dp),
                             )
                         } else if (topUp.qrContent.isNotBlank()) {
+                            // Tạo QR bitmap bằng ZXing từ content, cache bằng remember để không tạo lại
                             val qrBitmap = remember(topUp.qrContent) { generateQrBitmap(topUp.qrContent) }
                             Image(
                                 bitmap = qrBitmap.asImageBitmap(),
@@ -261,6 +307,10 @@ fun TopUpQRScreen(
     }
 }
 
+/**
+ * Trạng thái loading khi chưa có thông tin topUp.
+ * Hiển thị CircularProgressIndicator và text "Đang lấy thông tin chuyển khoản..."
+ */
 @Composable
 private fun LoadingTopUpState(colorScheme: ColorScheme) {
     Column(
@@ -277,6 +327,13 @@ private fun LoadingTopUpState(colorScheme: ColorScheme) {
     }
 }
 
+/**
+ * Badge hiển thị trạng thái giao dịch dạng viên thuốc (pill shape).
+ * Màu sắc thay đổi theo trạng thái: xanh (PAID), đỏ (FAILED/EXPIRED), primary (PENDING).
+ *
+ * @param status trạng thái TopUpStatus
+ * @param colorScheme theme colors
+ */
 @Composable
 private fun TopUpStatusBadge(status: TopUpStatus, colorScheme: ColorScheme) {
     val (label, tint, icon) = when (status) {
@@ -307,6 +364,11 @@ private fun TopUpStatusBadge(status: TopUpStatus, colorScheme: ColorScheme) {
     }
 }
 
+/**
+ * Card hiển thị chi tiết giao dịch chuyển khoản.
+ * Bao gồm: ngân hàng, số tài khoản, chủ tài khoản, số tiền, mã giao dịch, nội dung.
+ * Layout Surface bo góc 24dp với các row chia bởi HorizontalDivider.
+ */
 @Composable
 private fun TransferDetailsCard(
     topUp: TopUpRequest,
@@ -341,6 +403,10 @@ private fun TransferDetailsCard(
     }
 }
 
+/**
+ * Row hiển thị 1 cặp label-value trong card chi tiết chuyển khoản.
+ * Label chiếm 42% chiều rộng, value chiếm 58%.
+ */
 @Composable
 private fun TransferDetailRow(
     label: String,

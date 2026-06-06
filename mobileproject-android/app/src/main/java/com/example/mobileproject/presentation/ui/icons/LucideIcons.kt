@@ -1,4 +1,11 @@
-﻿package com.example.mobileproject.presentation.ui.icons
+﻿/**
+ * Ánh xạ tên icon Lucide-style sang Material Icons.
+ *
+ * File này cung cấp các getter property với tên Lucide (ví dụ: LucideBell, LucideHeart)
+ * nhưng trả về icon từ Material Icons Rounded/Filled, đảm bảo tính nhất quán
+ * với thiết kế Lucide mà không cần phụ thuộc thêm thư viện icon.
+ */
+package com.example.mobileproject.presentation.ui.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
@@ -34,6 +41,22 @@ import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.ui.graphics.vector.ImageVector
+
+/**
+ * Bộ icon Lucide-style dùng chung cho toàn bộ ứng dụng.
+ *
+ * Mỗi icon là một alias (getter property) trỏ đến icon tương ứng
+ * trong Material Icons Rounded/Filled, tạo cảm giác nhất quán
+ * với thiết kế Lucide mà không cần phụ thuộc thêm thư viện.
+ *
+ * Phân loại theo chức năng:
+ * - Điều hướng: [LucideHome], [LucideCompass], [LucideSearch]
+ * - Chat: [LucideSend], [LucideReply], [LucideMail]
+ * - Wallet: [LucideWallet], [LucideShoppingCart], [LucidePercent]
+ * - Người dùng: [LucideUser], [LucideHeart], [LucideLock]
+ * - Giao diện: [LucideSun], [LucideDarkMode], [LucideSystemTheme]
+ * - Thao tác: [LucideEdit], [LucideShare2], [LucideRefreshCw]
+ */
 
 val LucideBell: ImageVector
     get() = Icons.Rounded.Notifications

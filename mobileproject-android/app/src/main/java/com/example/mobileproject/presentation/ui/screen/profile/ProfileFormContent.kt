@@ -35,6 +35,34 @@ import com.example.mobileproject.R
 import java.time.Instant
 import java.time.ZoneId
 
+/**
+ * Form nội dung chỉnh sửa profile – component tái sử dụng chứa các trường nhập liệu.
+ *
+ * Trường nhập:
+ * - Họ và tên (fullName): OutlinedTextField singleLine.
+ * - Biệt danh (nickName): OutlinedTextField singleLine.
+ * - Ngày sinh (birthDate): OutlinedTextField readOnly, chạm để mở DatePickerDialog.
+ *   Sử dụng pointerInput + awaitEachGesture để bắt sự kiện chạm trên field readOnly.
+ * - Giới tính (gender): hàng 3 FilterChip (MALE/FEMALE/OTHER).
+ * - Nút Lưu: enabled khi saveEnabled && !isSaving, hiển thị CircularProgressIndicator
+ *   khi đang lưu.
+ *
+ * DatePicker integration:
+ * - [DatePickerDialog] Material3, convert millis → LocalDate → String (yyyy-MM-dd).
+ *
+ * @param fullName họ tên hiện tại.
+ * @param nickName biệt danh hiện tại.
+ * @param birthDate ngày sinh dạng "yyyy-MM-dd".
+ * @param gender giới tính: "MALE"/"FEMALE"/"OTHER".
+ * @param isSaving trạng thái đang lưu.
+ * @param onFullNameChange callback khi thay đổi họ tên.
+ * @param onNickNameChange callback khi thay đổi biệt danh.
+ * @param onBirthDateChange callback khi chọn ngày sinh mới.
+ * @param onGenderChange callback khi chọn giới tính.
+ * @param onSave callback khi nhấn nút Lưu.
+ * @param saveEnabled có cho phép lưu hay không.
+ * @param showSaveButton có hiển thị nút Lưu hay không.
+ */
 @Composable
 fun ProfileFormContent(
     fullName: String,

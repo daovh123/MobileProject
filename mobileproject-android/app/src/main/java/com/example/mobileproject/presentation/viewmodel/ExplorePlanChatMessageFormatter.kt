@@ -6,6 +6,19 @@ import com.example.mobileproject.utils.formatSimpleAmount
 import java.text.Normalizer
 import java.util.Locale
 
+/**
+ * Dữ liệu đã parse từ tin nhắn chat chứa thông tin quán ăn/uống trong kế hoạch khám phá.
+ * Được dùng để render card UI trong chat thay vì hiển thị text thuần.
+ *
+ * @property stopOrder Số thứ tự điểm dừng trong kế hoạch (null nếu chỉ chia sẻ lẻ)
+ * @property title Tên quán
+ * @property imageUrl URL hình ảnh quán (nếu có)
+ * @property experienceType Loại trải nghiệm: "An chinh" / "Cafe / do uong"
+ * @property estimatedCostLabel Nhãn chi phí dự kiến đã format (vd: "50,000d")
+ * @property reason Lý do gợi ý quán này
+ * @property address Địa chỉ đầy đủ (đã ghép quận, tỉnh)
+ * @property googleMapsUrl Link Google Maps (từ API hoặc tự tạo từ tọa độ)
+ */
 data class ExplorePlanChatCardData(
     val stopOrder: Int?,
     val title: String,
@@ -17,6 +30,25 @@ data class ExplorePlanChatCardData(
     val googleMapsUrl: String?,
 )
 
+/**
+ * Formatter chuyển đổi thông tin quán ăn/uống thành tin nhắn text có cấu trúc
+ * để gửi qua chat giữa cặp đôi.
+ *
+ * Cấu trúc tin nhắn:
+ * ```
+ * Goi y hen ho
+ * Diem dung: 1
+ * Quan: Tên quán
+ * Anh: URL
+ * Loai trai nghiem: An chinh
+ * Chi phi du kien: 50,000d
+ * Ly do: ...
+ * Dia chi: ...
+ * Google Maps: ...
+ * ```
+ *
+ * Tin nhắn có thể được parse ngược lại bởi [ExplorePlanChatCardParser].
+ */
 object ExplorePlanChatMessageFormatter {
 
     private const val header = "Goi y hen ho"
@@ -29,6 +61,12 @@ object ExplorePlanChatMessageFormatter {
     private const val addressLabel = "Dia chi"
     private const val mapsLabel = "Google Maps"
 
+    /**
+     * Format một [ExplorePlanItem] thành tin nhắn text có cấu trúc.
+     *
+     * @param item Điểm dừng trong kế hoạch khám phá
+     * @return Chuỗi text đã format, mỗi dòng một trường thông tin
+     */
     fun build(item: ExplorePlanItem): String {
         return build(
             name = item.place.name,
@@ -46,6 +84,12 @@ object ExplorePlanChatMessageFormatter {
         )
     }
 
+    /**
+     * Format một [Place] thành tin nhắn text (không có stopOrder, cost, reason).
+     *
+     * @param place Địa điểm
+     * @return Chuỗi text đã format
+     */
     fun build(place: Place): String {
         return build(
             name = place.name,
@@ -59,6 +103,24 @@ object ExplorePlanChatMessageFormatter {
         )
     }
 
+    /**
+     * Build tin nhắn từ các tham số rời rạc.
+     * Các tham số null sẽ bị bỏ qua (không thêm dòng).
+     *
+     * @param name Tên quán (bắt buộc, mặc định "Dia diem" nếu null)
+     * @param address Địa chỉ
+     * @param district Quận/huyện
+     * @param province Tỉnh/thành phố
+     * @param googleMapsUrl Link Google Maps trực tiếp
+     * @param lat Vĩ độ (dùng tạo link Maps nếu không có googleMapsUrl)
+     * @param lng Kinh độ
+     * @param imageUrl URL hình ảnh
+     * @param stopOrder Số thứ tự điểm dừng
+     * @param estimatedCost Chi phí dự kiến (VND)
+     * @param experienceType Loại trải nghiệm ("food" -> "An chinh", "drink" -> "Cafe / do uong")
+     * @param reason Lý do gợi ý
+     * @return Chuỗi text nhiều dòng
+     */
     fun build(
         name: String?,
         address: String?,
@@ -90,6 +152,12 @@ object ExplorePlanChatMessageFormatter {
         }.joinToString("\n")
     }
 
+    /**
+     * Trả về label đã format cho một key cụ thể, dùng cho unit test.
+     *
+     * @param key Tên trường cần lấy label (vd: "header", "stop", "title", "image", "type", "cost", "reason", "address", "maps")
+     * @return Chuỗi label đã format, hoặc rỗng nếu key không hợp lệ
+     */
     internal fun labelForTesting(key: String): String {
         return when (key) {
             "header" -> header
@@ -139,8 +207,21 @@ object ExplorePlanChatMessageFormatter {
     }
 }
 
+/**
+ * Parser chuyển đổi tin nhắn text có cấu trúc (từ [ExplorePlanChatMessageFormatter])
+ * ngược lại thành [ExplorePlanChatCardData] để render card UI trong chat.
+ *
+ * Sử dụng normalize Unicode (NFD + loại bỏ dấu) để so sánh label không phân biệt dấu tiếng Việt.
+ */
 object ExplorePlanChatCardParser {
 
+    /**
+     * Parse chuỗi tin nhắn text thành [ExplorePlanChatCardData].
+     *
+     * @param messageText Nội dung tin nhắn chat
+     * @return [ExplorePlanChatCardData] nếu parse thành công, null nếu không đúng định dạng
+     *   (dòng đầu phải là header "Goi y hen ho")
+     */
     fun parse(messageText: String): ExplorePlanChatCardData? {
         val lines = messageText.lines()
             .map { it.trim() }

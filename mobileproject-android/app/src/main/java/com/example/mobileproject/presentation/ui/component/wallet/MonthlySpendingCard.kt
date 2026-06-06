@@ -1,3 +1,9 @@
+/**
+ * Component hiển thị chi tiêu hàng tháng theo danh mục.
+ *
+ * Cung cấp [MonthlySpendingCard] composable với biểu đồ donut
+ * và legend tương tác, hỗ trợ chọn/bỏ chọn danh mục.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.animation.core.animateDpAsState
@@ -24,6 +30,21 @@ import com.example.mobileproject.domain.entity.CategoryBreakdown
 import java.text.DecimalFormat
 import java.text.DateFormatSymbols
 
+/**
+ * Card hiển thị chi tiêu hàng tháng theo danh mục với biểu đồ donut.
+ *
+ * Component này render:
+ * - Tiêu đề "Chi tiêu tháng" cùng nút chọn tháng.
+ * - Biểu đồ donut (ring chart) thể hiện tỷ lệ phần trăm từng danh mục.
+ * - Chú thích (legend) bên phải, có thể chọn để highlight danh mục trên biểu đồ.
+ * - Khi chọn một danh mục, phần trăm và tên danh mục hiển thị ở giữa donut.
+ * - Khi không chọn, hiển thị tổng chi tiêu ở giữa.
+ *
+ * @param spendingList Danh sách [CategoryBreakdown] chứa thông tin chi tiêu theo danh mục.
+ * @param selectedMonth Tháng hiện tại (1-12).
+ * @param onMonthClick Callback khi người dùng nhấn vào nút chọn tháng.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun MonthlySpendingCard(
     spendingList: List<CategoryBreakdown>,

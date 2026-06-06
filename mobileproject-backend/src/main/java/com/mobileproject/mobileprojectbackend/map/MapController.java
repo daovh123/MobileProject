@@ -14,6 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * REST controller cho tính năng chia sẻ vị trí trên bản đồ.
+ * Base path: {@code /api/auth/map}
+ *
+ * <p>Endpoint duy nhất để lấy vị trí cuối cùng của cả hai user trong couple.</p>
+ */
 @RestController
 @RequestMapping("/api/auth/map")
 public class MapController {
@@ -32,6 +38,12 @@ public class MapController {
         this.mapLocationService = mapLocationService;
     }
 
+    /**
+     * Lấy vị trí cuối cùng đã biết của cả hai user trong couple.
+     *
+     * @return coupleId, myLocation, partnerLocation
+     * @throws ResponseStatusException 409 nếu user chưa kết nối partner
+     */
     @GetMapping("/last")
     public ResponseEntity<MapLastLocationsResponse> getLastLocations(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader

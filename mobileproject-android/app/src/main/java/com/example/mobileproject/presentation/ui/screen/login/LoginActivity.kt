@@ -1,3 +1,29 @@
+/**
+ * LoginActivity - Activity host cho màn hình đăng nhập.
+ *
+ * Mục đích:
+ * - Cho phép người dùng đăng nhập bằng email/username và mật khẩu.
+ * - Hỗ trợ pre-fill email từ màn hình đăng ký.
+ * - Hiển thị thông báo đăng ký thành công nếu chuyển từ RegisterActivity.
+ *
+ * Layout:
+ * - BoxWithConstraints responsive: màn hình nhỏ (< 760dp) sẽ bật scroll.
+ * - Floating card (bo tròn 36dp, nền semi-transparent) chứa form.
+ * - Hình ảnh trang trí thỏ + cáo ở góc dưới.
+ *
+ * Logic kiểm tra session:
+ * - Nếu đã có session hợp lệ → chuyển đến [PersonalInfoActivity] hoặc [HomeActivity].
+ *
+ * ViewModels:
+ * - [AuthViewModel]: xử lý login, quan sát uiState (loading, error, authSession).
+ * - [ThemeModeViewModel]: đọc theme mode (sáng/tối/hệ thống).
+ *
+ * Navigation:
+ * - Đăng nhập thành công → [HomeActivity] hoặc [PersonalInfoActivity] (tùy profileCompleted).
+ * - "Đăng ký" → [RegisterActivity].
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 package com.example.mobileproject.presentation.ui.screen.login
 
 import android.content.Intent
@@ -81,24 +107,47 @@ import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+/**
+ * LoginActivity - Activity host cho màn hình đăng nhập.
+ *
+ * Mục đích:
+ * - Cho phép người dùng đăng nhập bằng email/username và mật khẩu.
+ * - Hỗ trợ pre-fill email từ màn hình đăng ký.
+ * - Hiển thị thông báo đăng ký thành công nếu chuyển từ RegisterActivity.
+ *
+ * Logic kiểm tra session:
+ * - Nếu đã có session hợp lệ → chuyển đến [PersonalInfoActivity] hoặc [HomeActivity].
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), inject [AuthSessionStore] và tạo [AuthViewModel].
+ *
+ * Navigation:
+ * - Đăng nhập thành công → [HomeActivity] hoặc [PersonalInfoActivity] (tùy profileCompleted).
+ * - "Đăng ký" → [RegisterActivity].
+ */
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
 
+    /** AuthSessionStore: kiểm tra session đã lưu trước khi hiển thị form đăng nhập */
     @Inject
     lateinit var authSessionStore: AuthSessionStore
 
     companion object {
+        /** Extra key để pre-fill email từ RegisterActivity */
         const val EXTRA_PREFILLED_EMAIL = "extra_prefilled_email"
+        /** Extra key đánh dấu vừa đăng ký thành công, hiển thị banner提示 */
         const val EXTRA_REGISTERED_SUCCESS = "extra_registered_success"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableImmersiveMode()
+        // Đọc extra từ intent: email pre-fill, trạng thái đăng ký, yêu cầu mở chat
         val prefilledEmail = intent.getStringExtra(EXTRA_PREFILLED_EMAIL).orEmpty()
         val showRegistrationSuccess = intent.getBooleanExtra(EXTRA_REGISTERED_SUCCESS, false)
         val openChat = intent.getBooleanExtra(HomeActivity.EXTRA_OPEN_CHAT, false)
 
+        // Kiểm tra session đã lưu → bypass login nếu hợp lệ
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
             val intent = if (!savedSession.profileCompleted) {
@@ -163,288 +212,21 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
-@Composable
-private fun LoginScreen(
-    onLoginSuccess: (AuthSession) -> Unit,
-    onSignUp: () -> Unit,
-    prefilledEmail: String,
-    showRegistrationSuccess: Boolean,
-    authViewModel: AuthViewModel,
-) {
-    var email by rememberSaveable(prefilledEmail) { mutableStateOf(prefilledEmail) }
-    var password by rememberSaveable { mutableStateOf("") }
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    val uiState by authViewModel.uiState.collectAsState()
-    val focusManager = LocalFocusManager.current
-    val scrollState = rememberScrollState()
-    val contentModifier = Modifier
-
-    LaunchedEffect(uiState.authSession) {
-        val session = uiState.authSession
-        if (session != null) {
-            onLoginSuccess(session)
-            authViewModel.consumeAuthSuccess()
-        }
-    }
-
-    val onSubmitLogin: () -> Unit = {
-        authViewModel.login(
-            usernameOrEmail = email.trim(),
-            password = password,
-        )
-    }
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        val enableScroll = maxHeight < 760.dp
-
-        Image(
-            painter = painterResource(id = R.drawable.img_register_and_login_rabbit),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .width(220.dp)
-                .height(296.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        Image(
-            painter = painterResource(id = R.drawable.img_register_and_login_fox),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .width(232.dp)
-                .height(462.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        Column(
-            modifier = contentModifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .then(if (enableScroll) Modifier.verticalScroll(scrollState) else Modifier)
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = if (enableScroll) Arrangement.Top else Arrangement.Center,
-        ) {
-
-            // Floating Card wrapping the form content
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = RoundedCornerShape(36.dp)
-                    )
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.login_welcome_title),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text(
-                    text = stringResource(R.string.login_welcome_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Registration Success Message
-                AnimatedVisibility(visible = showRegistrationSuccess) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.login_after_register_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                        )
-                    }
-                }
-
-                // EMAIL ADDRESS Field
-                LoginInputField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        authViewModel.clearError()
-                    },
-                    label = stringResource(R.string.login_email_label).uppercase(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Email,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // PASSWORD Field
-                LoginInputField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        authViewModel.clearError()
-                    },
-                    label = stringResource(R.string.login_password_label).uppercase(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) {
-                                    Icons.Rounded.VisibilityOff
-                                } else {
-                                    Icons.Rounded.Visibility
-                                },
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            focusManager.clearFocus()
-                            onSubmitLogin()
-                        }
-                    )
-                )
-
-                // Forgot Password link
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, end = 4.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Text(
-                        text = stringResource(R.string.login_forgot_password),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable { /* Reset password action or dummy */ }
-                    )
-                }
-
-                // Primary Button: Login
-                Button(
-                    onClick = onSubmitLogin,
-                    enabled = !uiState.isLoading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(50.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Eco,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = if (uiState.isLoading) {
-                                stringResource(R.string.login_signing_in)
-                            } else {
-                                stringResource(R.string.login_button)
-                            },
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
-                }
-
-                // Error display
-                AnimatedVisibility(visible = !uiState.errorMessage.isNullOrBlank()) {
-                    Text(
-                        text = uiState.errorMessage.orEmpty(),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Redirect to Sign Up link
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = stringResource(R.string.login_no_account),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp
-                    )
-                    Text(
-                        text = stringResource(R.string.login_sign_up),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .padding(start = 6.dp)
-                            .clickable(onClick = onSignUp),
-                    )
-                }
-            }
-
-        }
-    }
-}
-
+/**
+ * Composable trường input dùng chung cho màn hình Login.
+ *
+ * Hiển thị label phía trên + OutlinedTextField với leading/trailing icon.
+ * Style: bo tròn 50dp (pill shape), nền surfaceContainer.
+ *
+ * @param value Giá trị hiện tại của field.
+ * @param onValueChange Callback khi giá trị thay đổi.
+ * @param label Nhãn hiển thị phía trên field (viết hoa).
+ * @param leadingIcon Icon bên trái (ví dụ: Email, Lock).
+ * @param trailingIcon Icon bên phải (ví dụ: nút ẩn/hiện mật khẩu).
+ * @param visualTransformation Transform hiển thị (ẩn/hiện password).
+ * @param keyboardOptions Cấu hình bàn phím (loại, IME action).
+ * @param keyboardActions Xử lý action bàn phím (Done → submit).
+ */
 @Composable
 private fun LoginInputField(
     value: String,

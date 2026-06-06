@@ -6,6 +6,12 @@ import com.example.mobileproject.domain.repository.GoalRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
+/**
+ * Use case lấy danh sách tất cả mục tiêu của cặp đôi.
+ *
+ * Cung cấp entry point đơn giản cho ViewModel để observe danh sách goals
+ * mà không cần biết chi tiết implementation của repository.
+ */
 class GetGoalsUseCase @Inject constructor(
     private val repository: GoalRepository
 ) {

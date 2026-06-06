@@ -1,3 +1,9 @@
+/**
+ * BroadcastReceiver xử lý trả lời nhanh chat từ notification.
+ *
+ * Nhận inline reply, hiển thị optimistic UI, gửi qua WebSocket,
+ * và cập nhật trạng thái thất bại nếu cần.
+ */
 package com.example.mobileproject.presentation.notification
 
 import android.content.BroadcastReceiver
@@ -13,6 +19,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
+/**
+ * BroadcastReceiver xử lý trả lời nhanh từ notification chat.
+ *
+ * Khi người dùng nhập tin nhắn qua inline reply trên notification:
+ * 1. Trích xuất văn bản trả lời từ [RemoteInput].
+ * 2. Hiển thị tin nhắn outgoing trên notification (optimistic UI).
+ * 3. Gửi tin nhắn qua WebSocket sử dụng [ChatQuickReplySender].
+ * 4. Nếu gửi thất bại, cập nhật notification hiển thị "Gửi thất bại".
+ *
+ * Sử dụng [goAsync] để giữ receiver sống trong tối đa 8 giây
+ * chờ WebSocket hoàn thành.
+ *
+ * Action: [ChatNotifications.ACTION_REPLY]
+ */
 @AndroidEntryPoint
 class ChatReplyReceiver : BroadcastReceiver() {
 

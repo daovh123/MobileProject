@@ -6,6 +6,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Service xử lý bình luận cho kỷ niệm.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Lấy danh sách bình luận theo thứ tự thời gian tăng dần</li>
+ *   <li>Thêm bình luận mới với tên hiển thị của người gửi</li>
+ * </ul>
+ */
 @Service
 public class MomentCommentService {
 
@@ -15,12 +24,24 @@ public class MomentCommentService {
         this.momentCommentRepository = momentCommentRepository;
     }
 
+    /**
+     * Lấy danh sách bình luận của moment (cũ nhất trước).
+     */
     public List<MomentCommentView> getComments(String momentId) {
         return momentCommentRepository.findByMomentIdOrderByCreatedAtAsc(momentId).stream()
                 .map(this::toView)
                 .toList();
     }
 
+    /**
+     * Thêm bình luận mới cho kỷ niệm.
+     *
+     * @param momentId ID kỷ niệm
+     * @param coupleId ID couple
+     * @param user     người bình luận
+     * @param content  nội dung (tối đa 300 ký tự)
+     * @return bình luận đã lưu
+     */
     public MomentCommentView addComment(String momentId, String coupleId, AuthUser user, String content) {
         String author = user == null ? "" : user.getUsername();
         String userId = user == null ? "" : user.getId();

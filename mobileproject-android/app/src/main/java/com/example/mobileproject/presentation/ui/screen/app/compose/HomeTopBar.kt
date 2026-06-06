@@ -57,6 +57,23 @@ import com.example.mobileproject.presentation.ui.icons.LucideClose
 import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.viewmodel.NotificationUiState
 
+/**
+ * Thanh tiêu đề trên cùng (TopBar) cho HomeScaffold.
+ *
+ * Cấu trúc:
+ * - CenterAlignedTopAppBar với tiêu đề thay đổi theo route hiện tại.
+ * - Navigation icon: nút User (mở Profile) hoặc nút Close (khi ở Chat/ProfileEdit).
+ * - Action icon: nút chuông thông báo với Badge đếm unread + hiệu ứng shake animation.
+ *
+ * Bell shake animation:
+ * - Sử dụng infiniteTransition + animateFloat để tạo hiệu ứng lắc chuông
+ *   (-12° → 12°, 180ms, RepeatMode.Reverse) khi có thông báo chưa đọc.
+ * - Modifier.rotate() áp dụng lên Icon LucideBell.
+ *
+ * @param navController NavController để điều hướng.
+ * @param currentRoute route hiện tại để xác định title/icon.
+ * @param notifState trạng thái thông báo (unreadCount) cho badge.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun HomeTopBar(

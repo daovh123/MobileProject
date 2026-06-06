@@ -1,3 +1,11 @@
+/**
+ * Các visual component cho màn hình xác thực (login, register).
+ *
+ * Cung cấp:
+ * - [AuthBackdrop]: Background gradient thích ứng dark/light mode.
+ * - [AuthBrandMark]: Logo thương hiệu với pulse animation.
+ * - [AuthFormSurface]: Surface chứa biểu mẫu nhập liệu.
+ */
 package com.example.mobileproject.presentation.ui.components.auth
 
 import androidx.compose.animation.core.RepeatMode
@@ -31,6 +39,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * Background gradient cho các màn hình xác thực (login, register).
+ *
+ * Tự động phát hiện dark/light mode dựa trên luminance của colorScheme.background.
+ * - Light mode: gradient hồng nhạt (#FFFBFA → #FFF1F3 → #FFE8EC).
+ * - Dark mode: gradient nâu ấm (#1A1614 → #221E1C → #14110F).
+ *
+ * Kèm 2 hình tròn trang trí radial gradient ở góc trên phải và góc dưới trái.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param content Nội dung composable hiển thị bên trên background.
+ */
 @Composable
 fun AuthBackdrop(
     modifier: Modifier = Modifier,
@@ -93,6 +113,15 @@ fun AuthBackdrop(
     }
 }
 
+/**
+ * Logo thương hiệu với hiệu ứng pulse animation.
+ *
+ * Hiển thị biểu tượng ❤ trong Surface hình tròn trắng với border primary nhẹ.
+ * Có hiệu ứng scale pulse (1.0 → 1.04) lặp vô hạn để tạo cảm giác sống động.
+ * Shadow 12dp tạo chiều sâu.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun AuthBrandMark(modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
@@ -129,6 +158,16 @@ fun AuthBrandMark(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Surface chứa biểu mẫu xác thực với bo góc lớn.
+ *
+ * Render một card trắng (#FFFFFF alpha 97%) với bo góc 28dp,
+ * shadow 8dp, padding 24dp ngang và 28dp dọc.
+ * Thường chứa form đăng nhập hoặc đăng ký.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param content Composable nội dung bên trong (các trường nhập liệu, nút, ...).
+ */
 @Composable
 fun AuthFormSurface(
     modifier: Modifier = Modifier,

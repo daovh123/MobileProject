@@ -1,3 +1,23 @@
+/**
+ * # TopUpBankRedirectScreen - Màn hình chờ xác nhận nạp tiền qua ngân hàng
+ *
+ * Hiển thị trạng thái chờ sau khi người dùng chọn "Mở app ngân hàng" để nạp tiền.
+ * Có 3 phase:
+ * - **Phase 0**: Đang chuẩn bị yêu cầu (loading + delay 1.2s)
+ * - **Phase 1**: Chờ ngân hàng xác nhận (polling trạng thái, hiển thị thông tin chuyển khoản)
+ * - **Phase 2**: Thành công (hiệu ứng checkmark scale animation + thông tin giao dịch)
+ *
+ * ## ViewModel bindings
+ * - [TopUpViewModel]: polling trạng thái qua [startTopUpStatusPolling], kiểm tra uiState.isSuccess
+ *
+ * ## Key integrations
+ * - **animateFloatAsState**: hiệu ứng phóng to icon checkmark khi giao dịch thành công (tween 500ms)
+ * - **Phase-based LaunchedEffect**: delay 1.2s trước khi bắt đầu polling, tự động chuyển phase khi isSuccess
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại
+ * - onPaymentSuccess: chuyển về ví khi thành công
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,6 +69,15 @@ import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import kotlinx.coroutines.delay
 
+/**
+ * Màn hình chờ xác nhận nạp tiền sau khi redirect sang app ngân hàng.
+ * Hiển thị 3 phase: loading → chờ xác nhận → thành công (với animation).
+ *
+ * @param topUpId ID yêu cầu nạp tiền
+ * @param onNavigateBack quay lại
+ * @param onPaymentSuccess chuyển về ví khi thành công
+ * @param viewModel TopUpViewModel shared
+ */
 @Composable
 fun TopUpBankRedirectScreen(
     topUpId: String,
@@ -61,20 +90,24 @@ fun TopUpBankRedirectScreen(
     val topUp = uiState.activeTopUp
     val selectedBank = remember(topUp?.bankId) { topUp?.bankId?.let(TopUpViewModel::findBankById) }
 
+    // Phase 0: loading, Phase 1: chờ ngân hàng, Phase 2: thành công
     var phase by remember(topUpId) { mutableIntStateOf(0) }
 
+    // Delay 1.2s rồi chuyển sang phase 1 và bắt đầu polling trạng thái
     LaunchedEffect(topUpId) {
         delay(1200)
         phase = 1
         viewModel.startTopUpStatusPolling(topUpId)
     }
 
+    // Tự động chuyển phase 2 khi giao dịch thành công
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             phase = 2
         }
     }
 
+    // animateFloatAsState: hiệu ứng phóng to icon checkmark từ 0 → 1 khi phase == 2 (tween 500ms)
     val checkmarkScale by animateFloatAsState(
         targetValue = if (phase == 2) 1f else 0f,
         animationSpec = tween(durationMillis = 500),
@@ -246,6 +279,10 @@ fun TopUpBankRedirectScreen(
     }
 }
 
+/**
+ * Card tóm tắt thông tin chuyển khoản hiển thị trong phase chờ xác nhận.
+ * Hiển thị tên ngân hàng, số tài khoản, chủ tài khoản, nội dung chuyển khoản.
+ */
 @Composable
 private fun TransferSummary(topUp: com.example.mobileproject.domain.entity.TopUpRequest) {
     val colorScheme = MaterialTheme.colorScheme

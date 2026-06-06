@@ -1,3 +1,9 @@
+/**
+ * Gửi tin nhắn chat nhanh qua WebSocket.
+ *
+ * Mở kết nối tạm thời đến `/ws/chat`, gửi tin nhắn JSON,
+ * và đóng kết nối. Sử dụng coroutine suspend cho async.
+ */
 package com.example.mobileproject.presentation.notification
 
 import com.example.mobileproject.BuildConfig
@@ -11,10 +17,29 @@ import org.json.JSONObject
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+/**
+ * Gửi tin nhắn chat nhanh qua WebSocket cho tính năng trả lời từ notification.
+ *
+ * Mở kết nối WebSocket tạm thời đến `/ws/chat`, gửi tin nhắn
+ * dưới dạng JSON `{"type": "chat_message", "text": "..."}`,
+ * sau đó đóng kết nối.
+ *
+ * Sử dụng [suspendCancellableCoroutine] để chuyển callback-based
+ * WebSocket thành coroutine suspend function.
+ *
+ * @return true nếu gửi thành công, false nếu có lỗi hoặc timeout.
+ */
 object ChatQuickReplySender {
 
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
 
+    /**
+     * Gửi tin nhắn chat qua WebSocket.
+     *
+     * @param accessToken Token xác thực JWT.
+     * @param text Nội dung tin nhắn cần gửi.
+     * @return true nếu gửi thành công, false nếu có lỗi.
+     */
     suspend fun send(accessToken: String, text: String): Boolean {
         val token = accessToken.trim()
         val trimmed = text.trim()

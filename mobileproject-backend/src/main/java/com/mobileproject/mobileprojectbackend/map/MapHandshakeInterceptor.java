@@ -16,6 +16,19 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+/**
+ * Handshake interceptor xác thực WebSocket kết nối chia sẻ vị trí.
+ *
+ * <p><strong>Connection lifecycle – Phase: Handshake</strong></p>
+ * <ol>
+ *   <li>Trích xuất token từ header Authorization hoặc query param</li>
+ *   <li>Trích xuất coupleId từ URL path: {@code /ws/map/share/{coupleId}}</li>
+ *   <li>Xác thực user và kiểm tra user thuộc couple</li>
+ *   <li>Đặt attributes: userId, username, coupleId</li>
+ * </ol>
+ *
+ * <p>Trả về 401 nếu token sai, 400 nếu thiếu coupleId, 403 nếu user không thuộc couple.</p>
+ */
 @Component
 public class MapHandshakeInterceptor implements HandshakeInterceptor {
 

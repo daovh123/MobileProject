@@ -26,6 +26,27 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Service chính xử lý nghiệp vụ tìm kiếm và hiển thị địa điểm.
+ *
+ * <p><strong>Bộ nhớ đệm (cache):</strong> Toàn bộ dữ liệu địa điểm được load vào
+ * {@link CachedPlaceData} và giữ trong bộ nhớ (in-memory cache). Cache được xây dựng
+ * lazy (khi có request đầu tiên) và có thể invalidate/rebuild thủ công qua
+ * {@link #invalidateCache()} / {@link #rebuildCache()}.</p>
+ *
+ * <p><strong>Tìm kiếm:</strong> Hỗ trợ lọc theo từ khóa, tỉnh, quận, loại (food/drink),
+ * đánh giá tối thiểu, bán kính khoảng cách. Kết quả được phân trang và sắp xếp
+ * theo nhiều tiêu chí: trending (mặc định), rating, ratingAsc, ratingMix, distance.</p>
+ *
+ * <p><strong>Thuật toán trending:</strong> Ưu tiên địa điểm được ghím (pinned) →
+ * đánh giá cao → nhiều review → tên A-Z.</p>
+ *
+ * <p><strong>Thuật toán ratingMix:</strong> Nhóm địa điểm theo bucket điểm đánh giá
+ * (0.1 precision), sau đó xen kẽ giữa các bucket để danh sách đa dạng hơn.</p>
+ *
+ * <p><strong>Tính khoảng cách:</strong> Sử dụng công thức Haversine giữa tọa độ
+ * người dùng và tọa độ địa điểm.</p>
+ */
 @Service
 public class PlaceService {
 
@@ -43,6 +64,12 @@ public class PlaceService {
         this.placeRepository = placeRepository;
     }
 
+    /**
+     * Tìm kiếm địa điểm với nhiều tiêu chí lọc, phân trang và sắp xếp.
+     *
+     * @param request tiêu chí tìm kiếm
+     * @return kết quả phân trang danh sách địa điểm
+     */
     public PlaceSearchResponse search(PlaceSearchRequest request) {
         SearchCriteria criteria = normalizeRequest(request);
         List<PlaceView> filtered = filterPlaces(criteria);
@@ -50,6 +77,9 @@ public class PlaceService {
         return toPagedResponse(sorted, criteria.page(), criteria.size());
     }
 
+    /**
+     * Lấy danh sách địa điểm trending (mặc định sắp xếp theo trending).
+     */
     public PlaceSearchResponse trending(int page, int size) {
         PlaceSearchRequest request = new PlaceSearchRequest(
                 null,
@@ -66,6 +96,13 @@ public class PlaceService {
         return search(request);
     }
 
+    /**
+     * Chọn ngẫu nhiên một địa điểm từ danh sách kết quả lọc.
+     *
+     * @param request tiêu chí lọc
+     * @return một địa điểm ngẫu nhiên
+     * @throws ResponseStatusException 404 nếu không có địa điểm nào phù hợp
+     */
     public PlaceDto random(PlaceSearchRequest request) {
         SearchCriteria criteria = normalizeRequest(request);
         List<PlaceView> filtered = filterPlaces(criteria);
@@ -77,6 +114,13 @@ public class PlaceService {
         return toDto(filtered.get(randomIndex));
     }
 
+    /**
+     * Tìm địa điểm theo ID từ cache.
+     *
+     * @param placeId ID địa điểm
+     * @return thông tin địa điểm
+     * @throws ResponseStatusException 404 nếu không tìm thấy
+     */
     public PlaceDto findById(String id) {
         Place place = getCachedPlaceData().placeById().get(id);
         if (place == null) {
@@ -85,6 +129,9 @@ public class PlaceService {
         return toDto(place, null);
     }
 
+    /**
+     * Lấy thống kê tổng quan về dữ liệu địa điểm (tổng số, top tỉnh, top quận, top tag).
+     */
     public PlaceFeatureSummaryResponse getFeatureSummary() {
         List<Place> places = getCachedPlaceData().places();
 
@@ -128,6 +175,9 @@ public class PlaceService {
                 topTags);
     }
 
+    /**
+     * Lấy danh sách quận/huyện và tỉnh/thành phố duy nhất cho bộ lọc UI.
+     */
     public PlaceFilterOptionsResponse getFilterOptions() {
         List<Place> places = getCachedPlaceData().places();
 
@@ -142,12 +192,20 @@ public class PlaceService {
         return new PlaceFilterOptionsResponse(districts, provinces);
     }
 
+    /**
+     * Vô hiệu hóa cache trong bộ nhớ. Lần truy vấn tiếp theo sẽ tự động rebuild.
+     */
     public void invalidateCache() {
         synchronized (cacheLock) {
             cachedPlaceData = null;
         }
     }
 
+    /**
+     * Tải lại toàn bộ dữ liệu từ MongoDB và rebuild cache trong bộ nhớ.
+     *
+     * @return số lượng địa điểm đã cache
+     */
     public int rebuildCache() {
         CachedPlaceData refreshed = loadCacheData();
         synchronized (cacheLock) {

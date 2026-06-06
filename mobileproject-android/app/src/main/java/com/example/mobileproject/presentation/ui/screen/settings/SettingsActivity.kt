@@ -29,6 +29,18 @@ import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import javax.inject.Inject
 
+/**
+ * Activity host cho màn hình Cài đặt – sử dụng khi Settings cần mở riêng
+ * (không trong NavHost chính).
+ *
+ * Tính năng:
+ * - Inject [AuthSessionStore] qua Hilt để lấy accessToken.
+ * - Nhận accessToken từ Intent extras hoặc load từ local session.
+ * - setContent với [MobileProjectTheme] (hỗ trợ dark/light theme).
+ * - [SettingsActivityScreen]: Scaffold + TopAppBar + [SettingsScreen].
+ *
+ * @see SettingsScreen
+ */
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
 
@@ -64,6 +76,9 @@ class SettingsActivity : AppCompatActivity() {
     }
 }
 
+/**
+ * Composable host cho SettingsActivity – TopAppBar + SettingsScreen content.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SettingsActivityScreen(

@@ -1,3 +1,17 @@
+/**
+ * GoalCard - Composable card hiển thị thông tin mục tiêu (tiết kiệm hoặc tương lai).
+ *
+ * Mục đích:
+ * - Hiển thị tên mục tiêu, danh mục, và tiến độ.
+ * - SavingGoal: thanh progress bar + số tiền hiện tại/mục tiêu + % hoàn thành.
+ * - FutureGoal: thanh progress bar + danh sách tasks có thể toggle (hoàn thành/chưa).
+ *
+ * Layout:
+ * - Card bo tròn 32dp với nền surfaceContainerLowest.
+ * - Column chứa header (tên + badge danh mục) + nội dung theo loại mục tiêu.
+ *
+ * Được sử dụng bởi: [HomeScreen] trong GoalListSection.
+ */
 package com.example.mobileproject.presentation.ui.screen.home.components
 
 import androidx.compose.foundation.background
@@ -20,6 +34,21 @@ import com.example.mobileproject.domain.entity.Goal
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.utils.formatSimpleAmount
 
+/**
+ * GoalCard - Composable card hiển thị thông tin mục tiêu (tiết kiệm hoặc tương lai).
+ *
+ * Mục đích:
+ * - Hiển thị tên mục tiêu, danh mục, và tiến độ.
+ * - SavingGoal: thanh progress bar + số tiền hiện tại/mục tiêu + % hoàn thành.
+ * - FutureGoal: thanh progress bar + danh sách tasks có thể toggle (hoàn thành/chưa).
+ *
+ * Layout:
+ * - Card bo tròn 32dp với nền surfaceContainerLowest.
+ * - Column chứa header (tên + badge danh mục) + nội dung theo loại mục tiêu.
+ *
+ * @param goal Mục tiêu cần hiển thị (SavingGoal hoặc FutureGoal).
+ * @param onTaskToggle Callback khi toggle task trong FutureGoal (goalId, taskId).
+ */
 @Composable
 fun GoalCard(
     goal: Goal,
@@ -70,6 +99,10 @@ fun GoalCard(
     }
 }
 
+/**
+ * Composable nội dung cho SavingGoal.
+ * Hiển thị: số tiền hiện tại/mục tiêu, thanh progress, % hoàn thành.
+ */
 @Composable
 private fun SavingGoalContent(goal: SavingGoal) {
     val colorScheme = MaterialTheme.colorScheme
@@ -105,6 +138,11 @@ private fun SavingGoalContent(goal: SavingGoal) {
     )
 }
 
+/**
+ * Composable nội dung cho FutureGoal.
+ * Hiển thị: số tasks hoàn thành/tổng, thanh progress, danh sách tasks có thể toggle.
+ * Chỉ hiện tối đa 3 tasks đầu, hiện "+ X more tasks" nếu còn nhiều hơn.
+ */
 @Composable
 private fun FutureGoalContent(goal: FutureGoal, onTaskToggle: (String, String) -> Unit) {
     val colorScheme = MaterialTheme.colorScheme

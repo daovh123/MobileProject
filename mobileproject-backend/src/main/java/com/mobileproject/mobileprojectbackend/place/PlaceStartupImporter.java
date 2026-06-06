@@ -9,6 +9,19 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Component tự động import dữ liệu địa điểm khi ứng dụng khởi động.
+ * Implements {@link ApplicationRunner} để chạy sau khi Spring context đã sẵn sàng.
+ *
+ * <p><strong>Cấu hình:</strong></p>
+ * <ul>
+ *   <li>{@code app.place.import.auto-startup} – bật/tắt auto import (mặc định: false)</li>
+ *   <li>{@code app.place.import.skip-when-data-exists} – bỏ qua nếu collection đã có dữ liệu (mặc định: true)</li>
+ *   <li>{@code app.place.import.file-path} – đường dẫn file JSON nguồn</li>
+ * </ul>
+ *
+ * <p>Nếu import bị skip hoặc lỗi, cache sẽ được warm-up từ dữ liệu hiện có trong DB.</p>
+ */
 @Component
 public class PlaceStartupImporter implements ApplicationRunner {
 

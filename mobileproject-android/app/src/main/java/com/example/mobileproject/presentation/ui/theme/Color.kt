@@ -1,3 +1,9 @@
+/**
+ * Định nghĩa bảng màu Light và Dark cho "Love Wallet Design System".
+ *
+ * Cung cấp [MobileProjectLightColorScheme] và [MobileProjectDarkColorScheme]
+ * với thiết kế ấm áp, lãng mạn — lấy cảm hứng từ Airbnb + Stripe + Love Wallet.
+ */
 package com.example.mobileproject.presentation.ui.theme
 
 import androidx.compose.material3.darkColorScheme
@@ -5,11 +11,18 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Love Wallet Design System — Light Color Scheme
+ * Bảng màu Light Mode cho "Love Wallet Design System".
  *
- * Inspired by: Airbnb warmth + Stripe clarity + Love Wallet romance
- * Primary: #FF385C (Airbnb Rausch — warm, friendly, romantic)
- * Surfaces: Cream-white tones (#FFFBFA, #FFF7F8, #FFF1F3)
+ * Thiết kế lấy cảm hứng từ sự ấm áp của Airbnb, tính rõ ràng của Stripe
+ * và phong cách lãng mạn của Love Wallet.
+ *
+ * - Primary: #FF385C (Airbnb Rausch — ấm, thân thiện, lãng mạn).
+ * - Surfaces: Tông kem-trắng (#FFFBFA, #FFF7F8, #FFF1F3).
+ * - Error: #EF4444 (đỏ rõ ràng cho cảnh báo).
+ * - Tertiary: #FF6B81 (hồng nhạt bổ sung cho primary).
+ *
+ * Các surface container sử dụng thang hồng nhạt dần từ trắng → hồng,
+ * tạo chiều sâu mà vẫn giữ cảm giác ấm áp.
  */
 internal val MobileProjectLightColorScheme = lightColorScheme(
     primary = Color(0xFFFF385C),
@@ -48,14 +61,18 @@ internal val MobileProjectLightColorScheme = lightColorScheme(
 )
 
 /**
- * Love Wallet Design System — Warm Dark Color Scheme
+ * Bảng màu Dark Mode ấm ("Warm Dark") cho "Love Wallet Design System".
  *
- * Philosophy: "Warm dark mode" — dark backgrounds with warm brown/rose undertones,
- * NOT cold crypto-exchange dark mode. The app should still feel romantic and cozy at night.
+ * Triết lý: "Warm dark mode" — nền tối với tông nâu/hồng ấm,
+ * KHÔNG phải dark mode lạnh kiểu crypto-exchange. Ứng dụng vẫn
+ * cảm giác lãng mạn và ấm cúng vào ban đêm.
  *
- * Backgrounds: Warm dark browns (#1A1614, #221E1C) instead of cold grays
- * Text: Warm off-white (#F5EDE8) instead of pure #FFFFFF
- * Accents: Soft warm pink (#FF7A8F) instead of neon pink
+ * - Backgrounds: Nâu ấm (#1A1614, #221E1C) thay vì xám lạnh.
+ * - Text: Trắng ấm (#F5EDE8) thay vì trắng tinh (#FFFFFF).
+ * - Primary: Hồng ấm (#FF7A8F) thay vì hồng neon.
+ * - Error: #FCA5A5 (đỏ nhạt dễ đọc trên nền tối).
+ *
+ * Surface container sử dụng thang nâu ấm từ tối → sáng.
  */
 internal val MobileProjectDarkColorScheme = darkColorScheme(
     primary = Color(0xFFFF7A8F),

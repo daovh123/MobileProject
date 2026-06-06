@@ -29,6 +29,23 @@ import com.example.mobileproject.presentation.ui.icons.LucideInfo
 import com.example.mobileproject.presentation.ui.icons.LucidePalette
 import com.example.mobileproject.presentation.ui.icons.LucideShield
 
+/**
+ * Màn hình Cài đặt (Settings) – menu tổng hợp dẫn đến các mục cài đặt chi tiết.
+ *
+ * Cấu trúc UI:
+ * - [AppSectionHeader]: tiêu đề "Cài đặt" + phụ đề.
+ * - [AppSurfaceCard] chứa danh sách [SettingsMenuItem]:
+ *   + "Bảo mật & Quyền riêng tư" → [SettingsPrivacyScreen]
+ *   + "Thông báo" → [SettingsNotificationsScreen]
+ *   + "Giao diện" → [SettingsAppearanceScreen]
+ *   + "Trung tâm trợ giúp" → [SettingsHelpScreen]
+ *
+ * Mỗi [SettingsMenuItem] hiển thị icon, tiêu đề, phụ đề, mũi tên phải.
+ *
+ * Navigation: các callback onOpenXxx() → điều hướng đến detail screens.
+ *
+ * Layout: Column dọc scrollable, spacing 18dp, padding 20dp/16dp.
+ */
 @Composable
 fun SettingsScreen(
     accessToken: String,

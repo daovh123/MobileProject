@@ -1,3 +1,10 @@
+/**
+ * Theme chính của ứng dụng "Love Wallet".
+ *
+ * Cấu hình MaterialTheme với typography (Plus Jakarta Sans),
+ * shapes (bo góc Airbnb-inspired), color scheme (light/dark/dynamic),
+ * và extended colors (gradient, glass, accent).
+ */
 package com.example.mobileproject.presentation.ui.theme
 
 import android.os.Build
@@ -20,12 +27,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobileproject.R
 
+/**
+ * Font provider Google Fonts cho ứng dụng.
+ * Sử dụng Plus Jakarta Sans — font sans-serif hiện đại,
+ * gần với Inter (font được Love Wallet khuyến nghị).
+ */
 private val AppFontProvider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
     providerPackage = "com.google.android.gms",
     certificates = R.array.com_google_android_gms_fonts_certs,
 )
 
+/**
+ * Font family chính của ứng dụng — Plus Jakarta Sans.
+ * Load từ Google Fonts với certificate verification.
+ */
 private val AppFontFamily = FontFamily(
     GoogleFontEntry(
         googleFont = GoogleFont("Plus Jakarta Sans"),
@@ -34,11 +50,13 @@ private val AppFontFamily = FontFamily(
 )
 
 /**
- * Love Wallet Typography
+ * Hệ thống typography cho "Love Wallet Design System".
  *
- * Based on Plus Jakarta Sans (close to Inter — Love Wallet recommended).
- * Display tiers use SemiBold (Airbnb style — trust visual content over typographic muscle).
- * Financial labels use tighter letter-spacing for clean money display (Stripe-inspired).
+ * Dựa trên Plus Jakarta Sans (gần với Inter — Love Wallet khuyến nghị).
+ * - Display tiers sử dụng SemiBold (phong cách Airbnb — ưu tiên nội dung hình ảnh hơn typography).
+ * - Financial labels sử dụng letter-spacing chặt cho hiển thị số tiền sạch (lấy cảm hứng từ Stripe).
+ * - Negative letter-spacing cho display/headline tạo cảm giác gọn gàng, hiện đại.
+ * - Label sử dụng letterSpacing 0.1-0.4.sp cho readability tốt hơn ở kích thước nhỏ.
  */
 private val AppTypography = Typography(
     displayLarge = TextStyle(
@@ -149,10 +167,14 @@ private val AppTypography = Typography(
 )
 
 /**
- * Love Wallet Shape System
+ * Hệ thống hình dạng (shape) cho "Love Wallet Design System".
  *
- * Soft, generous radius — Airbnb-inspired friendly shapes.
- * --radius-input: 14dp, --radius-button: 16dp, --radius-card: 24dp
+ * Bo góc mềm mại, hào phóng — lấy cảm hứng từ Airbnb.
+ * - extraSmall: 10dp (chip, tag nhỏ).
+ * - small: 14dp (input field, metric chip).
+ * - medium: 16dp (button, card nhỏ).
+ * - large: 24dp (card tiêu chuẩn).
+ * - extraLarge: 28dp (dialog, card lớn).
  */
 private val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(10.dp),
@@ -162,6 +184,19 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
+/**
+ * Theme chính của ứng dụng "Love Wallet".
+ *
+ * Cấu hình MaterialTheme với:
+ * - Color scheme: Light/Dark tùy theo system theme hoặc dynamic color (Android 12+).
+ * - Typography: Plus Jakarta Sans với các tier SemiBold/Normal/Medium.
+ * - Shapes: Bo góc mềm mại Airbnb-inspired.
+ * - Extended colors: Gradient, glass, accent colors qua [LocalExtendedColors].
+ *
+ * @param darkTheme true nếu sử dụng dark mode. Mặc định theo system.
+ * @param dynamicColor true nếu sử dụng Material You dynamic color (Android 12+). Mặc định false.
+ * @param content Nội dung composable được bọc trong theme.
+ */
 @Composable
 fun MobileProjectTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

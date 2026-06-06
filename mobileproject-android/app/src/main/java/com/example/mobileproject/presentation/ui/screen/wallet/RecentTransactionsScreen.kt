@@ -1,4 +1,19 @@
-﻿package com.example.mobileproject.presentation.ui.screen.wallet
+﻿/**
+ * # RecentTransactionsScreen - Màn hình danh sách toàn bộ giao dịch
+ *
+ * Hiển thị danh sách tất cả giao dịch của ví dưới dạng LazyColumn.
+ * Hỗ trợ 3 trạng thái:
+ * - Loading (CircularProgressIndicator khi đang tải)
+ * - Empty ("Không tìm thấy giao dịch")
+ * - Data (danh sách TransactionItem)
+ *
+ * ## ViewModel bindings
+ * - [WalletViewModel]: tải lại dữ liệu qua [LaunchedEffect] gọi loadData()
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại màn hình trước
+ */
+package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +31,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.ui.component.wallet.TransactionItem
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 
+/**
+ * Màn hình danh sách toàn bộ giao dịch.
+ * Hiển thị loading, empty state hoặc LazyColumn các TransactionItem.
+ *
+ * @param onNavigateBack quay lại
+ * @param viewModel WalletViewModel shared với WalletScreen
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecentTransactionsScreen(
@@ -25,6 +47,7 @@ fun RecentTransactionsScreen(
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
+    // Tải lại dữ liệu khi composable mount
     LaunchedEffect(Unit) {
         viewModel.loadData()
     }

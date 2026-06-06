@@ -1,3 +1,25 @@
+/**
+ * Màn hình Kỷ niệm (Memories) – hiển thị khoảnh khắc gần đây, lịch ngày đặc biệt,
+ * và thông tin nửa kia (partner).
+ *
+ * Cấu trúc UI chính:
+ * - [RecentMomentsPreviewCard]: lưới 2×n ảnh preview khoảnh khắc mới nhất,
+ *   nhấp vào mở camera chụp ảnh mới.
+ * - [MemoriesCalendarCard]: lưới lịch tháng hiện tại, đánh dấu ngày gần nhất
+ *   có sự kiện đặc biệt (Valentine, 8/3, kỷ niệm 100 ngày…).
+ * - [PartnerSection]: thẻ hiển thị tên, avatar và số ngày bên nhau của partner.
+ * - [SpecialDaysBottomSheet]: bottom sheet danh sách 10 ngày đặc biệt sắp tới.
+ *
+ * ViewModel: [MemoriesViewModel] (Hilt-injected) – quản lý danh sách moments,
+ * thông tin partner, và trạng thái lưu ảnh.
+ *
+ * Điều hướng:
+ * - Nhấn [RecentMomentsPreviewCard] → điều hướng tới [CaptureMomentScreen] (camera).
+ * - Nhấn [MemoriesCalendarCard] → mở [SpecialDaysBottomSheet].
+ *
+ * Layout: Column dọc với spacing 12dp, padding ngang 14dp, toàn bộ nằm trong
+ * [AppScreenBackground] – gradient nền hồng nhạt đặc trưng.
+ */
 package com.example.mobileproject.presentation.ui.screen.memories
 
 import android.util.Base64
@@ -87,11 +109,13 @@ fun MemoriesScreen(
     }
     val nearestReminder = upcomingSpecialDays.firstOrNull()
 
+    // Tải dữ liệu khi accessToken thay đổi và khi resume từ background
     LaunchedEffect(accessToken) {
         viewModel.load(accessToken)
         viewModel.onPartnerInfoClick()
     }
 
+    // Lifecycle-aware reload: tự động refresh khi quay lại screen (ON_RESUME)
     DisposableEffect(lifecycleOwner, accessToken) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -143,6 +167,11 @@ fun MemoriesScreen(
     }
 }
 
+/**
+ * Card preview khoảnh khắc gần đây – lưới 2×n ảnh thumbnail.
+ * Bên trái: ảnh lớn (132dp height), bên phải: ảnh nhỏ + ô "+N" (số còn lại).
+ * Nhấp vào bất kỳ đâu để mở [CaptureMomentScreen].
+ */
 @Composable
 private fun RecentMomentsPreviewCard(
     moments: List<MomentDto>,
@@ -254,6 +283,10 @@ private fun RecentMomentsPreviewCard(
     }
 }
 
+/**
+ * Thẻ hiển thị thông tin nửa kia (partner) – tên, số ngày bên nhau,
+ * trạng thái kết nối. Nhấp để refresh thông tin.
+ */
 @Composable
 private fun PartnerSection(
     partnerProfile: PartnerProfileSummary?,
@@ -353,6 +386,10 @@ private fun PartnerSection(
     }
 }
 
+/**
+ * Card lịch tháng – hiển thị lưới lịch tháng hiện tại với ngày đặc biệt
+ * gần nhất được đánh dấu. Nhấp để mở [SpecialDaysBottomSheet].
+ */
 @Composable
 private fun MemoriesCalendarCard(
     nearestReminder: CalendarReminder?,
@@ -444,6 +481,10 @@ private fun MemoriesCalendarCard(
     }
 }
 
+/**
+ * Bottom sheet hiển thị danh sách 10 ngày đặc biệt sắp tới.
+ * Sử dụng ModalBottomSheet với skipPartiallyExpanded=true (mở full ngay).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SpecialDaysBottomSheet(
@@ -515,6 +556,11 @@ private fun SpecialDaysBottomSheet(
     }
 }
 
+/**
+ * Lưới lịch tháng – hiển thị 7 cột (CN-T7) × N hàng.
+ * Ngày được chọn (selectedDay) có nền hồng (F28A97).
+ * Tính leadingBlank từ dayOfWeek để căn chỉnh ngày đầu tháng.
+ */
 @Composable
 private fun CalendarMonthGrid(
     month: YearMonth,
@@ -565,6 +611,12 @@ private fun CalendarMonthGrid(
     }
 }
 
+/**
+ * Hiển thị ảnh khoảnh khắc từ URL hoặc Base64 data-URL.
+ * Nếu là data-URL, decode Base64 trên background thread (Dispatchers.Default)
+ * trước khi hiển thị qua Coil AsyncImage.
+ * Coil caching: memory + disk + network đều enabled.
+ */
 @Composable
 private fun MomentPhoto(
     model: String,

@@ -1,4 +1,27 @@
-﻿package com.example.mobileproject.presentation.ui.screen.home
+﻿/**
+ * HomeActivity - Activity host chính cho toàn bộ ứng dụng sau khi đăng nhập.
+ *
+ * Mục đích:
+ * - Chứa navigation graph chính với các tab: Home, Wallet, Explore, Memories, Settings.
+ * - Quản lý access token, đồng bộ FCM token, xử lý notification permission.
+ * - Hỗ trợ deep link mở chat từ notification (EXTRA_OPEN_CHAT).
+ *
+ * Layout:
+ * - HomeScaffold: scaffold chính với bottom navigation bar.
+ * - NavHost chứa các composable screens cho từng tab.
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), inject [AuthSessionStore] và [ApiService].
+ *
+ * Navigation:
+ * - Nếu không có access token → chuyển về [LoginActivity].
+ * - Sử dụng [NavHostController] để điều hướng giữa các tab.
+ * - [switchTo] điều hướng theo menu item ID.
+ * - [logoutAndOpenLogin] xóa session và quay về login.
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
+package com.example.mobileproject.presentation.ui.screen.home
 
 import android.Manifest
 import android.content.Intent
@@ -33,9 +56,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * HomeActivity - Activity host chính cho toàn bộ ứng dụng sau khi đăng nhập.
+ *
+ * Mục đích:
+ * - Chứa navigation graph chính với các tab: Home, Wallet, Explore, Memories, Settings.
+ * - Quản lý access token, đồng bộ FCM token, xử lý notification permission.
+ * - Hỗ trợ deep link mở chat từ notification (EXTRA_OPEN_CHAT).
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), inject [AuthSessionStore] và [ApiService].
+ *
+ * Navigation:
+ * - Nếu không có access token → chuyển về [LoginActivity].
+ * - Sử dụng [NavHostController] để điều hướng giữa các tab.
+ * - [switchTo] điều hướng theo menu item ID.
+ * - [logoutAndOpenLogin] xóa session và quay về login.
+ *
+ * Các extra:
+ * - [EXTRA_ACCESS_TOKEN]: token xác thực.
+ * - [EXTRA_OPEN_CHAT]: flag mở chat từ notification.
+ */
 @AndroidEntryPoint
 class HomeActivity : ComponentActivity() {
 
+    // Permission launcher: xin quyền POST_NOTIFICATIONS (Android 13+)
+    // để nhận push notification cho chat.
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -56,11 +102,13 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableImmersiveMode()
+        // Lấy access token từ intent extra hoặc từ session đã lưu
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN).orEmpty()
         if (accessToken.isBlank()) {
             accessToken = authSessionStore.load()?.token.orEmpty()
         }
 
+        // Nếu không có token → chuyển về login
         if (accessToken.isBlank()) {
             val loginIntent = Intent(this, LoginActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -71,10 +119,12 @@ class HomeActivity : ComponentActivity() {
             return
         }
 
+        // Xin quyền notification và đồng bộ FCM token cho push notification
         requestNotificationPermissionIfNeeded()
         syncFcmToken(accessToken)
 
         setContent {
+            // Lấy ThemeModeViewModel qua Hilt để đọc tùy chọn theme
             val themeViewModel: ThemeModeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
             val themeMode by themeViewModel.themeMode.collectAsState()
             val darkTheme = themeMode.resolveDarkTheme(isSystemInDarkTheme())
@@ -92,12 +142,20 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Xử lý intent mới khi activity đã tồn tại (singleTop).
+     * Nếu có flag EXTRA_OPEN_CHAT → điều hướng đến màn hình chat.
+     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         maybeOpenChatFromIntent(intent)
     }
 
+    /**
+     * Kiểm tra flag EXTRA_OPEN_CHAT trong intent → điều hướng đến chat nếu có.
+     * Dùng sau khi NavController sẵn sàng hoặc khi nhận onNewIntent.
+     */
     private fun maybeOpenChatFromIntent(intent: Intent?) {
         val controller = navController ?: return
         if (intent?.getBooleanExtra(EXTRA_OPEN_CHAT, false) != true) {
@@ -110,6 +168,10 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Đồng bộ FCM token lên server để nhận push notification.
+     * Kiểm tra Firebase availability trước khi lấy token.
+     */
     private fun syncFcmToken(accessToken: String) {
         val bearerToken = accessToken.trim()
         if (bearerToken.isBlank()) {
@@ -153,6 +215,10 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Kiểm tra Firebase có sẵn sàng không.
+     * Nếu chưa initialize → thử init. Trả về false nếu không có google-services.json.
+     */
     private fun isFirebaseAvailable(): Boolean {
         val existingApps = runCatching { FirebaseApp.getApps(this) }
             .getOrDefault(emptyList())
@@ -164,6 +230,10 @@ class HomeActivity : ComponentActivity() {
             .getOrNull() != null
     }
 
+    /**
+     * Xin quyền POST_NOTIFICATIONS trên Android 13+.
+     * Nếu đã có quyền thì bỏ qua.
+     */
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             return
@@ -179,6 +249,10 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Điều hướng navigation graph đến tab tương ứng với menu item ID.
+     * Sử dụng launchSingleTop + restoreState để tối ưu back stack.
+     */
     fun switchTo(menuItemId: Int) {
         val route = when (menuItemId) {
             com.example.mobileproject.R.id.nav_home -> com.example.mobileproject.presentation.ui.screen.app.compose.HomeRoutes.HOME
@@ -195,6 +269,10 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Đăng xuất: xóa session local và chuyển về LoginActivity.
+     * CLEAR_TASK flag để xóa toàn bộ back stack.
+     */
     fun logoutAndOpenLogin() {
         authSessionStore.clear()
         val intent = Intent(this, LoginActivity::class.java).apply {
@@ -210,6 +288,9 @@ class HomeActivity : ComponentActivity() {
         const val KEY_SELECTED_NAV_ITEM_ID: String = "selected_nav_item_id"
     }
 
+    /**
+     * Bật chế độ immersive: ẩn status bar cho toàn màn hình.
+     */
     private fun enableImmersiveMode() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {

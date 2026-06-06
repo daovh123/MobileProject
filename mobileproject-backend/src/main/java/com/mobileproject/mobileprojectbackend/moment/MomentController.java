@@ -21,6 +21,22 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST controller quản lý kỷ niệm (moment) của cặp đôi.
+ * Base path: {@code /api/v1/moments}
+ *
+ * <p>Các endpoint yêu cầu xác thực qua header Authorization (Bearer token).
+ * Tự động resolve coupleId từ thông tin user đã đăng nhập.</p>
+ *
+ * <p>Endpoints:</p>
+ * <ul>
+ *   <li>GET  / – Lấy danh sách kỷ niệm của couple</li>
+ *   <li>POST / – Tạo kỷ niệm mới (base64 image)</li>
+ *   <li>POST /{momentId}/reactions – Thả reaction cho kỷ niệm</li>
+ *   <li>GET  /{momentId}/comments – Lấy danh sách bình luận</li>
+ *   <li>POST /{momentId}/comments – Thêm bình luận</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/v1/moments")
 public class MomentController {
@@ -44,6 +60,9 @@ public class MomentController {
         this.momentCommentService = momentCommentService;
     }
 
+    /**
+     * Lấy danh sách kỷ niệm của couple hiện tại.
+     */
     @GetMapping
     public ResponseEntity<List<MomentView>> getMoments(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
@@ -56,6 +75,9 @@ public class MomentController {
         return ResponseEntity.ok(momentService.getMoments(resolvedCoupleId, user.getId()));
     }
 
+    /**
+     * Tạo kỷ niệm mới với ảnh base64.
+     */
     @PostMapping
     public ResponseEntity<MomentResponse> createMoment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
@@ -79,6 +101,9 @@ public class MomentController {
         }
     }
 
+    /**
+     * Thả reaction cho kỷ niệm. Nếu đã reaction cùng loại → hủy, khác loại → đổi.
+     */
     @PostMapping("/{momentId}/reactions")
     public ResponseEntity<MomentReactionResponse> reactToMoment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
@@ -99,6 +124,9 @@ public class MomentController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Lấy danh sách bình luận của kỷ niệm.
+     */
     @GetMapping("/{momentId}/comments")
     public ResponseEntity<List<MomentCommentView>> getComments(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
@@ -113,6 +141,9 @@ public class MomentController {
         return ResponseEntity.ok(momentCommentService.getComments(momentId));
     }
 
+    /**
+     * Thêm bình luận cho kỷ niệm.
+     */
     @PostMapping("/{momentId}/comments")
     public ResponseEntity<MomentCommentView> addComment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,

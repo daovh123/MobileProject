@@ -23,21 +23,53 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Bước hiện tại trong flow nạp tiền:
+ * - [AMOUNT]: Nhập số tiền
+ * - [BANK_SELECT]: Chọn ngân hàng
+ */
 enum class TopUpStep {
     AMOUNT,
     BANK_SELECT,
 }
 
+/**
+ * Phương thức thanh toán nạp tiền:
+ * - [QR]: Quét mã QR
+ * - [BANK_REDIRECT]: Chuyển hướng đến app/web ngân hàng
+ */
 enum class TopUpPaymentMode {
     QR,
     BANK_REDIRECT,
 }
 
+/**
+ * Sự kiện điều hướng one-shot từ TopUpViewModel.
+ * Sử dụng [SharedFlow] thay vì StateFlow để mỗi event chỉ được xử lý một lần.
+ *
+ * - [OpenQr]: Mở màn hình QR code để quét thanh toán
+ * - [OpenBankRedirect]: Mở trang web/app ngân hàng để chuyển khoản
+ */
 sealed interface TopUpNavigationEvent {
     data class OpenQr(val topUpId: String) : TopUpNavigationEvent
     data class OpenBankRedirect(val topUpId: String) : TopUpNavigationEvent
 }
 
+/**
+ * Trạng thái UI cho màn hình Nạp tiền (TopUp).
+ *
+ * @property amount Số tiền nhập vào (chuỗi số)
+ * @property note Ghi chú nạp tiền
+ * @property destination Hiển thị đích đến nạp tiền ("Nạp vào Ví chính")
+ * @property currentBalance Số dư ví hiện tại (cập nhật sau khi nạp thành công)
+ * @property isLoading True khi đang tạo yêu cầu nạp tiền
+ * @property isPolling True khi đang polling trạng thái nạp tiền
+ * @property isSuccess True khi nạp tiền thành công (status = PAID)
+ * @property error Thông báo lỗi
+ * @property currentStep Bước hiện tại trong flow nạp tiền
+ * @property selectedBank Ngân hàng đã chọn (null nếu chưa chọn)
+ * @property activeTopUp Yêu cầu nạp tiền đang active (chờ thanh toán hoặc đã hoàn tất)
+ */
 data class TopUpUiState(
     val amount: String = "",
     val note: String = "",
@@ -51,16 +83,34 @@ data class TopUpUiState(
     val selectedBank: VietnamBank? = null,
     val activeTopUp: TopUpRequest? = null,
 ) {
+    /** Số dư dự kiến sau khi nạp: currentBalance + amount. */
     val predictedBalance: Long
         get() {
             val addAmount = amount.toLongOrNull() ?: 0L
             return currentBalance + addAmount
         }
 
+    /** True nếu số tiền hợp lệ (> 0). */
     val isAmountValid: Boolean
         get() = (amount.toLongOrNull() ?: 0L) > 0
 }
 
+/**
+ * ViewModel cho màn hình Nạp tiền (TopUp) vào ví chung.
+ *
+ * Quản lý business logic:
+ * - Multi-step flow: Nhập số tiền -> Chọn ngân hàng
+ * - Tạo yêu cầu nạp tiền qua API
+ * - Polling trạng thái nạp tiền mỗi 3 giây cho đến khi PAID/FAILED/EXPIRED
+ * - Điều hướng đến màn hình QR hoặc redirect ngân hàng (one-shot event)
+ * - Cập nhật số dư ví local khi nạp thành công
+ *
+ * Navigation events sử dụng [SharedFlow] (replay=0) thay vì StateFlow
+ * để mỗi event chỉ được consume một lần, tránh re-trigger khi recompose.
+ *
+ * Polling sử dụng while loop + delay, dừng khi status != PENDING
+ * (tức PAID, FAILED, hoặc EXPIRED). Job được cancel trong [onCleared].
+ */
 @HiltViewModel
 class TopUpViewModel @Inject constructor(
     private val topUpRepository: TopUpRepository,
@@ -71,15 +121,22 @@ class TopUpViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TopUpUiState())
     val uiState: StateFlow<TopUpUiState> = _uiState.asStateFlow()
 
+    /** Navigation events one-shot (QR hoặc bank redirect). */
     private val _navigationEvents = MutableSharedFlow<TopUpNavigationEvent>()
     val navigationEvents: SharedFlow<TopUpNavigationEvent> = _navigationEvents.asSharedFlow()
 
+    /** Job polling trạng thái nạp tiền. */
     private var pollingJob: Job? = null
 
     init {
+        // Tải số dư ví hiện tại khi ViewModel được tạo
         loadCurrentBalance()
     }
 
+    /**
+     * Tải số dư ví chung hiện tại từ repository.
+     * Sử dụng Flow collect vì wallet repository trả về realtime Flow.
+     */
     private fun loadCurrentBalance() {
         val session = authSessionStore.load()
         val coupleId = session?.coupleId ?: return
@@ -94,20 +151,39 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cập nhật số tiền nạp (chỉ chấp nhận ký tự số).
+     *
+     * @param newAmount Chuỗi số tiền mới
+     */
     fun onAmountChange(newAmount: String) {
         if (newAmount.all { it.isDigit() }) {
             _uiState.update { it.copy(amount = newAmount) }
         }
     }
 
+    /**
+     * Cập nhật ghi chú nạp tiền.
+     *
+     * @param newNote Chuỗi ghi chú
+     */
     fun onNoteChange(newNote: String) {
         _uiState.update { it.copy(note = newNote) }
     }
 
+    /**
+     * Chọn ngân hàng để nạp tiền.
+     *
+     * @param bank Thông tin ngân hàng đã chọn
+     */
     fun onBankSelected(bank: VietnamBank) {
         _uiState.update { it.copy(selectedBank = bank) }
     }
 
+    /**
+     * Chuyển sang bước tiếp theo (Amount -> Bank Select).
+     * Chỉ chuyển nếu số tiền hợp lệ.
+     */
     fun goToNextStep() {
         val state = _uiState.value
         if (state.currentStep == TopUpStep.AMOUNT && state.isAmountValid) {
@@ -115,6 +191,10 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Quay lại bước trước (Bank Select -> Amount).
+     * Reset ngân hàng đã chọn.
+     */
     fun goToPreviousStep() {
         val state = _uiState.value
         if (state.currentStep == TopUpStep.BANK_SELECT) {
@@ -122,6 +202,14 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tạo yêu cầu nạp tiền và điều hướng đến màn hình thanh toán.
+     *
+     * @param paymentMode Phương thức thanh toán (QR hoặc bank redirect)
+     *
+     * Flow: Validate -> Gọi API tạo top-up -> Emit navigation event
+     * Navigation event là one-shot (SharedFlow replay=0) để mỗi lần chỉ xử lý một lần.
+     */
     fun createTopUpRequest(paymentMode: TopUpPaymentMode) {
         val state = _uiState.value
         val amountLong = state.amount.toLongOrNull() ?: 0L
@@ -179,6 +267,16 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Bắt đầu polling trạng thái nạp tiền mỗi [POLL_INTERVAL_MS] (3 giây).
+     *
+     * Dừng polling khi:
+     * - status != PENDING (tức PAID, FAILED, EXPIRED)
+     * - Gặp lỗi API
+     * - Job bị cancel (ViewModel destroyed)
+     *
+     * @param topUpId ID yêu cầu nạp tiền cần theo dõi
+     */
     fun startTopUpStatusPolling(topUpId: String) {
         if (topUpId.isBlank()) {
             _uiState.update { it.copy(error = "Thiếu mã yêu cầu nạp tiền") }
@@ -190,6 +288,7 @@ class TopUpViewModel @Inject constructor(
             _uiState.update { it.copy(isPolling = true, error = null) }
             var keepPolling = true
 
+            // Polling loop: tiếp tục cho đến khi status != PENDING
             while (keepPolling) {
                 keepPolling = when (val result = topUpRepository.getTopUp(topUpId)) {
                     is Resource.Success -> {
@@ -208,7 +307,7 @@ class TopUpViewModel @Inject constructor(
                 }
 
                 if (keepPolling) {
-                    delay(POLL_INTERVAL_MS)
+                    delay(POLL_INTERVAL_MS) // Chờ 3 giây trước lần poll tiếp theo
                 }
             }
 
@@ -216,6 +315,11 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Refresh trạng thái nạp tiền một lần (không polling).
+     *
+     * @param topUpId ID yêu cầu nạp tiền
+     */
     fun refreshTopUpStatus(topUpId: String) {
         if (topUpId.isBlank()) return
 
@@ -232,6 +336,11 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Xử lý kết quả nạp tiền từ API.
+     * Nếu PAID, cập nhật số dư ví local.
+     * Nếu FAILED/EXPIRED, hiển thị thông báo lỗi tương ứng.
+     */
     private suspend fun handleTopUpUpdate(topUp: TopUpRequest) {
         if (topUp.status == TopUpStatus.PAID && topUp.currentBalance != null) {
             walletRepository.updateLocalBalance(topUp.currentBalance)
@@ -251,18 +360,24 @@ class TopUpViewModel @Inject constructor(
         }
     }
 
+    /** Xóa thông báo lỗi. */
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
 
+    /**
+     * Hủy polling job khi ViewModel bị destroy.
+     */
     override fun onCleared() {
         pollingJob?.cancel()
         super.onCleared()
     }
 
     companion object {
+        /** Khoảng thời gian giữa các lần polling trạng thái nạp tiền (3 giây). */
         private const val POLL_INTERVAL_MS = 3_000L
 
+        /** Danh sách tất cả ngân hàng Việt Nam hỗ trợ nạp tiền. */
         val vietnamBanks = listOf(
             VietnamBank("abbank", "ABBank", "AB", R.drawable.bank_logo_abbank),
             VietnamBank("acb", "ACB", "ACB", R.drawable.bank_logo_acb),
@@ -311,6 +426,11 @@ class TopUpViewModel @Inject constructor(
             VietnamBank("woori_bank", "Woori Bank", "WORI", R.drawable.bank_logo_woori_bank),
         )
 
+        /**
+         * Tìm ngân hàng theo ID.
+         * @param id ID ngân hàng (vd: "vietcombank", "techcombank")
+         * @return [VietnamBank] hoặc null nếu không tìm thấy
+         */
         fun findBankById(id: String): VietnamBank? =
             com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog.findById(id)
     }

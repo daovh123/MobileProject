@@ -4,6 +4,21 @@ import com.example.mobileproject.data.model.goal.GoalDto
 import com.example.mobileproject.data.model.goal.GoalTaskDto
 import com.example.mobileproject.domain.entity.*
 
+/**
+ * Ánh xạ [GoalDto] sang domain entity polymorphic.
+ *
+ * Logic phân biệt loại mục tiêu dựa trên trường [GoalDto.type]:
+ * - `"FUTURE"` → [FutureGoal]: sử dụng [tasks] và [progress]
+ * - Mặc định (bao gồm `"SAVING"`) → [SavingGoal]: sử dụng [targetAmount] và [currentAmount]
+ *
+ * Xử lý null safety:
+ * - [id] fallback về [goalId] nếu null (tương thích 2 API response format)
+ * - [coupleId], [name] fallback về chuỗi rỗng nếu null
+ * - [category] mặc định "Others" nếu null
+ * - [targetAmount]/[currentAmount] mặc định 0L nếu null
+ * - [progress] mặc định 0.0 nếu null
+ * - [tasks] mặc định emptyList() nếu null
+ */
 fun GoalDto.toDomain(): Goal {
     val statusEnum = GoalStatus.fromString(this.status)
     val typeStr = this.type ?: ""
@@ -40,8 +55,15 @@ fun GoalDto.toDomain(): Goal {
     }
 }
 
+/**
+ * Ánh xạ [GoalTaskDto] sang [GoalTask] domain entity.
+ *
+ * Xử lý null safety:
+ * - [taskId] fallback về chuỗi rỗng nếu null
+ * - [content] fallback về chuỗi rỗng nếu null (server có thể trả null)
+ * - [isCompleted] giữ nguyên giá trị, mặc định false từ DTO
+ */
 fun GoalTaskDto.toDomain(): GoalTask {
-    // Sử dụng Named Arguments để tránh nhầm lẫn vị trí tham số
     return GoalTask(
         taskId = this.taskId ?: "",
         content = this.content ?: "",

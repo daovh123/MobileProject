@@ -81,6 +81,34 @@ import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.example.mobileproject.presentation.viewmodel.UserSettingsViewModel
 
+/**
+ * Màn hình Profile – hiển thị thông tin cá nhân, trạng thái cặp đôi,
+ * và các cài đặt nhanh (theme, thông báo, bảo mật).
+ *
+ * Cấu trúc UI chính:
+ * - [ProfileHeroCard]: avatar lớn + tên hiển thị + nút sửa thông tin cá nhân.
+ * - [AnniversaryCard]: hiển thị số ngày bên nhau, trạng thái kết nối cặp đôi.
+ * - [ProfileMenuCard]: danh sách cài đặt dạng accordion-expandable:
+ *   + Bảo mật & Quyền riêng tư (Switch toggle).
+ *   + Thông báo (push, email, từng nhóm: chat/payment/transaction/goal/memory).
+ *   + Giao diện (SegmentedButton chọn System/Light/Dark theme).
+ *   + Trung tâm trợ giúp (điều khoản, chính sách, mã nguồn mở).
+ * - Nút Đăng xuất.
+ * - Nút Mời kết nối cặp đôi (hiện khi chưa paired).
+ *
+ * ViewModel bindings:
+ * - [ProfileViewModel]: loadProfile(), couple status, avatar.
+ * - [ThemeModeViewModel]: themeMode (System/Light/Dark).
+ * - [UserSettingsViewModel]: push/email notifications, privacy toggles.
+ * - [NotificationViewModel]: notifChat/Payment/Transaction/Goal/Memory toggles.
+ *
+ * Navigation triggers:
+ * - onEditProfile → [ProfileEditScreen]
+ * - onInvitePartner → CoupleConnectActivity
+ * - onLogout → login screen
+ *
+ * Layout: Scaffold + Column dọc scrollable, spacing 12dp, padding ngang 16dp.
+ */
 @Composable
 fun ProfileScreen(
     accessToken: String,
@@ -284,6 +312,10 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Card hero profile – hiển thị avatar lớn, tên, email, nút sửa thông tin.
+ * Avatar có viền primary color, fallback là chữ cái đầu tên.
+ */
 @Composable
 private fun ProfileHeroCard(
     displayName: String,
@@ -393,6 +425,10 @@ private fun ProfileHeroCard(
     }
 }
 
+/**
+ * Card hiển thị trạng thái cặp đôi – số ngày bên nhau, tên partner.
+ * Trạng thái: paired (đã kết nối), pending (đang chờ), incoming (lời mời đến), none.
+ */
 @Composable
 private fun AnniversaryCard(
     status: CoupleStatus?,
@@ -469,6 +505,10 @@ private fun AnniversaryCard(
     }
 }
 
+/**
+ * Card menu cài đặt dạng accordion – chứa các nhóm: Privacy, Notifications,
+ * Appearance, Help. Mỗi nhóm có thể mở rộng/thu gọn.
+ */
 @Composable
 private fun ProfileMenuCard(
     themeLabel: String,
@@ -632,6 +672,10 @@ private fun ProfileMenuCard(
     }
 }
 
+/**
+ * Item menu dạng accordion trong ProfileMenuCard.
+ * Nhấn để mở rộng/hiện nội dung con (content composable).
+ */
 @Composable
 private fun ProfileMenuDropdownItem(
     title: String,
@@ -694,6 +738,10 @@ private fun ProfileMenuDropdownItem(
     }
 }
 
+/**
+ * Hàng hiển thị Switch toggle với tiêu đề và phụ đề.
+ * Dùng trong các mục cài đặt thông báo, bảo mật.
+ */
 @Composable
 private fun SwitchInfoRow(
     title: String,

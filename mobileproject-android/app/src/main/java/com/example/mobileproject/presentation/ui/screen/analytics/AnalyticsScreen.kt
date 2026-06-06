@@ -25,6 +25,26 @@ import com.example.mobileproject.presentation.viewmodel.AnalyticsViewModel
 import java.text.NumberFormat
 import java.util.*
 
+/**
+ * Màn hình Thống kê chi tiêu (Analytics) – hiển thị biểu đồ phân bổ và xu hướng.
+ *
+ * Cấu trúc UI chính:
+ * - [PieChart]: biểu đồ tròn (Canvas drawArc) hiển thị phân bổ chi tiêu theo danh mục.
+ *   Chú thích (legend) bên phải hiển thị tên danh mục + phần trăm.
+ * - [BarChart]: biểu đồ cột đôi (Canvas drawRect) so sánh thu nhập vs chi tiêu
+ *   theo thời gian. Cột xanh = thu nhập, cột đỏ = chi tiêu.
+ * - [AnalyticsShimmer]: placeholder loading dạng box xám khi dữ liệu đang tải.
+ * - [ChartCard]: Card container cho mỗi biểu đồ, bo góc 16dp.
+ *
+ * Canvas drawing notes:
+ * - PieChart: drawArc với useCenter=true, startAngle tích lũy qua mỗi phần.
+ * - BarChart: tính barWidth = canvasWidth / (dataSize * 3), mỗi pair cách nhau
+ *   1 barWidth spacing.
+ *
+ * ViewModel: [AnalyticsViewModel] (Hilt-injected) – loadAnalytics(coupleId, year, month).
+ *
+ * Layout: Scaffold + LazyColumn, spacing 24dp, padding ngang 16dp.
+ */
 @Composable
 fun AnalyticsScreen(
     coupleId: String,
@@ -104,6 +124,9 @@ fun PieChart(data: List<CategoryBreakdown>) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Canvas drawing: biểu đồ tròn sử dụng drawArc
+        // useCenter=true nối các điểm biên vào tâm tạo hình quạt
+        // startAngle tích lũy qua mỗi phần để vẽ đúng vị trí
         Canvas(modifier = Modifier.size(150.dp)) {
             var startAngle = 0f
             data.forEachIndexed { index, item ->
@@ -136,6 +159,9 @@ fun PieChart(data: List<CategoryBreakdown>) {
 fun BarChart(data: List<SpendingTrend>) {
     val maxVal = (data.maxOfOrNull { it.totalIncome.coerceAtLeast(it.totalExpense) } ?: 1000L).toFloat()
     
+    // Canvas drawing: biểu đồ cột đôi (grouped bar chart)
+    // barWidth = canvasWidth / (dataSize * 3) – mỗi group gồm 2 cột + 1 spacing
+    // Vẽ từ dưới lên: topLeft.y = canvasHeight - barHeight
     Canvas(modifier = Modifier.fillMaxWidth().height(200.dp)) {
         val barWidth = size.width / (data.size * 3)
         val spacing = barWidth

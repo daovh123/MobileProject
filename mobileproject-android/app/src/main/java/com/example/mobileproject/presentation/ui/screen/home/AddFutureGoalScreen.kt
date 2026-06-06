@@ -1,3 +1,22 @@
+/**
+ * AddFutureGoalScreen - Màn hình tạo mục tiêu tương lai mới.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo mục tiêu tương lai với tên, danh sách tasks, danh mục, ngày hết hạn.
+ * - Khác với SavingGoal: không có số tiền mục tiêu, thay vào đó là danh sách công việc cần hoàn thành.
+ *
+ * Layout:
+ * - Scaffold với TopAppBar (nút back + tiêu đề).
+ * - Column cuộn dọc chứa: tên, tasks (danh sách động), danh mục, ngày hết hạn.
+ * - Tasks có thể thêm/xóa động, mỗi task có nút xóa (hiện khi > 1 task).
+ *
+ * ViewModel: [GoalViewModel] - quan sát createSuccess và error.
+ *
+ * Navigation:
+ * - Tạo thành công → quay lại màn hình trước (onNavigateBack).
+ *
+ * Được host bởi: [HomeActivity] (qua navigation graph).
+ */
 package com.example.mobileproject.presentation.ui.screen.home
 
 import android.widget.Toast
@@ -70,6 +89,28 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 
+/**
+ * AddFutureGoalScreen - Màn hình tạo mục tiêu tương lai mới.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo mục tiêu tương lai với tên, danh sách tasks, danh mục, ngày hết hạn.
+ * - Khác với SavingGoal: không có số tiền mục tiêu, thay vào đó là danh sách công việc cần hoàn thành.
+ *
+ * Layout:
+ * - Scaffold với TopAppBar (nút back + tiêu đề).
+ * - Column cuộn dọc chứa: tên, tasks (danh sách động), danh mục, ngày hết hạn.
+ * - Tasks có thể thêm/xóa động, mỗi task có nút xóa (hiện khi > 1 task).
+ *
+ * ViewModel: [GoalViewModel] - quan sát createSuccess và error.
+ *
+ * Navigation:
+ * - Tạo thành công → quay lại màn hình trước (onNavigateBack).
+ *
+ * Được host bởi: [HomeActivity] (qua navigation graph).
+ *
+ * @param onNavigateBack Callback quay lại màn hình trước.
+ * @param viewModel GoalViewModel xử lý logic tạo mục tiêu.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddFutureGoalScreen(
@@ -81,7 +122,9 @@ fun AddFutureGoalScreen(
     val colorScheme = MaterialTheme.colorScheme
 
     var name by remember { mutableStateOf("") }
+    // Danh sách tasks: bắt đầu với 1 task rỗng, có thể thêm/xóa động
     var tasks by remember { mutableStateOf(listOf("")) }
+    // Danh mục mặc định: Education
     var selectedCategory by remember { mutableStateOf<ExpenseCategory>(ExpenseCategory.Education) }
     var showCategorySheet by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -89,6 +132,7 @@ fun AddFutureGoalScreen(
 
     val datePickerState = rememberDatePickerState()
 
+    // LaunchedEffect: theo dõi createSuccess. Khi tạo thành công → quay lại + clear message.
     LaunchedEffect(state.createSuccess) {
         if (state.createSuccess) {
             onNavigateBack()
@@ -96,6 +140,7 @@ fun AddFutureGoalScreen(
         }
     }
 
+    // LaunchedEffect: theo dõi error. Khi có lỗi → hiện Toast + clear message.
     LaunchedEffect(state.error) {
         state.error?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -389,6 +434,13 @@ fun AddFutureGoalScreen(
     }
 }
 
+/**
+ * Composable hiển thị danh mục dưới dạng hình tròn với icon (cho FutureGoal).
+ *
+ * @param category Danh mục cần hiển thị.
+ * @param isSelected Có đang được chọn không.
+ * @param onClick Callback khi nhấn vào.
+ */
 @Composable
 fun FutureCategoryCircle(
     category: ExpenseCategory,

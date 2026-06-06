@@ -1,3 +1,11 @@
+/**
+ * Các card hiển thị địa điểm cho màn hình khám phá.
+ *
+ * Cung cấp:
+ * - [PlaceCard]: Card địa điểm đầy đủ với ảnh, tag, đánh giá, giờ mở cửa.
+ * - [TrendingPlaceCard]: Card địa điểm thu gọn cho danh sách trending.
+ * - Fallback image pool tự động chọn ảnh dựa trên placeId.
+ */
 package com.example.mobileproject.presentation.ui.components.place
 
 import androidx.compose.foundation.BorderStroke
@@ -47,6 +55,11 @@ import coil.request.ImageRequest
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.Place
 
+/**
+ * Pool URL ảnh fallback khi địa điểm không có ảnh.
+ * Ảnh được chọn dựa trên hash của placeId để đảm bảo
+ * mỗi địa điểm luôn hiển thị cùng một ảnh fallback.
+ */
 private val placeImageFallbackPool: List<String> = listOf(
     "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Little_Vietnam_Restaurant.jpg/1280px-Little_Vietnam_Restaurant.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Nice_vietnamese_restaurant_3630.JPG/1280px-Nice_vietnamese_restaurant_3630.JPG",
@@ -59,11 +72,34 @@ private val placeImageFallbackPool: List<String> = listOf(
     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/13-08-31-Kochtreffen-Wien-RalfR-N3S_7849-024.jpg/960px-13-08-31-Kochtreffen-Wien-RalfR-N3S_7849-024.jpg",
 )
 
+/**
+ * Chọn ảnh fallback cho địa điểm dựa trên placeId.
+ *
+ * Sử dụng hashCode của placeId để chọn ảnh từ [placeImageFallbackPool],
+ * đảm bảo cùng một địa điểm luôn hiển thị cùng một ảnh fallback.
+ *
+ * @param placeId ID của địa điểm.
+ * @return URL ảnh fallback.
+ */
 private fun fallbackImageFor(placeId: String): String {
     val index = (placeId.hashCode() and Int.MAX_VALUE) % placeImageFallbackPool.size
     return placeImageFallbackPool[index]
 }
 
+/**
+ * Card địa điểm đầy đủ cho màn hình khám phá (explore).
+ *
+ * Render ảnh địa điểm với overlay gradient tối, badge tag ở góc trên trái,
+ * badge đánh giá (sao + số review) ở góc trên phải, và thông tin bên dưới
+ * bao gồm tên, địa chỉ, giờ mở cửa.
+ *
+ * Nếu ảnh load lỗi, tự động chuyển sang ảnh fallback từ [placeImageFallbackPool].
+ * Ảnh được load với Coil, kích thước tối ưu 360x250 dp.
+ *
+ * @param place [Place] chứa thông tin địa điểm.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param onClick Callback khi nhấn vào card.
+ */
 @Composable
 fun PlaceCard(
     place: Place,
@@ -230,6 +266,17 @@ fun PlaceCard(
     }
 }
 
+/**
+ * Card địa điểm thu gọn cho danh sách trending (ngang).
+ *
+ * Phiên bản nhỏ hơn của [PlaceCard], kích thước cố định 238x168 dp,
+ * hiển thị ảnh, badge đánh giá, tên địa điểm và tag + quận/huyện.
+ * Dùng trong LazyRow hiển thị danh sách địa điểm nổi bật.
+ *
+ * @param place [Place] chứa thông tin địa điểm.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param onClick Callback khi nhấn vào card.
+ */
 @Composable
 fun TrendingPlaceCard(
     place: Place,
@@ -358,6 +405,13 @@ fun TrendingPlaceCard(
     }
 }
 
+/**
+ * Placeholder hiển thị khi ảnh địa điểm chưa load xong.
+ *
+ * Render background màu tertiaryContainer với icon nhà hàng ở giữa.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 private fun PlaceImagePlaceholder(modifier: Modifier = Modifier) {
     Box(modifier = modifier.background(MaterialTheme.colorScheme.tertiaryContainer), contentAlignment = Alignment.Center) {

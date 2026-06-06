@@ -11,17 +11,52 @@ import com.example.mobileproject.domain.entity.TransactionResponse
 import com.example.mobileproject.domain.repository.TransactionRepository
 import javax.inject.Inject
 
+/**
+ * Implementation của [TransactionRepository], xử lý giao dịch tài chính.
+ *
+ * ## Caching strategy
+ * Không có cache, tất cả giao dịch lấy từ API.
+ * Không cache vì dữ liệu tài chính cần realtime accuracy.
+ *
+ * ## Data transformation
+ * - Tạo giao dịch: map [TransactionResponseDto] -> [TransactionResponse] (domain),
+ *   ánh xạ `currentBalance` từ backend thành `totalBalance` trong domain
+ * - Lấy danh sách: map [TransactionDto] -> [Transaction], chuyển `type` string
+ *   thành [TransactionType] enum
+ *
+ * ## Error handling
+ * Trả về [Resource.Error] khi API call thất bại, không throw exception.
+ *
+ * ## Threading
+ * Tất cả hàm `suspend` chạy trên IO dispatcher (Retrofit default).
+ */
 class TransactionRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val authSessionStore: AuthSessionStore,
 ) : TransactionRepository {
 
+    /**
+     * Tạo header xác thực từ token đã lưu.
+     *
+     * @return "Bearer <token>"
+     * @throws IllegalStateException nếu token rỗng
+     */
     private fun authorizationHeader(): String {
         val token = authSessionStore.load()?.token?.trim().orEmpty()
         if (token.isBlank()) throw IllegalStateException("Missing auth token")
         return "Bearer $token"
     }
 
+    /**
+     * Tạo giao dịch chi tiêu mới.
+     *
+     * @param coupleId ID cặp đôi
+     * @param amount số tiền (VND)
+     * @param type loại giao dịch (expense, income, ...)
+     * @param category danh mục (food, transport, ...)
+     * @param note ghi chú (nullable)
+     * @return [Resource]<[TransactionResponse]> chứa thông tin giao dịch và số dư mới
+     */
     override suspend fun createTransaction(
         coupleId: String,
         amount: Long,
@@ -64,6 +99,16 @@ class TransactionRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Xử lý giao dịch thu nhập (tiền vào).
+     *
+     * @param coupleId ID cặp đôi
+     * @param amount số tiền (VND)
+     * @param targetType nơi nhận tiền ("wallet" hoặc "goal")
+     * @param goalId ID mục tiêu (nếu targetType = "goal")
+     * @param note ghi chú (nullable)
+     * @return [Resource]<[TransactionResponse]>
+     */
     override suspend fun processIncome(
         coupleId: String,
         amount: Long,
@@ -106,6 +151,14 @@ class TransactionRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Lấy danh sách giao dịch của cặp đôi.
+     *
+     * Chuyển đổi `type` string từ API thành [TransactionType] enum.
+     *
+     * @param coupleId ID cặp đôi
+     * @return [Resource]<[List]<[Transaction]>>
+     */
     override suspend fun getTransactions(coupleId: String): Resource<List<Transaction>> {
         return try {
             val response = apiService.getTransactions(authorizationHeader(), coupleId)

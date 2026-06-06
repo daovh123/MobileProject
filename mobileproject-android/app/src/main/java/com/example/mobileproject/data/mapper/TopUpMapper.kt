@@ -7,6 +7,15 @@ import com.example.mobileproject.domain.entity.PayoutStatus
 import com.example.mobileproject.domain.entity.TopUpRequest
 import com.example.mobileproject.domain.entity.TopUpStatus
 
+/**
+ * Ánh xạ [TopUpResponseDto] sang [TopUpRequest] domain entity.
+ *
+ * Xử lý null safety:
+ * - Các trường String nullable dùng `.orEmpty()` → chuỗi rỗng nếu null
+ * - [amount] dùng `?: 0L` → 0 nếu null
+ * - [status] chuyển đổi qua [toTopUpStatus] enum parsing an toàn
+ * - [qrImageUrl], [paidAt], [currentBalance] giữ nguyên nullable
+ */
 fun TopUpResponseDto.toDomain(): TopUpRequest {
     return TopUpRequest(
         id = id.orEmpty(),
@@ -27,10 +36,27 @@ fun TopUpResponseDto.toDomain(): TopUpRequest {
     )
 }
 
+/**
+ * Chuyển đổi chuỗi status sang [TopUpStatus] enum một cách an toàn.
+ *
+ * Xử lý:
+ * - Trim và uppercase chuỗi trước khi parse
+ * - Nếu parse thất bại (unknown status từ API), fallback về [TopUpStatus.UNKNOWN]
+ * - Nếu chuỗi null, trả về [TopUpStatus.UNKNOWN]
+ */
 private fun String?.toTopUpStatus(): TopUpStatus {
     return runCatching { TopUpStatus.valueOf(orEmpty().trim().uppercase()) }.getOrDefault(TopUpStatus.UNKNOWN)
 }
 
+/**
+ * Ánh xạ [PayoutResponseDto] sang [PayoutRequest] domain entity.
+ *
+ * Xử lý null safety:
+ * - Các trường String nullable dùng `.orEmpty()` → chuỗi rỗng nếu null
+ * - [amount] dùng `?: 0L` → 0 nếu null
+ * - [status] chuyển đổi qua [toPayoutStatus] enum parsing an toàn
+ * - [paidAt], [currentBalance] giữ nguyên nullable
+ */
 fun PayoutResponseDto.toDomain(): PayoutRequest {
     return PayoutRequest(
         id = id.orEmpty(),
@@ -44,6 +70,14 @@ fun PayoutResponseDto.toDomain(): PayoutRequest {
     )
 }
 
+/**
+ * Chuyển đổi chuỗi status sang [PayoutStatus] enum một cách an toàn.
+ *
+ * Xử lý:
+ * - Trim và uppercase chuỗi trước khi parse
+ * - Nếu parse thất bại (unknown status từ API), fallback về [PayoutStatus.UNKNOWN]
+ * - Nếu chuỗi null, trả về [PayoutStatus.UNKNOWN]
+ */
 private fun String?.toPayoutStatus(): PayoutStatus {
     return runCatching { PayoutStatus.valueOf(orEmpty().trim().uppercase()) }.getOrDefault(PayoutStatus.UNKNOWN)
 }

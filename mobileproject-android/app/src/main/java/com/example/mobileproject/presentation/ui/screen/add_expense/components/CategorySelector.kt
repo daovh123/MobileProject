@@ -22,6 +22,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobileproject.domain.model.ExpenseCategory
 
+/**
+ * Hàng chọn danh mục nhanh – hiển thị 3 danh mục phổ biến + nút "More".
+ *
+ * Cấu trúc UI:
+ * - Row ngang chứa 3 [CategoryItem] (FoodDrink, Dating, Others) + 1 nút Add (More).
+ * - Mỗi [CategoryItem]: icon trong hình tròn + label bên dưới.
+ *   Khi chọn: nền hồng, icon trắng, text đậm.
+ *   Khi không chọn: nền trắng viền xám, icon hồng.
+ *
+ * @param selectedCategory danh mục đang chọn.
+ * @param onCategorySelected callback khi chọn danh mục.
+ * @param onMoreClick callback khi nhấn nút More → mở [CategoryBottomSheet].
+ */
 @Composable
 fun CategorySelector(
     selectedCategory: ExpenseCategory,

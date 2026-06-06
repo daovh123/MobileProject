@@ -19,6 +19,23 @@ import kotlinx.coroutines.flow.flow
 import retrofit2.Response
 import javax.inject.Inject
 
+/**
+ * Implementation của [GoalRepository], quản lý mục tiêu tài chính của cặp đôi.
+ *
+ * ## Caching strategy
+ * Không có cache local, tất cả dữ liệu lấy từ [GoalApiService].
+ * Mỗi lần gọi sẽ tạo Flow mới và emit kết quả từ API.
+ *
+ * ## Error handling
+ * - Sử dụng [Resource] sealed class: Loading -> Success/Error
+ * - Parse error body từ server để lấy message chi tiết
+ * - Log lỗi với tag "GoalRepository" để debug
+ *
+ * ## Threading
+ * Các hàm trả về `Flow` sử dụng `flow { }` builder, các thao tác bên trong
+ * chạy trên dispatcher của người gọi (thường là IO dispatcher).
+ * Lấy token từ [AuthSessionStore] mỗi lần gọi API (không cache token).
+ */
 class GoalRepositoryImpl @Inject constructor(
     private val apiService: GoalApiService,
     private val authSessionStore: AuthSessionStore,
@@ -29,11 +46,24 @@ class GoalRepositoryImpl @Inject constructor(
         private const val TAG = "GoalRepository"
     }
 
+    /**
+     * Lấy header xác thực từ token đã lưu.
+     *
+     * @return "Bearer <token>" hoặc "Bearer " nếu chưa đăng nhập
+     */
     private fun getAuthHeader(): String {
         val token = authSessionStore.load()?.token ?: ""
         return "Bearer ${token.trim()}"
     }
 
+    /**
+     * Lấy danh sách mục tiêu theo couple ID.
+     *
+     * Flow emit: [Resource.Loading] -> [Resource.Success] hoặc [Resource.Error]
+     *
+     * @param coupleId ID cặp đôi
+     * @return Flow<Resource<List<Goal>>>
+     */
     override fun getGoals(coupleId: String): Flow<Resource<List<Goal>>> = flow {
         emit(Resource.Loading)
         try {
@@ -49,6 +79,20 @@ class GoalRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Tạo mục tiêu tài chính mới.
+     *
+     * Flow emit: [Resource.Loading] -> [Resource.Success] hoặc [Resource.Error]
+     *
+     * @param coupleId ID cặp đôi
+     * @param name tên mục tiêu
+     * @param category danh mục (saving, spending, ...)
+     * @param type loại mục tiêu
+     * @param targetAmount số tiền mục tiêu (nullable cho goal không có target)
+     * @param deadline hạn chót (nullable)
+     * @param tasks danh sách task con (nullable)
+     * @return Flow<Resource<Goal>>
+     */
     override fun createGoal(
         coupleId: String,
         name: String,
@@ -84,6 +128,15 @@ class GoalRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Bật/tắt trạng thái hoàn thành của task.
+     *
+     * Flow emit: [Resource.Loading] -> [Resource.Success] (progress %) hoặc [Resource.Error]
+     *
+     * @param goalId ID mục tiêu
+     * @param taskId ID task cần toggle
+     * @return Flow<Resource<Double>> progress mới (% hoàn thành)
+     */
     override fun toggleTask(goalId: String, taskId: String): Flow<Resource<Double>> = flow {
         emit(Resource.Loading)
         try {
@@ -100,6 +153,17 @@ class GoalRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Đóng góp vào mục tiêu từ ví chung.
+     *
+     * Flow emit: [Resource.Loading] -> [Resource.Success] hoặc [Resource.Error]
+     * Trả về thông tin bao gồm số dư ví mới sau khi trừ tiền.
+     *
+     * @param goalId ID mục tiêu
+     * @param amount số tiền đóng góp (VND)
+     * @param note ghi chú (nullable)
+     * @return Flow<Resource<GoalContributionResult>>
+     */
     override fun contributeFromWallet(
         goalId: String,
         amount: Long,
@@ -131,6 +195,18 @@ class GoalRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Đóng góp trực tiếp vào mục tiêu (không qua ví).
+     *
+     * Flow emit: [Resource.Loading] -> [Resource.Success] hoặc [Resource.Error]
+     * Dùng cho trường hợp đóng góp tiền mặt hoặc ngoại tuyến.
+     *
+     * @param goalId ID mục tiêu
+     * @param amount số tiền đóng góp (VND)
+     * @param contributorId ID người đóng góp
+     * @param note ghi chú (nullable)
+     * @return Flow<Resource<GoalContributionResult>>
+     */
     override fun contributeDirect(
         goalId: String,
         amount: Long,

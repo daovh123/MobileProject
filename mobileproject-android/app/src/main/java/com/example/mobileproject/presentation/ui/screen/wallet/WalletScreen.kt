@@ -1,3 +1,26 @@
+/**
+ * # WalletScreen - Màn hình ví tiền chính
+ *
+ * Hiển thị tổng quan tài chính cá nhân của người dùng bao gồm:
+ * - Số dư ví hiện tại
+ * - Thống kê chi tiêu theo tháng (MonthlySpendingCard) với picker chọn tháng
+ * - Hoạt động giao dịch gần đây (RecentActivitySection)
+ * - FAB mở rộng (expandable FAB) với 4 tùy chọn: Đóng góp mục tiêu, Thêm chi tiêu, Nạp tiền, Chuyển tiền
+ *
+ * ## ViewModel bindings
+ * - [WalletViewModel]: tải dữ liệu ví, giao dịch, phân loại chi tiêu theo tháng
+ * - [SavingGoalViewModel]: tải danh sách mục tiêu tiết kiệm cho bottom sheet đóng góp
+ *
+ * ## Lifecycle
+ * - [DisposableEffect] lắng nghe ON_RESUME để tự động reload dữ liệu khi quay lại màn hình
+ * - [LaunchedEffect] tải dữ liệu ban đầu khi compose lần đầu
+ *
+ * ## Navigation triggers
+ * - onNavigateToAddExpense: chuyển đến màn thêm chi tiêu
+ * - onNavigateToTopUp: chuyển đến màn nạp tiền
+ * - onNavigateToTransfer: chuyển đến màn chuyển tiền
+ * - onSeeAllTransactions: chuyển đến danh sách toàn bộ giao dịch
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -62,6 +85,17 @@ import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import java.text.DateFormatSymbols
 
+/**
+ * Màn hình ví tiền chính.
+ * Hiển thị số dư, chi tiêu theo tháng, giao dịch gần đây và FAB mở rộng với 4 tùy chọn.
+ *
+ * @param onNavigateToAddExpense điều hướng đến màn thêm chi tiêu
+ * @param onNavigateToTopUp điều hướng đến màn nạp tiền
+ * @param onNavigateToTransfer điều hướng đến màn chuyển tiền
+ * @param onSeeAllTransactions điều hướng đến danh sách toàn bộ giao dịch
+ * @param viewModel WalletViewModel quản lý dữ liệu ví
+ * @param savingGoalViewModel SavingGoalViewModel quản lý mục tiêu tiết kiệm
+ */
 @Composable
 fun WalletScreen(
     onNavigateToAddExpense: () -> Unit,
@@ -77,15 +111,18 @@ fun WalletScreen(
     val selectedMonth by viewModel.selectedMonth.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Trạng thái UI: ẩn/hiện month picker, FAB mở rộng, bottom sheet đóng góp
     var isMonthPickerVisible by remember { mutableStateOf(false) }
     var isFabExpanded by remember { mutableStateOf(false) }
     var isContributeSheetVisible by remember { mutableStateOf(false) }
 
+    // Tải dữ liệu lần đầu khi composable mount
     LaunchedEffect(Unit) {
         viewModel.loadData()
         savingGoalViewModel.loadGoals()
     }
 
+    // Lắng nghe lifecycle ON_RESUME để reload dữ liệu khi quay lại từ màn hình khác
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -316,6 +353,7 @@ fun WalletScreen(
             }
         }
 
+        // animateFloatAsState: xoay icon FAB 45° khi mở rộng (biến "+" thành "×")
         val rotation by animateFloatAsState(if (isFabExpanded) 45f else 0f, label = "wallet-fab-rotation")
         FloatingActionButton(
             onClick = { isFabExpanded = !isFabExpanded },

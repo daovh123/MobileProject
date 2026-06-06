@@ -1,3 +1,22 @@
+/**
+ * AddSavingGoalScreen - Màn hình tạo mục tiêu tiết kiệm mới.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo mục tiêu tiết kiệm với tên, số tiền mục tiêu, danh mục, ngày hết hạn.
+ * - Hiển thị DatePicker và CategoryBottomSheet để chọn ngày và danh mục.
+ *
+ * Layout:
+ * - Scaffold với TopAppBar (nút back + tiêu đề).
+ * - Column cuộn dọc chứa các trường input.
+ * - 3 danh mục nhanh (Travel, Education, Household) + nút "Thêm" mở CategoryBottomSheet.
+ *
+ * ViewModel: [GoalViewModel] - quan sát createSuccess và error.
+ *
+ * Navigation:
+ * - Tạo thành công → quay lại màn hình trước (onNavigateBack).
+ *
+ * Được host bởi: [HomeActivity] (qua navigation graph).
+ */
 package com.example.mobileproject.presentation.ui.screen.home
 
 import android.widget.Toast
@@ -68,6 +87,28 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+/**
+ * AddSavingGoalScreen - Màn hình tạo mục tiêu tiết kiệm mới.
+ *
+ * Mục đích:
+ * - Cho phép người dùng tạo mục tiêu tiết kiệm với tên, số tiền mục tiêu, danh mục, ngày hết hạn.
+ * - Hiển thị DatePicker và CategoryBottomSheet để chọn ngày và danh mục.
+ *
+ * Layout:
+ * - Scaffold với TopAppBar (nút back + tiêu đề).
+ * - Column cuộn dọc chứa các trường input.
+ * - 3 danh mục nhanh (Travel, Education, Household) + nút "Thêm" mở CategoryBottomSheet.
+ *
+ * ViewModel: [GoalViewModel] - quan sát createSuccess và error.
+ *
+ * Navigation:
+ * - Tạo thành công → quay lại màn hình trước (onNavigateBack).
+ *
+ * Được host bởi: [HomeActivity] (qua navigation graph).
+ *
+ * @param onNavigateBack Callback quay lại màn hình trước.
+ * @param viewModel GoalViewModel xử lý logic tạo mục tiêu.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSavingGoalScreen(
@@ -80,13 +121,19 @@ fun AddSavingGoalScreen(
 
     var name by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
+    // Danh mục mặc định: Travel
     var selectedCategory by remember { mutableStateOf<ExpenseCategory>(ExpenseCategory.Travel) }
+    // Trạng thái hiện/ẩn bottom sheet chọn danh mục
     var showCategorySheet by remember { mutableStateOf(false) }
+    // Trạng thái hiện/ẩn DatePicker dialog
     var showDatePicker by remember { mutableStateOf(false) }
+    // Ngày đã chọn (millis), null nếu chưa chọn
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
 
+    // rememberDatePickerState: cache trạng thái DatePicker qua recomposition
     val datePickerState = rememberDatePickerState()
 
+    // LaunchedEffect: theo dõi createSuccess. Khi tạo thành công → quay lại + clear message.
     LaunchedEffect(state.createSuccess) {
         if (state.createSuccess) {
             onNavigateBack()
@@ -94,6 +141,7 @@ fun AddSavingGoalScreen(
         }
     }
 
+    // LaunchedEffect: theo dõi error. Khi có lỗi → hiện Toast + clear message.
     LaunchedEffect(state.error) {
         state.error?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -374,6 +422,13 @@ fun AddSavingGoalScreen(
     }
 }
 
+/**
+ * Composable hiển thị danh mục dưới dạng hình tròn với icon.
+ *
+ * @param category Danh mục cần hiển thị.
+ * @param isSelected Có đang được chọn không.
+ * @param onClick Callback khi nhấn vào.
+ */
 @Composable
 fun CategoryCircle(
     category: ExpenseCategory,

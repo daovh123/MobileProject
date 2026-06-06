@@ -14,6 +14,21 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Service backfill ảnh cho các địa điểm có ảnh GPS-CS không ổn định.
+ *
+ * <p>Ảnh GPS-CS (googleusercontent.com/gps-cs-s/) là ảnh do người dùng upload,
+ * thường bị xóa hoặc expire sau thời gian. Service này thay thế chúng bằng ảnh
+ * từ pool nội bộ (các ảnh hợp lệ khác trong DB) hoặc Wikimedia Commons.</p>
+ *
+ * <p><strong>Quy trình:</strong></p>
+ * <ol>
+ *   <li>Tìm tất cả địa điểm có ảnh GPS-CS và ảnh Wikimedia fallback hiện tại</li>
+ *   <li>Xây dựng pool ảnh thay thế từ các ảnh hợp lệ trong DB</li>
+ *   <li>Chọn ảnh thay thế deterministically (hash(placeId) mod poolSize)</li>
+ *   <li>Save theo batch 300, rebuild cache sau khi xong</li>
+ * </ol>
+ */
 @Service
 public class PlaceImageBackfillService {
 
@@ -50,6 +65,13 @@ public class PlaceImageBackfillService {
         this.placeCacheService = placeCacheService;
     }
 
+    /**
+     * Thực hiện backfill ảnh GPS-CS.
+     *
+     * @param dryRun nếu true, chỉ quét và trả kết quả mà không lưu thay đổi
+     * @param limit  số địa điểm tối đa xử lý (1-20000)
+     * @return kết quả backfill
+     */
     public PlaceImageBackfillResponse backfillGpsCsImages(boolean dryRun, int limit) {
         int safeLimit = normalizeLimit(limit);
 

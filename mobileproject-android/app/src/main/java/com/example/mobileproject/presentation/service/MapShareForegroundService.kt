@@ -1,3 +1,9 @@
+/**
+ * Foreground Service chia sẻ vị trí thời gian thực.
+ *
+ * Theo dõi GPS, gửi/nhận vị trí qua WebSocket,
+ * broadcast vị trí bản thân và đối phương qua local broadcast.
+ */
 package com.example.mobileproject.presentation.service
 
 import android.app.NotificationChannel
@@ -36,6 +42,25 @@ import okhttp3.WebSocketListener
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+/**
+ * Foreground Service chia sẻ vị trí thời gian thực qua WebSocket.
+ *
+ * Dịch vụ này:
+ * - Chạy foreground với notification liên tục (FOREGROUND_SERVICE_TYPE_LOCATION).
+ * - Theo dõi vị trí GPS mỗi 3 giây qua FusedLocationProviderClient.
+ * - Gửi vị trí hiện tại đến server qua WebSocket (`/ws/map/share/{coupleId}`).
+ * - Nhận vị trí đối phương từ WebSocket và broadcast qua local broadcast.
+ * - Tự động kết nối lại khi mất kết nối (delay 3 giây).
+ * - Chỉ gửi vị trí khi di chuyển ≥ 100m HOẶC đã quá 5 phút kể từ lần gửi cuối.
+ *
+ * Sử dụng:
+ * - [MapShareForegroundService.start] để bắt đầu chia sẻ vị trí.
+ * - [MapShareForegroundService.stop] để dừng.
+ *
+ * Broadcast actions:
+ * - [ACTION_MY_LOCATION]: Vị trí hiện tại của người dùng.
+ * - [ACTION_PARTNER_LOCATION]: Vị trí nhận được từ đối phương.
+ */
 class MapShareForegroundService : Service() {
 
     private val serviceJob: Job = SupervisorJob()

@@ -4,6 +4,20 @@ import java.net.URI;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * Utility class chuẩn hóa URL hình ảnh địa điểm.
+ *
+ * <p>Loại bỏ các URL không hợp lệ (n/a, null text, Google Maps links),
+ * chuẩn hóa scheme (// → https://, www. → https://), và validate URI.</p>
+ *
+ * <p>Các URL bị reject:</p>
+ * <ul>
+ *   <li>Literal không hợp lệ: "n/a", "na", "none", "null", "-", "_", "n.a"</li>
+ *   <li>Google Maps short links (maps.app.goo.gl)</li>
+ *   <li>Google Maps redirect URLs (goo.gl/maps...)</li>
+ *   <li>Google Maps direct URLs (google.com/maps...)</li>
+ * </ul>
+ */
 final class PlaceImageUrlNormalizer {
 
     private static final Set<String> INVALID_LITERALS = Set.of(
@@ -18,6 +32,12 @@ final class PlaceImageUrlNormalizer {
     private PlaceImageUrlNormalizer() {
     }
 
+    /**
+     * Chuẩn hóa URL hình ảnh.
+     *
+     * @param rawValue URL thô từ database
+     * @return URL đã chuẩn hóa, hoặc {@code null} nếu không hợp lệ
+     */
     static String normalize(String rawValue) {
         if (rawValue == null) {
             return null;

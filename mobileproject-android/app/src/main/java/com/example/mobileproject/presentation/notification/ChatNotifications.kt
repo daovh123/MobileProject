@@ -1,3 +1,9 @@
+/**
+ * Quản lý hiển thị và lưu trữ thông báo chat trên Android.
+ *
+ * Cung cấp notification channel, MessagingStyle, inline reply,
+ * và lưu trữ tin nhắn gần đây trong SharedPreferences.
+ */
 package com.example.mobileproject.presentation.notification
 
 import android.app.NotificationChannel
@@ -16,6 +22,19 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
 
+/**
+ * Quản lý hiển thị thông báo chat trên Android.
+ *
+ * Chịu trách nhiệm:
+ * - Tạo và quản lý notification channel "chat_messages" (IMPORTANCE_HIGH).
+ * - Hiển thị thông báo với MessagingStyle (hỗ trợ hiển thị lịch sử tin nhắn).
+ * - Lưu trữ tin nhắn gần đây (tối đa 12) trong SharedPreferences.
+ * - Hỗ trợ trả lời nhanh (inline reply) qua [ChatReplyReceiver].
+ * - Mở HomeActivity (màn hình chat) khi nhấn vào thông báo.
+ *
+ * Sử dụng notification ID dựa trên hash của conversationKey để
+ * đảm bảo mỗi cuộc trò chuyện có notification riêng biệt.
+ */
 object ChatNotifications {
 
     private const val CHANNEL_ID = "chat_messages"
@@ -39,6 +58,20 @@ object ChatNotifications {
         val mine: Boolean,
     )
 
+    /**
+     * Hiển thị thông báo tin nhắn đến từ đối phương.
+     *
+     * Lưu tin nhắn vào SharedPreferences, sau đó hiển thị notification
+     * với MessagingStyle chứa lịch sử tin nhắn gần đây.
+     *
+     * @param context Context.
+     * @param conversationKey Khóa định danh cuộc trò chuyện (thường là coupleId).
+     * @param conversationTitle Tiêu đề cuộc trò chuyện (tên đối phương).
+     * @param myUsername Tên người dùng hiện tại (dùng cho MessagingStyle).
+     * @param senderUsername Tên người gửi.
+     * @param messageText Nội dung tin nhắn.
+     * @param timestampMillis Thời gian gửi (millis).
+     */
     fun showIncomingMessage(
         context: Context,
         conversationKey: String,
@@ -70,6 +103,17 @@ object ChatNotifications {
         )
     }
 
+    /**
+     * Hiển thị thông báo tin nhắn đã gửi (outgoing) để đồng bộ notification với chat.
+     *
+     * @param context Context.
+     * @param conversationKey Khóa định danh cuộc trò chuyện.
+     * @param conversationTitle Tiêu đề cuộc trò chuyện.
+     * @param myUsername Tên người dùng hiện tại.
+     * @param messageText Nội dung tin nhắn đã gửi.
+     * @param timestampMillis Thời gian gửi.
+     * @param subText Phụ đề optional (ví dụ: "Đang gửi...").
+     */
     fun showOutgoingMessage(
         context: Context,
         conversationKey: String,
@@ -104,6 +148,12 @@ object ChatNotifications {
         )
     }
 
+    /**
+     * Hiển thị trạng thái gửi thất bại trên notification.
+     *
+     * Cập nhật subText của notification thành "Gửi thất bại"
+     * mà không thay đổi nội dung tin nhắn đã lưu.
+     */
     fun showSendFailed(
         context: Context,
         conversationKey: String,

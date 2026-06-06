@@ -1,3 +1,18 @@
+/**
+ * Bộ UI components hiện đại dùng chung cho toàn bộ ứng dụng.
+ *
+ * Bao gồm các composable đa năng:
+ * - [ModernGradientCard]: Card gradient cho hero sections.
+ * - [AIInsightChip]: Chip gợi ý AI.
+ * - [SettingGroupCard] / [SettingRow]: Nhóm cài đặt.
+ * - [SquircleAvatar]: Avatar bo góc squircle.
+ * - [SpendingDonutChart]: Biểu đồ donut chi tiêu.
+ * - [RecentActivityItem]: Hàng giao dịch gần đây.
+ * - [DiscoveryImageCard]: Card khám phá địa điểm.
+ * - [EmptyChatSuggestions]: Gợi ý chat trống.
+ * - [MomentCard]: Card kỷ niệm.
+ * - [pinkRippleClickable]: Modifier extension ripple hồng.
+ */
 package com.example.mobileproject.presentation.ui.components
 
 import android.graphics.Bitmap
@@ -49,6 +64,17 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.mobileproject.R
 
+/**
+ * Card gradient dùng chung cho các section nổi bật.
+ *
+ * Render một [Surface] với bo góc 32dp, shadow 8dp,
+ * và background gradient tùy chỉnh. Thường dùng cho
+ * hero sections hoặc các card nổi bật trên màn hình chính.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param brush [Brush] gradient dùng làm background.
+ * @param content Nội dung composable bên trong card.
+ */
 @Composable
 fun ModernGradientCard(modifier: Modifier = Modifier, brush: Brush, content: @Composable () -> Unit) {
     Surface(modifier = modifier, shape = RoundedCornerShape(32.dp), color = Color.Transparent, shadowElevation = 8.dp) {
@@ -56,6 +82,15 @@ fun ModernGradientCard(modifier: Modifier = Modifier, brush: Brush, content: @Co
     }
 }
 
+/**
+ * Chip hiển thị gợi ý hoặc mẹo từ AI.
+ *
+ * Render một chip nhỏ với icon ✨ (AutoAwesome) và văn bản gợi ý,
+ * sử dụng màu secondary với alpha nhẹ để tạo cảm giác nhẹ nhàng.
+ *
+ * @param text Nội dung gợi ý cần hiển thị.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun AIInsightChip(text: String, modifier: Modifier = Modifier) {
     Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f)) {
@@ -66,6 +101,15 @@ fun AIInsightChip(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Card nhóm cài đặt với bo góc lớn và shadow nhẹ.
+ *
+ * Dùng làm container cho danh sách các [SettingRow],
+ * tạo cảm giác nhóm các mục cài đặt liên quan.
+ *
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param content Nội dung composable (thường là danh sách [SettingRow]).
+ */
 @Composable
 fun SettingGroupCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Surface(modifier = modifier, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
@@ -73,6 +117,19 @@ fun SettingGroupCard(modifier: Modifier = Modifier, content: @Composable () -> U
     }
 }
 
+/**
+ * Hàng cài đặt với icon, tiêu đề, phụ đề và widget tùy chỉnh bên phải.
+ *
+ * Mỗi hàng có icon trong container bo góc, tiêu đề và phụ đề optional.
+ * Hỗ trợ click với hiệu ứng ripple hồng đặc trưng qua [pinkRippleClickable].
+ *
+ * @param icon [ImageVector] hiển thị bên trái.
+ * @param title Tiêu đề chính của mục cài đặt.
+ * @param subtitle Phụ đề optional hiển thị dưới tiêu đề.
+ * @param trailing Composable optional bên phải (ví dụ: Switch, Text).
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param onClick Callback khi nhấn vào hàng. Nếu null, hàng không thể click.
+ */
 @Composable
 fun SettingRow(
     icon: ImageVector,
@@ -96,6 +153,18 @@ fun SettingRow(
     }
 }
 
+/**
+ * Avatar hình vuông bo góc (squircle) hỗ trợ ảnh từ URL hoặc Bitmap.
+ *
+ * Hiển thị ảnh người dùng với bo góc 30dp (squircle shape).
+ * Nếu không có ảnh, hiển thị chữ cái đầu làm fallback.
+ * Sử dụng Coil để load ảnh bất đồng bộ với crossfade.
+ *
+ * @param imageModel Ảnh nguồn: có thể là URL (String), Bitmap, hoặc null.
+ * @param fallbackText Văn bản hiển thị khi không có ảnh (thường là chữ cái đầu tên).
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param size Kích thước avatar tính bằng dp (mặc định 96).
+ */
 @Composable
 fun SquircleAvatar(imageModel: Any?, fallbackText: String, modifier: Modifier = Modifier, size: Int = 96) {
     Box(modifier = modifier.size(size.dp).clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
@@ -112,6 +181,19 @@ fun SquircleAvatar(imageModel: Any?, fallbackText: String, modifier: Modifier = 
     }
 }
 
+/**
+ * Biểu đồ donut (ring chart) hiển thị phân bổ chi tiêu theo danh mục.
+ *
+ * Render biểu đồ donut bên trái và danh sách chú thích (legend) bên phải.
+ * Hỗ trợ chọn danh mục: khi chọn, vòng cung tương ứng dày hơn và
+ * tên danh mục hiển thị đậm hơn trong legend.
+ *
+ * @param items Danh sách cặp (tên danh mục, tỷ lệ 0.0-1.0).
+ * @param colors Danh sách màu tương ứng cho từng danh mục.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param selectedIndex Chỉ số danh mục đang được chọn (-1 nếu không chọn).
+ * @param onSelect Callback khi chọn/bỏ chọn một danh mục.
+ */
 @Composable
 fun SpendingDonutChart(
     items: List<Pair<String, Float>>,
@@ -147,6 +229,20 @@ fun SpendingDonutChart(
     }
 }
 
+/**
+ * Hàng hiển thị một hoạt động giao dịch gần đây.
+ *
+ * Render icon trong container tròn, tiêu đề, phụ đề và số tiền.
+ * Số tiền có màu đỏ nếu chi tiêu, xanh nếu thu nhập.
+ *
+ * @param icon [ImageVector] của danh mục giao dịch.
+ * @param iconTint Màu của icon.
+ * @param title Tiêu đề giao dịch (tên danh mục hoặc mục tiêu).
+ * @param subtitle Phụ đề (thường là ngày tháng).
+ * @param amountText Số tiền đã định dạng (bao gồm dấu +/-).
+ * @param isNegative true nếu là chi tiêu (màu đỏ), false nếu thu nhập (màu xanh).
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun RecentActivityItem(
     icon: ImageVector,
@@ -170,6 +266,18 @@ fun RecentActivityItem(
     }
 }
 
+/**
+ * Card khám phá địa điểm với ảnh, đánh giá và overlay gradient.
+ *
+ * Render ảnh địa điểm với gradient tối phía dưới, badge đánh giá
+ * ở góc trên phải, và tên cùng phụ đề ở dưới cùng.
+ *
+ * @param imageUrl URL ảnh địa điểm.
+ * @param title Tên địa điểm.
+ * @param subtitle Phụ đề (địa chỉ, mô tả ngắn).
+ * @param ratingText Chuỗi đánh giá (ví dụ: "4.5 (120)").
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun DiscoveryImageCard(
     imageUrl: String?,
@@ -202,6 +310,17 @@ fun DiscoveryImageCard(
     }
 }
 
+/**
+ * Giao diện gợi ý khi cuộc trò chuyện trống.
+ *
+ * Hiển thị icon ✨ và danh sách các gợi ý dạng chip có thể click.
+ * Khi nhấn vào một gợi ý, callback [onSuggestionClick] được gọi
+ * với nội dung gợi ý tương ứng.
+ *
+ * @param suggestions Danh sách chuỗi gợi ý.
+ * @param onSuggestionClick Callback khi chọn một gợi ý.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun EmptyChatSuggestions(suggestions: List<String>, onSuggestionClick: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -214,6 +333,20 @@ fun EmptyChatSuggestions(suggestions: List<String>, onSuggestionClick: (String) 
     }
 }
 
+/**
+ * Card hiển thị một kỷ niệm (moment) với ảnh, tiêu đề và tùy chọn ghim.
+ *
+ * Render ảnh kỷ niệm, badge ghim (pin) ở góc trên phải, tiêu đề,
+ * ngày tháng và footer optional. Hỗ trợ toggle ghim/bỏ ghim.
+ *
+ * @param title Tiêu đề kỷ niệm.
+ * @param dateText Chuỗi ngày tháng đã định dạng.
+ * @param imageModel Ảnh nguồn (URL, Bitmap, hoặc resource).
+ * @param pinned true nếu kỷ niệm đang được ghim.
+ * @param onPinToggle Callback khi nhấn vào nút ghim/bỏ ghim.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param footer Composable optional hiển thị dưới ngày tháng.
+ */
 @Composable
 fun MomentCard(
     title: String,
@@ -256,6 +389,15 @@ fun MomentCard(
     }
 }
 
+/**
+ * Modifier extension thêm hiệu ứng ripple hồng (#E94057) khi click.
+ *
+ * Sử dụng [composed] để tạo [MutableInteractionSource] riêng biệt
+ * cho mỗi composable, đảm bảo hiệu ứng ripple không bị chia sẻ.
+ *
+ * @param onClick Callback khi click.
+ * @return [Modifier] với hiệu ứng ripple hồng.
+ */
 fun Modifier.pinkRippleClickable(onClick: () -> Unit): Modifier = composed {
     clickable(
         interactionSource = remember { MutableInteractionSource() },

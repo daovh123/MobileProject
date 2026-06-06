@@ -4,6 +4,13 @@ import com.example.mobileproject.domain.entity.PlaceSearchPage
 import com.example.mobileproject.domain.repository.PlaceRepository
 import javax.inject.Inject
 
+/**
+ * Use case tìm kiếm địa điểm với phân trang và nhiều tiêu chí lọc.
+ *
+ * Cung cấp giao diện tìm kiếm linh hoạt cho người dùng:
+ * theo từ khóa, tỉnh/quận, loại địa điểm, đánh giá, vị trí địa lý.
+ * Hỗ trợ phân trang và sắp xếp (trending, rating, distance).
+ */
 class SearchPlacesUseCase @Inject constructor(
     private val placeRepository: PlaceRepository,
 ) {

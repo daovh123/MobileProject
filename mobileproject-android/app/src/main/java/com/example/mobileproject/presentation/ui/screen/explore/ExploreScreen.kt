@@ -1,3 +1,25 @@
+/**
+ * # ExploreScreen - Màn hình khám phá địa điểm
+ *
+ * Màn hình chính cho phép người dùng tìm kiếm, lọc và khám phá các địa điểm ẩm thực/đồ uống.
+ * Hỗ trợ các tính năng:
+ * - Tìm kiếm theo từ khóa với bộ lọc nâng cao (tỉnh/thành, đánh giá, bán kính)
+ * - Lọc theo loại hình (đồ ăn, đồ uống, gần tôi)
+ * - Gợi ý ngẫu nhiên (random place)
+ * - Lập kế hoạch ngân sách (Budget Planner) - tính toán chi phí chuyến đi dựa trên ví hoặc nhập tay
+ * - Hiển thị xu hướng (Trending places)
+ * - Chi tiết địa điểm trong BottomSheet với điều hướng Google Maps
+ * - Phân trang tự động (infinite scroll paging)
+ * - Tích hợp vị trí hiện tại (FusedLocationProvider) cho tính năng "gần tôi"
+ *
+ * ## ViewModel bindings
+ * - [ExploreViewModel]: quản lý tìm kiếm, lọc, phân trang, gợi ý, budget planner
+ * - [FavoriteViewModel]: quản lý yêu thích (thêm/xóa/toggle)
+ * - [HistoryViewModel]: ghi nhận lượt xem địa điểm
+ *
+ * ## Navigation
+ * - Không có điều hướng trực tiếp; sử dụng BottomSheet để hiển thị chi tiết
+ */
 package com.example.mobileproject.presentation.ui.screen.explore
 
 import android.Manifest
@@ -138,8 +160,15 @@ private val predefinedAreaOptions: List<AreaOption> = listOf(
     AreaOption(R.string.explore_area_nam_dinh, "nam dinh"),
 )
 
+/**
+ * Entry point composable cho Explore tab.
+ * Khởi tạo 3 ViewModel (explore, favorite, history) qua Hilt và truyền vào [ExploreScreen].
+ *
+ * @param accessToken JWT token xác thực, truyền từ navigation graph
+ */
 @Composable
 fun ExploreRoute(accessToken: String) {
+    // Log debug khi compose lần đầu, dùng remember để tránh log lại trên recomposition
     remember(accessToken) {
         if (BuildConfig.DEBUG) {
             Log.d(EXPLORE_LOG_TAG, "route compose start accessTokenBlank=${accessToken.isBlank()}")
@@ -159,6 +188,16 @@ fun ExploreRoute(accessToken: String) {
     )
 }
 
+/**
+ * Màn hình khám phá địa điểm chính.
+ * Render toàn bộ UI bao gồm: search bar, chip lọc loại, bộ lọc nâng cao, budget planner,
+ * trending places, danh sách kết quả phân trang, và PlaceDetailBottomSheet.
+ *
+ * @param accessToken JWT token xác thực
+ * @param exploreViewModel quản lý tìm kiếm, lọc, phân trang, gợi ý, budget planner
+ * @param favoriteViewModel quản lý yêu thích
+ * @param historyViewModel ghi nhận lượt xem
+ */
 @Composable
 fun ExploreScreen(
     accessToken: String,
@@ -171,6 +210,7 @@ fun ExploreScreen(
     val uiState by exploreViewModel.uiState.collectAsState()
     val favoriteState by favoriteViewModel.uiState.collectAsState()
 
+    // DisposableEffect: log lifecycle compose/dispose cho debug
     DisposableEffect(Unit) {
         if (BuildConfig.DEBUG) {
             Log.d(EXPLORE_LOG_TAG, "enter accessTokenBlank=${accessToken.isBlank()}")
@@ -183,13 +223,16 @@ fun ExploreScreen(
         }
     }
 
-    var isAdvancedExpanded by rememberSaveable { mutableStateOf(false) }
-    var isTrendingCollapsed by rememberSaveable { mutableStateOf(false) }
-    var isBudgetPlannerExpanded by rememberSaveable { mutableStateOf(false) }
+    // Trạng thái UI lưu qua rememberSaveable để giữ khi xoay màn hình
+    var isAdvancedExpanded by rememberSaveable { mutableStateOf(false) }       // Bộ lọc nâng cao đang mở/đóng
+    var isTrendingCollapsed by rememberSaveable { mutableStateOf(false) }      // Trending đang thu gọn
+    var isBudgetPlannerExpanded by rememberSaveable { mutableStateOf(false) }  // Budget planner đang mở
 
+    // Tọa độ vị trí hiện tại của người dùng (dùng cho tính năng "gần tôi")
     var currentLocationLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var currentLocationLng by rememberSaveable { mutableStateOf<Double?>(null) }
 
+    // Khởi tạo FusedLocationProviderClient một lần, xử lý lỗi nếu Google Play Services không khả dụng
     val fusedLocationClient = remember(context) {
         runCatching { LocationServices.getFusedLocationProviderClient(context) }
             .onFailure {
@@ -250,6 +293,7 @@ fun ExploreScreen(
         }
     }
 
+    // Launcher yêu cầu quyền ACCESS_FINE_LOCATION, tự động fetch location khi được cấp
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -277,6 +321,7 @@ fun ExploreScreen(
         }
     }
 
+    // Tải favorites và history khi có accessToken
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
             favoriteViewModel.loadFavorites(accessToken)
@@ -284,12 +329,14 @@ fun ExploreScreen(
         }
     }
 
+    // Thu thập history stream và đồng bộ sang ExploreViewModel
     LaunchedEffect(historyViewModel) {
         historyViewModel.uiState.collectLatest { historyState ->
             exploreViewModel.onHistoryUpdated(historyState.history)
         }
     }
 
+    // Phân trang tự động: theo dõi scroll position để load thêm khi gần cuối danh sách
     val listState = rememberLazyListState()
     LaunchedEffect(listState) {
         observePagingLoadMore(listState) {
@@ -300,11 +347,14 @@ fun ExploreScreen(
         }
     }
 
+    // State cho PlaceDetailBottomSheet
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     var showPlaceDetail by rememberSaveable { mutableStateOf(false) }
+    // Token để tránh xử lý trùng cùng một gợi ý ngẫu nhiên
     var lastHandledRandomSuggestionToken by rememberSaveable { mutableStateOf(-1L) }
     var expandedBudgetItemKey by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Xử lý gợi ý ngẫu nhiên: mở BottomSheet khi có suggestion mới (khác token lần trước)
     LaunchedEffect(uiState.randomSuggestionToken, uiState.randomSuggestion) {
         val suggestion = uiState.randomSuggestion
         val token = uiState.randomSuggestionToken
@@ -353,8 +403,10 @@ fun ExploreScreen(
         )
     }
 
+    // Tùy chọn bộ lọc được cache bằng remember
     val areaDisplayOptions = remember(context) { buildAreaDisplayOptions(context) }
     val ratingOptions = remember(context) { buildRatingOptions(context) }
+    // Hiệu ứng reveal: trì hoãn 90ms trước khi hiển thị feed để tránh flash UI
     var revealFeed by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -405,6 +457,7 @@ fun ExploreScreen(
                             },
                         )
 
+                        // AnimatedVisibility: hiển thị/ẩn bộ lọc nâng cao với animation mặc định
                         AnimatedVisibility(visible = isAdvancedExpanded) {
                             ExploreAdvancedFilters(
                                 selectedProvinceQuery = uiState.selectedProvince,
@@ -600,6 +653,7 @@ fun ExploreScreen(
                                 }
                             }
 
+                            // AnimatedVisibility: hiển thị/ẩn danh sách trending places
                             AnimatedVisibility(visible = !isTrendingCollapsed) {
                                 LazyRow(
                                     contentPadding = PaddingValues(start = 14.dp, end = 14.dp),
@@ -668,6 +722,7 @@ fun ExploreScreen(
                 }
             }
 
+            // Chỉ render feed khi revealFeed = true (tránh flash nội dung khi vừa mount)
             if (revealFeed) {
                 items(uiState.places, key = { it.id }) { place ->
                     PlaceCard(
@@ -693,6 +748,18 @@ fun ExploreScreen(
     }
 }
 
+/**
+ * Card lập kế hoạch ngân sách cho chuyến đi khám phá.
+ * Cho phép người dùng chọn nguồn ngân sách (ví/nhập tay), số người, số điểm dừng,
+ * và tạo kế hoạch chi phí.
+ *
+ * @param isExpanded card đang mở rộng hay thu gọn
+ * @param budgetSource nguồn ngân sách: WALLET (từ ví) hoặc MANUAL (nhập tay)
+ * @param walletBalance số dư ví hiện tại (null nếu chưa tải)
+ * @param isPlanLoading đang tạo kế hoạch
+ * @param planErrorMessage lỗi khi tạo kế hoạch
+ * @param lowBalanceMessage cảnh báo số dư thấp
+ */
 @Composable
 internal fun ExploreBudgetPlannerCard(
     isExpanded: Boolean,
@@ -758,8 +825,10 @@ internal fun ExploreBudgetPlannerCard(
                 }
             }
 
+            // AnimatedVisibility: mở rộng/thu gọn nội dung budget planner (chips, input fields, nút)
             AnimatedVisibility(visible = isExpanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Chip chọn nguồn ngân sách: WALLET hoặc MANUAL
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
                             FilterChip(
@@ -857,6 +926,10 @@ internal fun ExploreBudgetPlannerCard(
     }
 }
 
+/**
+ * Card hiển thị 1 điểm dừng trong kế hoạch ngân sách.
+ * Hỗ trợ mở rộng/thu gọn để xem chi tiết và các hành động (xem chi tiết, mở Maps, gửi chat).
+ */
 @Composable
 private fun ExploreBudgetPlanItemCard(
     stopOrder: Int,
@@ -876,6 +949,7 @@ private fun ExploreBudgetPlanItemCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val cardShape = MaterialTheme.shapes.large
+            // remember(isExpanded): tính lại shape khi expand/collapse để đổi bo góc
             val rowShape = remember(isExpanded) {
                 if (isExpanded) {
                     RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -972,6 +1046,7 @@ private fun ExploreBudgetPlanItemCard(
                 }
             }
 
+            // AnimatedVisibility: mở rộng chi tiết điểm dừng (lý do, nút hành động)
             AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
@@ -1012,6 +1087,9 @@ private fun ExploreBudgetPlanItemCard(
     }
 }
 
+/**
+ * Thanh tìm kiếm với nút toggle bộ lọc nâng cao và nút tìm kiếm.
+ */
 @Composable
 private fun ExploreSearchBar(
     query: String,
@@ -1055,6 +1133,10 @@ private fun ExploreSearchBar(
     )
 }
 
+/**
+ * Hàng chip lọc theo loại địa điểm: Tất cả, Đồ ăn, Đồ uống, Gần tôi.
+ * Sử dụng LazyRow để cuộn ngang khi nhiều chip.
+ */
 @Composable
 private fun ExploreTypeChipsRow(
     selectedType: ExplorePlaceType,
@@ -1102,6 +1184,9 @@ private fun ExploreTypeChipsRow(
     }
 }
 
+/**
+ * Bộ lọc nâng cao: chọn tỉnh/thành, đánh giá tối thiểu, bán kính, nút gợi ý ngẫu nhiên.
+ */
 @Composable
 private fun ExploreAdvancedFilters(
     selectedProvinceQuery: String,
@@ -1150,6 +1235,10 @@ private fun ExploreAdvancedFilters(
     }
 }
 
+/**
+ * Dropdown selector chung, hiển thị TextField read-only + DropdownMenu.
+ * Dùng cho chọn tỉnh/thành và đánh giá.
+ */
 @Composable
 private fun DropdownSelector(
     label: String,
@@ -1202,6 +1291,10 @@ private fun DropdownSelector(
     }
 }
 
+/**
+ * Dropdown selector trả về index thay vì giá trị string.
+ * Dùng cho chọn mức đánh giá tối thiểu.
+ */
 @Composable
 private fun DropdownSelectorByIndex(
     label: String,
@@ -1253,6 +1346,15 @@ private fun DropdownSelectorByIndex(
     }
 }
 
+/**
+ * BottomSheet hiển thị chi tiết địa điểm: ảnh, tên, đánh giá, giờ mở cửa, giá,
+ * địa chỉ, tọa độ, nút chỉ đường Google Maps, và nút yêu thích.
+ *
+ * @param place địa điểm cần hiển thị
+ * @param isFavorite đang là yêu thích
+ * @param onToggleFavorite callback toggle yêu thích
+ * @param onRecordView callback ghi nhận lượt xem
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlaceDetailBottomSheet(
@@ -1269,6 +1371,7 @@ private fun PlaceDetailBottomSheet(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // Ghi nhận lượt xem mỗi khi place hoặc accessToken thay đổi
     LaunchedEffect(place.id, accessToken) {
         onRecordView()
     }
@@ -1485,6 +1588,9 @@ private fun PlaceDetailBottomSheet(
     }
 }
 
+/**
+ * Badge pill hình viên thuốc hiển thị thông tin ngắn gọn (giờ mở cửa, giá, đánh giá).
+ */
 @Composable
 private fun BadgePill(text: String) {
     Surface(

@@ -1,3 +1,17 @@
+/**
+ * # TransferOptionsBottomSheet - Bottom sheet chọn phương thức chuyển tiền
+ *
+ * Hiển thị 2 tùy chọn chuyển tiền:
+ * - **Chuyển khoản thủ công**: mở màn hình TransferMoneyScreen
+ * - **Quét QR**: mở màn hình QRScannerScreen
+ *
+ * Sử dụng [ModalBottomSheet] của Material3.
+ *
+ * ## Navigation triggers
+ * - onDismiss: đóng bottom sheet
+ * - onManualTransfer: chuyển đến màn hình nhập thông tin thủ công
+ * - onScanQr: chuyển đến màn hình quét QR
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * Bottom sheet cho phép chọn phương thức chuyển tiền: thủ công hoặc quét QR.
+ *
+ * @param onDismiss đóng bottom sheet
+ * @param onManualTransfer chọn chuyển khoản thủ công
+ * @param onScanQr chọn quét QR
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransferOptionsBottomSheet(

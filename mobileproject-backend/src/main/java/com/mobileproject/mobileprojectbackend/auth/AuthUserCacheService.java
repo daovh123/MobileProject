@@ -14,6 +14,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Service quản lý cache người dùng với chiến lược 2 tầng: Redis (chính) → In-memory (dự phòng).
+ *
+ * <p>Chiến lược cache:</p>
+ * <ul>
+ *   <li><b>Tầng 1 - Redis</b>: Hash storage cho user data (key: {@code auth:user:id:{id}}),
+ *       String storage cho index username→id và email→id</li>
+ *   <li><b>Tầng 2 - In-memory</b>: HashMap nội bộ với TTL 30 phút,
+ *       kích hoạt khi Redis không khả dụng</li>
+ * </ul>
+ *
+ * <p>TTL mặc định: 30 phút cho tất cả cache entries.</p>
+ * <p>Key pattern trên Redis:</p>
+ * <ul>
+ *   <li>{@code auth:user:id:{userId}} - Hash chứa toàn bộ thông tin user</li>
+ *   <li>{@code auth:user:username:{username}} - String mapping username → userId</li>
+ *   <li>{@code auth:user:email:{email}} - String mapping email → userId</li>
+ * </ul>
+ */
 @Service
 public class AuthUserCacheService {
 
@@ -33,6 +52,12 @@ public class AuthUserCacheService {
         this.redisTemplate = redisTemplate;
     }
 
+    /**
+     * Tìm người dùng theo ID. Thử Redis trước, fallback sang in-memory, cuối cùng query MongoDB.
+     *
+     * @param userId ID của người dùng
+     * @return Optional chứa người dùng nếu tìm thấy
+     */
     public Optional<AuthUser> findById(String userId) {
         if (isBlank(userId)) {
             return Optional.empty();
@@ -64,6 +89,12 @@ public class AuthUserCacheService {
         }
     }
 
+    /**
+     * Tìm người dùng theo username (viết thường). Thử Redis trước, fallback sang in-memory.
+     *
+     * @param username tên đăng nhập
+     * @return Optional chứa người dùng nếu tìm thấy
+     */
     public Optional<AuthUser> findByUsername(String username) {
         String normalizedUsername = normalizeKey(username);
         if (isBlank(normalizedUsername)) {
@@ -96,6 +127,12 @@ public class AuthUserCacheService {
         }
     }
 
+    /**
+     * Tìm người dùng theo email (viết thường). Thử Redis trước, fallback sang in-memory.
+     *
+     * @param email địa chỉ email
+     * @return Optional chứa người dùng nếu tìm thấy
+     */
     public Optional<AuthUser> findByEmail(String email) {
         String normalizedEmail = normalizeKey(email);
         if (isBlank(normalizedEmail)) {
@@ -128,12 +165,23 @@ public class AuthUserCacheService {
         }
     }
 
+    /**
+     * Lưu người dùng vào MongoDB và cập nhật cache (Redis + in-memory).
+     *
+     * @param user đối tượng người dùng cần lưu
+     * @return đối tượng người dùng đã được lưu (có ID)
+     */
     public AuthUser save(AuthUser user) {
         AuthUser saved = authUserRepository.save(user);
         cacheUser(saved);
         return saved;
     }
 
+    /**
+     * Đưa người dùng vào cache (Redis + in-memory). Không lưu vào MongoDB.
+     *
+     * @param user đối tượng người dùng cần cache
+     */
     public void cacheUser(AuthUser user) {
         if (user == null || isBlank(user.getId())) {
             return;

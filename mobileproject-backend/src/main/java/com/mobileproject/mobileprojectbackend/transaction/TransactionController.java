@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * REST Controller quản lý giao dịch tài chính của cặp đôi.
+ *
+ * <p>Base path: {@code /api/v1/transactions}</p>
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/transactions")
@@ -27,6 +32,13 @@ public class TransactionController {
         this.transactionRepository = transactionRepository;
     }
 
+    /**
+     * Lấy tất cả giao dịch trong hệ thống (debug only).
+     *
+     * <p><b>GET</b> {@code /api/v1/transactions/debug-all}</p>
+     *
+     * @return danh sách tất cả giao dịch
+     */
     @GetMapping("/debug-all")
     public ResponseEntity<List<Transaction>> getAllTransactions() {
         List<Transaction> all = transactionRepository.findAll();
@@ -40,12 +52,28 @@ public class TransactionController {
         return ResponseEntity.ok(all);
     }
 
+    /**
+     * Lấy danh sách giao dịch của một cặp đôi, sắp xếp mới nhất trước.
+     *
+     * <p><b>GET</b> {@code /api/v1/transactions?coupleId=...}</p>
+     *
+     * @param coupleId ID của cặp đôi (query param)
+     * @return danh sách giao dịch theo thứ tự thời gian giảm dần
+     */
     @GetMapping
     public ResponseEntity<List<Transaction>> getTransactions(@RequestParam String coupleId) {
         List<Transaction> transactions = transactionRepository.findByCoupleIdOrderByCreatedAtDesc(coupleId);
         return ResponseEntity.ok(transactions);
     }
 
+    /**
+     * Tạo giao dịch thu/chi mới.
+     *
+     * <p><b>POST</b> {@code /api/v1/transactions}</p>
+     *
+     * @param request {@link TransactionRequest} chứa coupleId, amount, type, category, note
+     * @return {@link TransactionResponse} với thông tin giao dịch và số dư cập nhật; 400 nếu lỗi
+     */
     @PostMapping
     public ResponseEntity<TransactionResponse> createTransaction(@RequestBody TransactionRequest request) {
         log.info("Payload nhận được: {}", request);
@@ -64,6 +92,14 @@ public class TransactionController {
         }
     }
 
+    /**
+     * Xử lý nạp tiền vào ví chung hoặc mục tiêu tiết kiệm.
+     *
+     * <p><b>POST</b> {@code /api/v1/transactions/income}</p>
+     *
+     * @param request {@link IncomeRequest} chứa coupleId, amount, targetType (WALLET/GOAL), goalId, note
+     * @return {@link TransactionResponse} với kết quả xử lý; 400 nếu lỗi
+     */
     @PostMapping("/income")
     public ResponseEntity<TransactionResponse> processIncome(@RequestBody IncomeRequest request) {
         log.info("Payload nhận được: {}", request);

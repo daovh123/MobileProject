@@ -1,3 +1,9 @@
+/**
+ * Thanh điều hướng dưới cùng (bottom navigation bar) tùy chỉnh.
+ *
+ * Cung cấp [AppNavigationBar] composable với indicator thanh ngang,
+ * animation màu mượt mà, và layout responsive theo số lượng tab.
+ */
 package com.example.mobileproject.presentation.ui.navigation
 
 import androidx.compose.animation.animateColorAsState
@@ -33,6 +39,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+/**
+ * Thanh điều hướng dưới cùng (bottom navigation bar) của ứng dụng.
+ *
+ * Render các tab từ [NavigationConfig.navigationItems] với:
+ * - Indicator thanh ngang (32dp) phía trên tab đang chọn, màu primary.
+ * - Icon và nhãn với animateColorAsState cho hiệu ứng chuyển mượt.
+ * - Padding navigation bar tự động (navigationBarsPadding).
+ *
+ * @param currentRoute Route hiện tại để xác định tab đang chọn.
+ * @param onNavigate Callback khi chọn một tab, truyền route tương ứng.
+ * @param modifier [Modifier] tùy chỉnh.
+ * @param items Danh sách [NavigationItem], mặc định từ [NavigationConfig].
+ */
 @Composable
 fun AppNavigationBar(
     currentRoute: String,
@@ -90,6 +109,18 @@ fun AppNavigationBar(
     }
 }
 
+/**
+ * Nội dung của một tab trong thanh điều hướng.
+ *
+ * Hiển thị icon và nhãn dọc, với màu animate giữa selected/unselected.
+ * Nhãn sử dụng SemiBold khi được chọn, Normal khi không chọn.
+ *
+ * @param item [NavigationItem] cần hiển thị.
+ * @param isSelected true nếu tab đang được chọn.
+ * @param selectedColor Màu khi tab được chọn.
+ * @param onNavigate Callback khi nhấn vào tab.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 private fun NavigationBarItemContent(
     item: NavigationItem,

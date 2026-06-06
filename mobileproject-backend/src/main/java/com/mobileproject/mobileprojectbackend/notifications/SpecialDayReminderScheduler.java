@@ -16,6 +16,28 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Scheduler nhắc nhở ngày đặc biệt cho cặp đôi.
+ *
+ * <p><strong>Cron logic:</strong> Chạy mỗi ngày lúc 8:00 sáng (giờ Việt Nam)
+ * theo cron expression {@code "0 0 8 * * *"}, zone {@code Asia/Ho_Chi_Minh}.</p>
+ *
+ * <p><strong>Notification dedup:</strong> Sử dụng
+ * {@link NotificationService#createAndPushIfAbsentToday} để đảm bảo mỗi ngày
+ * chỉ gửi tối đa 1 thông báo cho cùng (userId, type, title). Nếu đã gửi hôm nay
+ * → skip.</p>
+ *
+ * <p><strong>Ngày đặc biệt được theo dõi:</strong></p>
+ * <ul>
+ *   <li>Ngày Quốc tế Phụ nữ (8/3)</li>
+ *   <li>Ngày Quốc tế Nam giới (19/11)</li>
+ *   <li>Giáng sinh (25/12)</li>
+ *   <li>Kỷ niệm 100/200/300 ngày yêu nhau</li>
+ *   <li>Kỷ niệm 1 năm, 2 năm yêu nhau</li>
+ * </ul>
+ *
+ * <p>Chỉ gửi thông báo khi còn đúng 7 ngày nữa đến ngày đặc biệt.</p>
+ */
 @Component
 public class SpecialDayReminderScheduler {
 
@@ -32,6 +54,10 @@ public class SpecialDayReminderScheduler {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Job chạy hàng ngày lúc 8:00 sáng (Asia/Ho_Chi_Minh).
+     * Quét tất cả couple, kiểm tra ngày đặc biệt còn 7 ngày → gửi thông báo cho cả 2 user.
+     */
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
     public void notifyUpcomingSpecialDays() {
         LocalDate today = LocalDate.now(REMINDER_ZONE);

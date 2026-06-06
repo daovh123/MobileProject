@@ -1,3 +1,9 @@
+/**
+ * Cập nhật dữ liệu cho MomentWidget.
+ *
+ * Tải ảnh, cache vào storage, lưu DataStore,
+ * và gọi updateAll để refresh widget instances.
+ */
 package com.example.mobileproject.presentation.widget
 
 import android.content.Context
@@ -10,10 +16,27 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 
+/**
+ * Cập nhật dữ liệu cho [MomentWidget].
+ *
+ * Chịu trách nhiệm:
+ * 1. Tải ảnh từ URL (hỗ trợ HTTP URL và data URI Base64).
+ * 2. Cache ảnh vào `cacheDir/moment_widget_latest.jpg`.
+ * 3. Lưu tiêu đề và đường dẫn ảnh vào [momentWidgetDataStore].
+ * 4. Gọi [MomentWidget.updateAll] để refresh tất cả widget instances.
+ *
+ * Nếu moment là null, xóa toàn bộ dữ liệu widget.
+ */
 object MomentWidgetUpdater {
 
     private val client = OkHttpClient()
 
+    /**
+     * Cập nhật widget với kỷ niệm mới nhất.
+     *
+     * @param context Context.
+     * @param moment [MomentDto] cần hiển thị, hoặc null để xóa widget.
+     */
     suspend fun updateLatest(context: Context, moment: MomentDto?) {
         if (moment == null) {
             clearState(context)
@@ -54,6 +77,12 @@ object MomentWidgetUpdater {
         }
     }
 
+    /**
+     * Tải ảnh từ URL hoặc data URI.
+     *
+     * @param imageUrl URL ảnh (http/https) hoặc data URI (data:image/...;base64,...).
+     * @return ByteArray của ảnh, hoặc null nếu tải thất bại.
+     */
     private fun loadImageBytes(imageUrl: String): ByteArray? {
         if (imageUrl.isBlank()) return null
         if (imageUrl.startsWith("data:", ignoreCase = true)) {
@@ -69,6 +98,12 @@ object MomentWidgetUpdater {
         }.getOrNull()
     }
 
+    /**
+     * Giải mã data URI (data:image/...;base64,...) thành ByteArray.
+     *
+     * @param dataUri Chuỗi data URI.
+     * @return ByteArray đã giải mã, hoặc null nếu format không hợp lệ.
+     */
     private fun decodeDataUri(dataUri: String): ByteArray? {
         val parts = dataUri.split(",", limit = 2)
         if (parts.size < 2) return null

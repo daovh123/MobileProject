@@ -46,6 +46,29 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import javax.inject.Inject
 
+/**
+ * Activity chia sẻ vị trí real-time – hiển thị bản đồ osmdroid với marker
+ * của mình và partner, cập nhật vị trí qua ForegroundService.
+ *
+ * osmdroid MapView integration:
+ * - [MapView] hiển thị tiles OpenStreetMap (MAPNIK tile source).
+ * - Multi-touch controls (pinch to zoom, drag to pan).
+ * - [Marker] overlay cho "Tôi" và "Partner", cập nhật vị trí real-time.
+ * - Center map lần đầu khi nhận được vị trí đầu tiên (hasCenteredOnce flag).
+ *
+ * Location sharing flow:
+ * 1. Load vị trí cuối cùng từ API (getMapLastLocations).
+ * 2. Hiển thị marker ban đầu trên bản đồ.
+ * 3. Start [MapShareForegroundService] để liên tục cập nhật vị trí.
+ * 4. BroadcastReceiver nhận location updates từ service → cập nhật marker.
+ *
+ * Permissions: yêu cầu ACCESS_FINE_LOCATION + POST_NOTIFICATIONS (Android 13+).
+ *
+ * Lifecycle:
+ * - onResume/onPause forwarding tới MapView.
+ * - onDestroy: unregister receiver, stop service (nếu !keepSharingActive),
+ *   detach MapView.
+ */
 @AndroidEntryPoint
 class MapShareActivity : AppCompatActivity() {
 
@@ -147,12 +170,13 @@ class MapShareActivity : AppCompatActivity() {
         requestPermissionsIfNeeded()
     }
 
+    // osmdroid MapView: init tile source và zoom level
     private fun initMap(mapView: MapView) {
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 
-        mapView.setTileSource(TileSourceFactory.MAPNIK)
-        mapView.setMultiTouchControls(true)
-        mapView.controller.setZoom(DEFAULT_ZOOM)
+        mapView.setTileSource(TileSourceFactory.MAPNIK) // OpenStreetMap standard tiles
+        mapView.setMultiTouchControls(true) // pinch-to-zoom, drag-to-pan
+        mapView.controller.setZoom(DEFAULT_ZOOM) // zoom level 17 (street level)
     }
 
     private fun requestPermissionsIfNeeded() {
@@ -341,6 +365,12 @@ class MapShareActivity : AppCompatActivity() {
     }
 }
 
+/**
+ * Composable host cho MapShareActivity – Scaffold + TopAppBar + osmdroid MapView.
+ *
+ * AndroidView integration: MapView được tạo trong factory, gọi onMapReady
+ * để Activity init map config. DisposableEffect gọi onDisposeMap khi unmount.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun MapShareScreen(

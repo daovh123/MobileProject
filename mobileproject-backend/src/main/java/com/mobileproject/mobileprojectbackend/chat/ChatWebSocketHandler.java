@@ -24,6 +24,40 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+/**
+ * WebSocket handler xử lý tin nhắn chat real-time giữa cặp đôi.
+ *
+ * <p><strong>Message protocol (JSON):</strong></p>
+ * <ul>
+ *   <li><b>Client → Server:</b>
+ *     <ul>
+ *       <li>{@code {"type":"message","text":"..."}} – gửi tin nhắn</li>
+ *       <li>{@code {"type":"history"}} – yêu cầu load lại lịch sử</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Server → Client:</b>
+ *     <ul>
+ *       <li>{@code {"type":"chat_history","messages":[...],"partnerUsername":"...","partnerAvatarUrl":"..."}} – lịch sử</li>
+ *       <li>{@code {"type":"chat_message","id":"...","text":"...","mine":true/false,...}} – tin nhắn mới</li>
+ *       <li>{@code {"type":"chat_error","message":"..."}} – lỗi</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ *
+ * <p><strong>Connection lifecycle:</strong></p>
+ * <ol>
+ *   <li>{@code afterConnectionEstablished} – thêm session vào pool theo coupleId, gửi lịch sử 50 tin nhắn gần nhất</li>
+ *   <li>{@code handleTextMessage} – parse JSON, lưu DB, broadcast cho cả 2 user, gửi FCM push, trigger AI nếu có @MiniAI</li>
+ *   <li>{@code afterConnectionClosed} – xóa session khỏi pool</li>
+ * </ol>
+ *
+ * <p><strong>AI integration:</strong> Khi tin nhắn chứa {@code @MiniAI} hoặc {@code @MimIAI},
+ * handler gọi {@link GroqChatClient} bất đồng bộ (CompletableFuture) để tạo phản hồi AI.
+ * Context gửi cho AI bao gồm 20 tin nhắn gần nhất, phân loại role (user/assistant/system).</p>
+ *
+ * <p><strong>FCM push:</strong> Mỗi tin nhắn gửi thành công đều trigger FCM push cho người nhận
+ * qua {@link FcmPushService}.</p>
+ */
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
@@ -55,6 +89,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Khi WebSocket kết nối thành công: thêm session vào pool coupleId, gửi lịch sử chat.
+     */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String coupleId = coupleIdOf(session);
@@ -70,6 +107,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         sendHistory(session);
     }
 
+    /**
+     * Xử lý tin nhắn từ client: lưu DB, broadcast, FCM push, trigger AI nếu cần.
+     */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String coupleId = coupleIdOf(session);
@@ -138,6 +178,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Khi WebSocket đóng: xóa session khỏi pool coupleId.
+     */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String coupleId = coupleIdOf(session);
@@ -156,6 +199,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * Xử lý lỗi transport: log và đóng session.
+     */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         LOGGER.debug("WebSocket transport error", exception);

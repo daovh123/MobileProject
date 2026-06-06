@@ -4,6 +4,13 @@ import com.example.mobileproject.domain.entity.Place
 import com.example.mobileproject.domain.repository.PlaceRepository
 import javax.inject.Inject
 
+/**
+ * Use case lấy một địa điểm ngẫu nhiên phù hợp với tiêu chí.
+ *
+ * Dùng cho tính năng "Đi đâu?" khi cặp đôi muốn một gợi ý nhanh
+ * mà không cần xem toàn bộ danh sách. Hữu ích khi cả hai đều
+ * không biết đi đâu và muốn "quay số"随机 địa điểm.
+ */
 class GetRandomPlaceUseCase @Inject constructor(
     private val placeRepository: PlaceRepository,
 ) {

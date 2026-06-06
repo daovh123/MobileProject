@@ -16,6 +16,20 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * Service upload file lên Firebase Storage.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Upload avatar: lưu tại path {@code avatars/{userId}/avatar_{timestamp}.{ext}}</li>
+ *   <li>Upload ảnh kỷ niệm: lưu tại path {@code moments/{coupleId}/moment_{timestamp}.{ext}}</li>
+ *   <li>Ảnh được set ACL public-read để ai cũng xem được</li>
+ *   <li>Fallback: nếu Firebase chưa cấu hình, avatar dùng UI Avatars placeholder,
+ *       ảnh kỷ niệm dùng data URI inline</li>
+ * </ul>
+ *
+ * <p><strong>Cấu hình:</strong> {@code firebase.storage.bucket} – tên bucket Firebase Storage.</p>
+ */
 @Service
 public class FirebaseStorageService {
 
@@ -32,6 +46,14 @@ public class FirebaseStorageService {
      * avatars/{userId}/avatar_{timestamp}.{ext}.
      * Returns the public download URL.
      * Falls back to a placeholder URL if Firebase Storage is not configured.
+     */
+    /**
+     * Upload ảnh avatar lên Firebase Storage.
+     *
+     * @param userId      ID người dùng
+     * @param imageBytes  dữ liệu ảnh
+     * @param contentType MIME type (image/jpeg, image/png, ...)
+     * @return public download URL, hoặc placeholder URL nếu Firebase chưa cấu hình
      */
     public String uploadAvatar(String userId, byte[] imageBytes, String contentType) {
         if (bucketName.isBlank()) {
@@ -86,6 +108,14 @@ public class FirebaseStorageService {
         };
     }
 
+    /**
+     * Upload ảnh kỷ niệm lên Firebase Storage.
+     *
+     * @param coupleId    ID couple
+     * @param imageBytes  dữ liệu ảnh
+     * @param contentType MIME type
+     * @return public download URL, hoặc data URI nếu Firebase chưa cấu hình
+     */
     public String uploadMomentImage(String coupleId, byte[] imageBytes, String contentType) {
         if (bucketName.isBlank() || FirebaseApp.getApps().isEmpty()) {
             LOGGER.warn("Firebase not configured — returning inline data url for moment in couple={}", coupleId);

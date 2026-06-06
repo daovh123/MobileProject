@@ -5,6 +5,13 @@ import com.example.mobileproject.domain.repository.AnalyticsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
+/**
+ * Use case lấy thống kê chi tiêu theo danh mục trong một tháng cụ thể.
+ *
+ * Dữ liệu được dùng để vẽ biểu đồ tròn (pie chart) trên màn hình Analytics,
+ * giúp cặp đôi nhận biết tỷ lệ chi tiêu giữa các danh mục
+ * (ăn uống chiếm bao nhiêu %, giải trí bao nhiêu %, v.v.)
+ */
 class GetCategoryBreakdownUseCase @Inject constructor(
     private val repository: AnalyticsRepository
 ) {

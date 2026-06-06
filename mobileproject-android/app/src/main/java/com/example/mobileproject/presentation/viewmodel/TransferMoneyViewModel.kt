@@ -15,6 +15,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * UI state cho màn hình chuyển tiền / rút tiền.
+ *
+ * @property isSubmitting Đang gửi yêu cầu tạo lệnh rút lên server
+ * @property isSuccess Lệnh rút đã hoàn tất thành công (SePay xác nhận tiền ra)
+ * @property isWaitingBankConfirmation Đang chờ người dùng chuyển tiền thật qua app ngân hàng
+ * @property payoutId ID của lệnh rút trên server
+ * @property transferCode Mã giao dịch SePay, người dùng cần dùng mã này khi chuyển tiền thật
+ * @property statusText Thông báo trạng thái hiện tại hiển thị cho người dùng
+ * @property errorMessage Thông báo lỗi nếu có
+ */
 data class TransferMoneyUiState(
     val isSubmitting: Boolean = false,
     val isSuccess: Boolean = false,
@@ -25,15 +36,41 @@ data class TransferMoneyUiState(
     val errorMessage: String? = null,
 )
 
+/**
+ * ViewModel phục vụ màn hình chuyển tiền / rút tiền từ quỹ chung.
+ *
+ * Xử lý business logic:
+ * - Tạo lệnh rút tiền (payout) thông qua [PayoutRepository]
+ * - Polling trạng thái lệnh rút từ server để xác nhận SePay webhook tiền ra
+ * - Quản lý trạng thái UI: đang gửi, chờ xác nhận ngân hàng, thành công/thất bại
+ *
+ * Luồng hoạt động:
+ * 1. Người dùng nhập thông tin và submit → gọi API tạo payout
+ * 2. Nhận transferCode, hiển thị hướng dẫn chuyển tiền thật
+ * 3. Polling mỗi 3 giây, tối đa 20 lần (60 giây) để chờ SePay xác nhận
+ * 4. Cập nhật UI khi trạng thái payout thay đổi (PAID/FAILED)
+ */
 @HiltViewModel
 class TransferMoneyViewModel @Inject constructor(
     private val payoutRepository: PayoutRepository,
     private val authSessionStore: AuthSessionStore,
 ) : ViewModel() {
 
+    // StateFlow pattern: MutableStateFlow nội bộ + expose read-only asStateFlow
     private val _uiState = MutableStateFlow(TransferMoneyUiState())
     val uiState: StateFlow<TransferMoneyUiState> = _uiState.asStateFlow()
 
+    /**
+     * Gửi yêu cầu tạo lệnh rút tiền.
+     *
+     * Validates coupleId từ session và số tiền > 0 trước khi gọi API.
+     * Sau khi tạo payout thành công, bắt đầu polling trạng thái.
+     *
+     * @param amount Số tiền cần rút (đơn vị: VND, phải > 0)
+     * @param bankName Tên ngân hàng (hiển thị trong hướng dẫn)
+     * @param accountNumber Số tài khoản ngân hàng (hiển thị trong hướng dẫn)
+     * @param note Ghi chú thêm cho giao dịch (có thể null)
+     */
     fun submitTransfer(
         amount: Long,
         bankName: String,
@@ -107,6 +144,15 @@ class TransferMoneyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Polling trạng thái lệnh rút tiền từ server.
+     *
+     * Gọi API getPayout mỗi 3 giây, tối đa 20 lần (tổng ~60 giây).
+     * Dừng ngay khi nhận được trạng thái PAID hoặc FAILED.
+     * Nếu hết số lần poll mà vẫn chưa xác nhận, UI hiển thị trạng thái chờ.
+     *
+     * @param payoutId ID lệnh rút cần theo dõi trạng thái
+     */
     private suspend fun pollPayoutStatus(payoutId: String) {
         repeat(20) {
             delay(3000L)
@@ -150,6 +196,9 @@ class TransferMoneyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Xóa thông báo lỗi hiện tại trong UI state.
+     */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }

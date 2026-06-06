@@ -1,3 +1,23 @@
+/**
+ * PersonalInfoActivity - Activity host cho màn hình thiết lập profile cá nhân.
+ *
+ * Mục đích:
+ * - Bắt buộc người dùng hoàn tất profile sau khi đăng ký (fullName, nickName, birthDate, gender).
+ * - Nếu profile chưa hoàn tất → hiển thị form.
+ * - Sau khi lưu thành công → chuyển đến [HomeActivity].
+ *
+ * Layout:
+ * - AuthBackdrop (gradient background) + AuthBrandMark (logo) + AuthFormSurface (form card).
+ * - Sử dụng ProfileFormContent (từ components) để render các trường input.
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), tạo [ProfileViewModel] và [ThemeModeViewModel].
+ *
+ * Navigation:
+ * - Lưu profile thành công → [HomeActivity] (với EXTRA_ACCESS_TOKEN).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 package com.example.mobileproject.presentation.ui.screen.profile
 
 import android.content.Intent
@@ -44,10 +64,27 @@ import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * PersonalInfoActivity - Activity host cho màn hình thiết lập profile cá nhân.
+ *
+ * Mục đích:
+ * - Bắt buộc người dùng hoàn tất profile sau khi đăng ký (fullName, nickName, birthDate, gender).
+ * - Nếu profile chưa hoàn tất → hiển thị form.
+ * - Sau khi lưu thành công → chuyển đến [HomeActivity].
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), tạo [ProfileViewModel] và [ThemeModeViewModel].
+ *
+ * Navigation:
+ * - Lưu profile thành công → [HomeActivity] (với EXTRA_ACCESS_TOKEN).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 @AndroidEntryPoint
 class PersonalInfoActivity : ComponentActivity() {
 
     companion object {
+        /** Extra key cho access token */
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
     }
 
@@ -86,21 +123,39 @@ class PersonalInfoActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable màn hình thiết lập profile cá nhân.
+ *
+ * Hiển thị form với các trường: fullName, nickName, birthDate, gender.
+ * Sử dụng AuthBackdrop + AuthBrandMark + AuthFormSurface để tạo layout thống nhất với auth screens.
+ *
+ * ViewModel: [ProfileViewModel] - quan sát uiState (fullName, nickName, birthDate, gender, isSaving, errorMessage).
+ *
+ * @param accessToken Token xác thực để gọi API lưu profile.
+ * @param profileViewModel ViewModel quản lý profile.
+ * @param onContinue Callback khi lưu thành công → chuyển đến HomeActivity.
+ */
 @Composable
 private fun PersonalInfoScreen(
     accessToken: String,
     profileViewModel: ProfileViewModel,
     onContinue: (String) -> Unit,
 ) {
+    // remember: cache trạng thái submit để theo dõi khi nào save hoàn tất
     var submitRequested by remember { mutableStateOf(false) }
     val uiState by profileViewModel.uiState.collectAsState()
 
+    // LaunchedEffect: load profile hiện tại khi có accessToken.
+    // Điền sẵn dữ liệu nếu profile đã có thông tin trước đó.
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
             profileViewModel.loadProfile(accessToken)
         }
     }
 
+    // LaunchedEffect: theo dõi savedProfile + isSaving + submitRequested.
+    // Khi submit hoàn tất (không saving, có savedProfile, không lỗi) → gọi onContinue.
+    // Logic phức tạp để tránh trigger sớm khi chỉ load profile.
     LaunchedEffect(uiState.savedProfile, uiState.isSaving, submitRequested) {
         if (submitRequested && !uiState.isSaving && uiState.savedProfile != null && uiState.errorMessage.isNullOrBlank()) {
             submitRequested = false

@@ -11,6 +11,14 @@ import com.example.mobileproject.domain.entity.PlaceFilterOptions
 import com.example.mobileproject.domain.entity.Place
 import java.util.Locale
 
+/**
+ * Ánh xạ [PlaceDto] sang [Place] domain entity.
+ *
+ * Logic đặc biệt:
+ * - [effectiveTag] ưu tiên dùng giá trị từ API, fallback về [category] nếu null.
+ *   Điều này đảm bảo UI luôn có tag hiển thị cho người dùng.
+ * - Các trường nullable được giữ nguyên nullable trong domain entity.
+ */
 fun PlaceDto.toDomain(): Place {
     return Place(
         id = id,
@@ -32,6 +40,11 @@ fun PlaceDto.toDomain(): Place {
     )
 }
 
+/**
+ * Ánh xạ [PlaceFilterOptionsDto] sang [PlaceFilterOptions] domain entity.
+ *
+ * Mapping 1:1, danh sách quận/huyện và tỉnh/thành phố được giữ nguyên.
+ */
 fun PlaceFilterOptionsDto.toDomain(): PlaceFilterOptions {
     return PlaceFilterOptions(
         districts = districts,
@@ -39,6 +52,15 @@ fun PlaceFilterOptionsDto.toDomain(): PlaceFilterOptions {
     )
 }
 
+/**
+ * Chuyển đổi danh sách [VietnamProvinceDto] thành danh sách tên tỉnh đã chuẩn hóa.
+ *
+ * Xử lý:
+ * - Loại bỏ tên null hoặc rỗng
+ * - Trim khoảng trắng
+ * - Loại bỏ trùng lặp (case-insensitive)
+ * - Sắp xếp theo alphabet (case-insensitive)
+ */
 fun List<VietnamProvinceDto>.toProvinceNames(): List<String> {
     return asSequence()
         .mapNotNull { it.name?.trim() }
@@ -48,6 +70,12 @@ fun List<VietnamProvinceDto>.toProvinceNames(): List<String> {
         .toList()
 }
 
+/**
+ * Ánh xạ [ExplorePlanResponseDto] sang [ExplorePlan] domain entity.
+ *
+ * Mapping đệ quy: mỗi [ExplorePlanItemDto] sẽ được chuyển thành [ExplorePlanItem],
+ * trong đó [PlaceDto] con cũng được chuyển qua [PlaceDto.toDomain()].
+ */
 fun ExplorePlanResponseDto.toDomain(): ExplorePlan {
     return ExplorePlan(
         summary = ExplorePlanSummary(

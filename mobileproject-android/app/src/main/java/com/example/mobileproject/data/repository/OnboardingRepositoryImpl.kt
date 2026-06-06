@@ -16,14 +16,55 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import javax.inject.Inject
 
+/**
+ * Implementation của [OnboardingRepository], xử lý toàn bộ quy trình onboarding:
+ * hồ sơ cá nhân, ghép đôi, avatar.
+ *
+ * ## Caching strategy
+ * - Cập nhật [AuthSessionStore] mỗi khi lấy/cập nhật profile hoặc couple status
+ * - Không cache response API, luôn fetch mới để đảm bảo dữ liệu đồng bộ
+ *
+ * ## Error handling
+ * - Sử dụng extension `requireSuccessfulBody()` để parse response và throw nếu lỗi
+ * - Parse error body JSON để lấy message chi tiết từ server
+ * - Xử lý riêng lỗi 401 (phiên hết hạn) với message tiếng Việt
+ *
+ * ## Data transformation
+ * - [ProfileResponseDto] -> [ProfileResult] qua extension `toProfileResult()`
+ * - [AvatarFrameDto] -> [AvatarFrame] qua extension `toDomain()`
+ * - [CoupleStatusResponseDto] -> [CoupleStatus] mapping thủ công
+ *
+ * ## Threading
+ * Tất cả hàm `suspend` chạy trên IO dispatcher (Retrofit default).
+ */
 class OnboardingRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val authSessionStore: AuthSessionStore,
     private val gson: Gson,
 ) : OnboardingRepository {
 
+    /**
+     * Tạo header xác thực từ token.
+     *
+     * @param token JWT token
+     * @return "Bearer <token>"
+     */
     private fun authorizationHeader(token: String): String = "Bearer ${token.trim()}"
 
+    /**
+     * Lưu hoặc cập nhật hồ sơ người dùng.
+     *
+     * Sau khi lưu thành công, cập nhật [AuthSessionStore] với trạng thái mới.
+     *
+     * @param token JWT token
+     * @param fullName họ và tên
+     * @param nickName biệt danh (nullable)
+     * @param birthDate ngày sinh (format: yyyy-MM-dd)
+     * @param gender giới tính
+     * @param email email (nullable)
+     * @return [ProfileResult] thông tin hồ sơ đã cập nhật
+     * @throws IllegalStateException nếu lưu thất bại
+     */
     override suspend fun saveProfile(
         token: String,
         fullName: String,
@@ -41,6 +82,15 @@ class OnboardingRepositoryImpl @Inject constructor(
         return body.toProfileResult()
     }
 
+    /**
+     * Lấy thông tin hồ sơ người dùng hiện tại.
+     *
+     * Cập nhật [AuthSessionStore] sau khi fetch thành công.
+     *
+     * @param token JWT token
+     * @return [ProfileResult]
+     * @throws IllegalStateException nếu fetch thất bại
+     */
     override suspend fun getProfile(token: String): ProfileResult {
         val response = apiService.getProfile(authorizationHeader(token))
         val body = response.requireSuccessfulBody(gson, "Khong the lay ho so")
@@ -48,6 +98,16 @@ class OnboardingRepositoryImpl @Inject constructor(
         return body.toProfileResult()
     }
 
+    /**
+     * Lấy trạng thái ghép đôi hiện tại.
+     *
+     * Cập nhật [AuthSessionStore] với coupleId và trạng thái ghép đôi.
+     * Xử lý riêng lỗi 401 (phiên hết hạn) với message tiếng Việt.
+     *
+     * @param token JWT token
+     * @return [CoupleStatus] trạng thái ghép đôi
+     * @throws IllegalStateException nếu fetch thất bại
+     */
     override suspend fun getCoupleStatus(token: String): CoupleStatus {
         val response = apiService.getCoupleStatus(authorizationHeader(token))
         val body = response.body()
@@ -87,6 +147,13 @@ class OnboardingRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Lấy thông tin tóm tắt hồ sơ đối phương.
+     *
+     * @param token JWT token
+     * @return [PartnerProfileSummary] thông tin đối phương
+     * @throws IllegalStateException nếu fetch thất bại
+     */
     override suspend fun getPartnerProfileSummary(token: String): PartnerProfileSummary {
         val response = apiService.getPartnerProfile(authorizationHeader(token))
         val body = response.body()
@@ -106,6 +173,14 @@ class OnboardingRepositoryImpl @Inject constructor(
         throw Exception(errorMsg)
     }
 
+    /**
+     * Gửi yêu cầu ghép đôi đến đối phương bằng mã couple code.
+     *
+     * @param token JWT token
+     * @param partnerCode mã ghép đôi của đối phương
+     * @return [CoupleRequestAction] kết quả gửi yêu cầu
+     * @throws IllegalStateException nếu gửi thất bại
+     */
     override suspend fun sendCoupleRequest(token: String, partnerCode: String): CoupleRequestAction {
         val response = apiService.sendCoupleRequest(authorizationHeader(token), CoupleRequestCreateRequestDto(partnerCode))
         val body = response.body()
@@ -122,6 +197,15 @@ class OnboardingRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Chấp nhận hoặc từ chối yêu cầu ghép đôi.
+     *
+     * @param token JWT token
+     * @param requestId ID yêu cầu ghép đôi
+     * @param accept `true` để chấp nhận, `false` để từ chối
+     * @return [CoupleRequestAction] kết quả xử lý
+     * @throws IllegalStateException nếu xử lý thất bại
+     */
     override suspend fun decideCoupleRequest(token: String, requestId: String, accept: Boolean): CoupleRequestAction {
         val response = apiService.decideCoupleRequest(
             authorizationHeader(token),
@@ -138,6 +222,15 @@ class OnboardingRepositoryImpl @Inject constructor(
         )
     }
 
+    /**
+     * Tải lên ảnh đại diện (multipart upload).
+     *
+     * @param token JWT token
+     * @param imageBytes dữ liệu ảnh dạng byte array
+     * @param contentType MIME type (ví dụ: "image/jpeg")
+     * @return URL avatar mới
+     * @throws IllegalStateException nếu upload thất bại
+     */
     override suspend fun uploadAvatar(token: String, imageBytes: ByteArray, contentType: String): String {
         val requestBody = imageBytes.toRequestBody(contentType.toMediaType())
         val filePart = MultipartBody.Part.createFormData("file", "avatar", requestBody)
@@ -146,11 +239,25 @@ class OnboardingRepositoryImpl @Inject constructor(
         return body.avatarUrl ?: ""
     }
 
+    /**
+     * Lấy danh sách khung avatar có sẵn.
+     *
+     * @param token JWT token
+     * @return danh sách [AvatarFrame]
+     */
     override suspend fun getAvatarFrames(token: String): List<AvatarFrame> {
         val response = apiService.getAvatarFrames(authorizationHeader(token))
         return response.body()?.map { it.toDomain() } ?: emptyList()
     }
 
+    /**
+     * Đặt hoặc xóa khung avatar.
+     *
+     * @param token JWT token
+     * @param frameId ID khung avatar (null để xóa khung hiện tại)
+     * @return [ProfileResult] hồ sơ đã cập nhật
+     * @throws IllegalStateException nếu đặt khung thất bại
+     */
     override suspend fun setAvatarFrame(token: String, frameId: String?): ProfileResult {
         val response = apiService.setAvatarFrame(authorizationHeader(token), AvatarFrameRequestDto(frameId))
         val body = response.requireSuccessfulBody(gson, "Dat khung anh that bai")

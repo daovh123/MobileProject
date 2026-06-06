@@ -1,3 +1,9 @@
+/**
+ * Component hiển thị giao dịch gần đây trên màn hình ví.
+ *
+ * Cung cấp [RecentActivitySection] composable hiển thị tối đa 5 giao dịch
+ * với nút "Xem tất cả" để điều hướng đến lịch sử giao dịch đầy đủ.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.layout.*
@@ -14,6 +20,18 @@ import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.domain.entity.Transaction
 
+/**
+ * Hiển thị các giao dịch gần đây nhất trên màn hình ví.
+ *
+ * Component này render tiêu đề "Hoạt động gần đây" cùng nút "Xem tất cả",
+ * hiển thị tối đa 5 giao dịch gần nhất dưới dạng [TransactionItem].
+ * Nếu danh sách trống, hiển thị thông báo "Chưa có giao dịch".
+ *
+ * @param transactions Danh sách [Transaction] cần hiển thị.
+ * @param goals Danh sách [SavingGoal] dùng để khớp giao dịch với mục tiêu tiết kiệm.
+ * @param onSeeAllClick Callback khi người dùng nhấn "Xem tất cả".
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun RecentActivitySection(
     transactions: List<Transaction>,

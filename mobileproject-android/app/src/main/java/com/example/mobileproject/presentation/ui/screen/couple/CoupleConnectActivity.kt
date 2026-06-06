@@ -1,3 +1,20 @@
+/**
+ * CoupleConnectActivity - Activity host cho màn hình kết nối cặp đôi.
+ *
+ * Mục đích:
+ * - Chứa CoupleConnectContent (màn hình kết nối với background ảnh).
+ * - Khi kết nối thành công → chuyển đến [CoupleConnectedActivity].
+ *
+ * Chứa cả CoupleConnectScreen (phiên bản editorial layout, legacy).
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), tạo [CoupleViewModel].
+ *
+ * Navigation:
+ * - Kết nối thành công → [CoupleConnectedActivity] (với EXTRA_ACCESS_TOKEN + EXTRA_RELATIONSHIP_START_DATE).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 package com.example.mobileproject.presentation.ui.screen.couple
 
 import android.content.Intent
@@ -57,10 +74,26 @@ import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * CoupleConnectActivity - Activity host cho màn hình kết nối cặp đôi.
+ *
+ * Mục đích:
+ * - Chứa CoupleConnectContent (màn hình kết nối với background ảnh).
+ * - Khi kết nối thành công → chuyển đến [CoupleConnectedActivity].
+ *
+ * Dependency Injection:
+ * - Hilt (@AndroidEntryPoint), tạo [CoupleViewModel].
+ *
+ * Navigation:
+ * - Kết nối thành công → [CoupleConnectedActivity] (với EXTRA_ACCESS_TOKEN + EXTRA_RELATIONSHIP_START_DATE).
+ *
+ * Chế độ hiển thị: Immersive (ẩn status bar).
+ */
 @AndroidEntryPoint
 class CoupleConnectActivity : ComponentActivity() {
 
     companion object {
+        /** Extra key cho access token */
         const val EXTRA_ACCESS_TOKEN: String = "extra_access_token"
     }
 
@@ -97,6 +130,16 @@ class CoupleConnectActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Composable màn hình kết nối cặp đôi (phiên bản cũ, editorial layout).
+ *
+ * Tương tự CoupleConnectContent nhưng sử dụng layout editorial magazine
+ * với gradient code display và rounded surface cards.
+ *
+ * @param accessToken Token xác thực.
+ * @param coupleViewModel ViewModel quản lý couple.
+ * @param onContinue Callback khi kết nối thành công.
+ */
 @Composable
 private fun CoupleConnectScreen(
     accessToken: String,

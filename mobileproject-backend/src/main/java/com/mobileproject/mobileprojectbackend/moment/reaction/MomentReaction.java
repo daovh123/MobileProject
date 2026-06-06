@@ -7,25 +7,43 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
+/**
+ * Entity đại diện cho reaction (cảm xúc) của user đối với một kỷ niệm.
+ * Ánh xạ tới collection {@code moment_reactions}.
+ *
+ * <p><strong>Index:</strong></p>
+ * <ul>
+ *   <li>{@code moment_id} – truy vấn reaction theo moment</li>
+ *   <li>{@code id_couple} – truy vấn reaction theo couple</li>
+ * </ul>
+ *
+ * <p>Mỗi user chỉ có thể có tối đa 1 reaction cho mỗi moment.
+ * Nếu reaction cùng loại → toggle (xóa), khác loại → cập nhật.</p>
+ */
 @Document(collection = "moment_reactions")
 public class MomentReaction {
 
     @Id
     private String id;
 
+    /** ID kỷ niệm. */
     @Indexed
     @Field("moment_id")
     private String momentId;
 
+    /** ID cặp đôi. */
     @Indexed
     @Field("id_couple")
     private String coupleId;
 
+    /** ID người thả reaction. */
     @Field("user_id")
     private String userId;
 
+    /** Loại reaction (HEART, FIRE, WOW, LAUGH). */
     private String reaction;
 
+    /** Thời điểm tạo reaction. */
     @Field("created_at")
     private Instant createdAt;
 

@@ -7,47 +7,110 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 
+/**
+ * Entity đại diện cho yêu cầu nạp tiền vào ví chung thông qua SePay.
+ *
+ * <p>Lưu trong MongoDB collection {@code top_up_requests}.
+ * Mỗi yêu cầu nạp tiền gắn với một cặp đôi và có mã chuyển khoản duy nhất
+ * để đối soát với webhook từ SePay.</p>
+ *
+ * <h3>Indexes:</h3>
+ * <ul>
+ *   <li>{@code id_couple} – indexed, truy vấn nhanh theo cặp đôi</li>
+ *   <li>{@code transferCode} – unique, đảm bảo mã chuyển khoản không trùng lặp</li>
+ *   <li>{@code sepayId} – unique sparse, đối soát webhook SePay theo ID giao dịch</li>
+ *   <li>{@code referenceCode} – unique sparse, đối soát webhook SePay theo mã tham chiếu</li>
+ * </ul>
+ *
+ * <h3>Luồng trạng thái:</h3>
+ * <pre>PENDING → PROCESSING → PAID
+ *                   ↘ FAILED</pre>
+ *
+ * <h3>Mối quan hệ:</h3>
+ * <ul>
+ *   <li>{@code coupleId} → tham chiếu đến {@code CoupleInfo.id}</li>
+ *   <li>{@code transactionId} → tham chiếu đến {@code Transaction.id} (sau khi thanh toán)</li>
+ * </ul>
+ */
 @Document(collection = "top_up_requests")
 public class TopUpRequest {
 
+    /** ID duy nhất của yêu cầu nạp tiền (MongoDB ObjectId). */
     @Id
     private String id;
 
+    /** ID cặp đôi yêu cầu nạp tiền. */
     @Indexed
     @Field("id_couple")
     private String coupleId;
 
+    /** Số tiền cần nạp (VND). */
     private Long amount;
 
+    /** Mã chuyển khoản duy nhất, dùng để đối soát với SePay webhook. */
     @Indexed(unique = true)
     private String transferCode;
 
+    /** Mã ngân hàng (ví dụ: "MBBank"). */
     private String bankCode;
+    /** Tên ngân hàng hiển thị cho người dùng. */
     private String bankName;
+    /** Số tài khoản nhận tiền. */
     private String accountNumber;
+    /** Tên chủ tài khoản nhận tiền. */
     private String accountName;
+    /** Nội dung chuyển khoản (bao gồm mã chuyển khoản + ghi chú). */
     private String transferContent;
+    /** Nội dung mã QR (dùng để tạo QR trên client). */
     private String qrContent;
+    /** URL hình ảnh mã QR từ SePay. */
     private String qrUrl;
+    /** Trạng thái yêu cầu nạp tiền. */
     private TopUpRequestStatus status;
 
+    /** ID giao dịch từ SePay (dùng để deduplicate webhook). */
     @Indexed(unique = true, sparse = true)
     private Long sepayId;
 
+    /** Mã tham chiếu từ SePay (dùng để deduplicate webhook). */
     @Indexed(unique = true, sparse = true)
     private String referenceCode;
 
+    /** ID giao dịch {@code Transaction} sau khi nạp thành công. */
     private String transactionId;
+    /** Nội dung webhook từ SePay (lưu để debug). */
     private String webhookContent;
+    /** Mô tả từ webhook SePay. */
     private String webhookDescription;
+    /** Lỗi gần nhất nếu xử lý thất bại. */
     private String lastError;
+    /** Thời điểm tạo yêu cầu. */
     private Instant createdAt;
+    /** Thời điểm cập nhật gần nhất. */
     private Instant updatedAt;
+    /** Thời điểm nạp tiền thành công. */
     private Instant paidAt;
 
+    /**
+     * Constructor mặc định bắt buộc bởi MongoDB driver.
+     */
     public TopUpRequest() {
     }
 
+    /**
+     * Tạo yêu cầu nạp tiền mới với trạng thái mặc định là {@code PENDING}.
+     *
+     * @param coupleId        ID cặp đôi
+     * @param amount          số tiền nạp (VND)
+     * @param transferCode    mã chuyển khoản duy nhất
+     * @param bankCode        mã ngân hàng
+     * @param bankName        tên ngân hàng
+     * @param accountNumber   số tài khoản nhận
+     * @param accountName     tên chủ tài khoản
+     * @param transferContent nội dung chuyển khoản
+     * @param qrContent       nội dung QR
+     * @param qrUrl           URL mã QR
+     */
     public TopUpRequest(String coupleId, Long amount, String transferCode, String bankCode, String bankName,
                         String accountNumber, String accountName, String transferContent, String qrContent,
                         String qrUrl) {

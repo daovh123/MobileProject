@@ -16,6 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * REST controller cho lịch sử xem địa điểm.
+ * Base path: {@code /api/history}
+ *
+ * <p>Endpoints:</p>
+ * <ul>
+ *   <li>POST /view?placeId=... – ghi nhận lượt xem</li>
+ *   <li>GET  / – lấy lịch sử xem</li>
+ *   <li>DELETE / – xóa toàn bộ lịch sử</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/history")
 @RequiredArgsConstructor
@@ -24,6 +35,7 @@ public class HistoryController {
     private final HistoryService historyService;
     private final AuthIdentityService authIdentityService;
 
+    /** Ghi nhận lượt xem địa điểm. */
     @PostMapping("/view")
     public ResponseEntity<Map<String, Object>> recordView(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
@@ -32,6 +44,7 @@ public class HistoryController {
         return ResponseEntity.ok(historyService.recordView(user.getId(), placeId));
     }
 
+    /** Lấy lịch sử xem địa điểm (mới nhất trước). */
     @GetMapping
     public ResponseEntity<HistoryListResponse> getHistory(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -39,6 +52,7 @@ public class HistoryController {
         return ResponseEntity.ok(historyService.getUserHistory(user.getId()));
     }
 
+    /** Xóa toàn bộ lịch sử xem. */
     @DeleteMapping
     public ResponseEntity<Map<String, Object>> clearHistory(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {

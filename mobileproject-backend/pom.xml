@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Maven POM for the Spring Boot backend. Defines the project identity,
+     parent BOM, dependencies, and build plugins. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <!-- Spring Boot Parent BOM – manages dependency versions and plugin defaults. -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+
+    <!-- Project Coordinates -->
     <groupId>com.mobileproject</groupId>
     <artifactId>mobileproject-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -26,82 +32,117 @@
         <tag/>
         <url/>
     </scm>
+
+    <!-- Global Properties -->
     <properties>
         <java.version>21</java.version>
     </properties>
+
     <dependencies>
 
+        <!-- ── Spring Boot Starters (Runtime) ─────────────────────────────── -->
+
+        <!-- Health checks and metrics endpoint (/actuator/health, /actuator/metrics). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- MongoDB data access via Spring Data (repositories, MongoTemplate). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
+
+        <!-- Redis client for caching and session storage. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
+        <!-- Spring Security – authentication and authorization filters. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+
+        <!-- Bean Validation (JSR-380) – @Valid, @NotNull, @Size, etc. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+
+        <!-- Spring Cache abstraction (backed by Redis in this project). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
+
+        <!-- Spring MVC – REST controllers, request mapping, JSON serialization. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
+        <!-- Jackson JSON serialization/deserialization. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-json</artifactId>
         </dependency>
 
+        <!-- WebSocket support (STOMP/SockJS) for real-time chat. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- ── Third-Party Libraries ──────────────────────────────────────── -->
+
+        <!-- Firebase Admin SDK – server-side push notifications (FCM), Storage access. -->
         <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
             <version>9.8.0</version>
         </dependency>
 
+        <!-- Lombok – compile-time code generation for getters/setters/builders/logging. -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- ── Test Dependencies ──────────────────────────────────────────── -->
+
+        <!-- Embedded MongoDB for integration tests. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring Security test utilities (@WithMockUser, SecurityMockMvcRequestPostProcessors). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Validation test support. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring MVC test utilities (MockMvc). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring Boot Test – @SpringBootTest, TestRestTemplate, etc. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -111,6 +152,8 @@
 
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin – targets Java 21 and registers Lombok as an
+                 annotation processor so that generated code is available at compile time. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -127,6 +170,9 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- Spring Boot Maven Plugin – packages the app as an executable fat JAR.
+                 Excludes Lombok from the final JAR since it's compile-time only. -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

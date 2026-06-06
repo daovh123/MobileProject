@@ -1,3 +1,33 @@
+/**
+ * HomeScreen - Màn hình chính của ứng dụng, hiển thị sau khi đăng nhập.
+ *
+ * Mục đích:
+ * - Hiển thị tổng quan tài chính cặp đôi: số dư chung, số ngày bên nhau, mục tiêu tiết kiệm/tương lai.
+ * - Tích hợp bản đồ chia sẻ vị trí (OSM) giữa 2 người dùng.
+ * - Quản lý FAB mở rộng với các action: chat, thêm mục tiêu tương lai, thêm mục tiêu tiết kiệm.
+ *
+ * Layout:
+ * - [Box] outer: chứa toàn bộ nội dung + FAB overlay.
+ * - [Column] với verticalScroll: cuộn dọc cho toàn bộ nội dung.
+ * - Sử dụng gradient nền từ surface → surfaceContainerLow → surfaceContainer.
+ *
+ * ViewModels quan sát:
+ * - [CoupleViewModel]: trạng thái kết nối cặp đôi (coupleId, paired, daysTogether).
+ * - [WalletViewModel]: thông tin ví (số dư).
+ * - [GoalViewModel]: danh sách mục tiêu tiết kiệm/tương lai.
+ * - [HomeMapShareViewModel]: trạng thái chia sẻ vị trí.
+ *
+ * Được host bởi: [HomeActivity] (qua HomeScaffold).
+ *
+ * Navigation:
+ * - [onSeeAllGoals] → xem tất cả mục tiêu tiết kiệm.
+ * - [onSeeAllFutureGoals] → xem tất cả mục tiêu tương lai.
+ * - [onNavigateToAddSavingGoal] → thêm mục tiêu tiết kiệm mới.
+ * - [onNavigateToAddFutureGoal] → thêm mục tiêu tương lai mới.
+ * - [onNavigateToTopUp] → nạp tiền vào ví.
+ * - [onNavigateToTransfer] → chuyển tiền.
+ * - [onNavigateToChat] → mở chat.
+ */
 package com.example.mobileproject.presentation.ui.screen.home
 
 import android.Manifest
@@ -82,6 +112,25 @@ import kotlin.math.sqrt
 
 private const val DEFAULT_ZOOM: Double = 17.0
 
+/**
+ * Composable chính của HomeScreen.
+ *
+ * Chịu trách nhiệm:
+ * - Quản lý state tổng hợp (couple, wallet, goals, map share).
+ * - Tạo và quản lý MapView (OSM) cho chia sẻ vị trí.
+ * - Xử lý permission location và BroadcastReceiver cho vị trí real-time.
+ * - Hiển thị FAB mở rộng với các action nhanh.
+ *
+ * @param accessToken Token xác thực để gọi API.
+ * @param apiService Service gọi API cho map locations.
+ * @param onSeeAllGoals Callback điều hướng đến danh sách tất cả saving goals.
+ * @param onSeeAllFutureGoals Callback điều hướng đến danh sách tất cả future goals.
+ * @param onNavigateToAddSavingGoal Callback điều hướng đến form thêm saving goal.
+ * @param onNavigateToAddFutureGoal Callback điều hướng đến form thêm future goal.
+ * @param onNavigateToTopUp Callback điều hướng đến màn hình nạp tiền.
+ * @param onNavigateToTransfer Callback điều hướng đến màn hình chuyển tiền.
+ * @param onNavigateToChat Callback điều hướng đến màn hình chat.
+ */
 @Composable
 fun HomeScreen(
     accessToken: String,
@@ -98,6 +147,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val locationPermissionMessage = stringResource(R.string.home_location_permission_required)
 
+    // Khởi tạo 4 ViewModel qua Hilt: couple, wallet, goals, map share
     val coupleViewModel: CoupleViewModel = hiltViewModel()
     val coupleState by coupleViewModel.uiState.collectAsState()
     
@@ -111,16 +161,24 @@ fun HomeScreen(
     val homeMapShareState by homeMapShareViewModel.uiState.collectAsState()
     val isShareLocationEnabled = homeMapShareState.shareLocationEnabled
 
+    // remember: cache MapView, FAB state, contribute sheet state qua recomposition.
+    // Không dùng rememberSaveable vì MapView không thể serialize.
     var mapView by remember { mutableStateOf<MapView?>(null) }
+    // Trạng thái FAB mở rộng (hiện/ẩn menu con)
     var isFabExpanded by remember { mutableStateOf(false) }
+    // Trạng thái bottom sheet đóng góp vào mục tiêu
     var isContributeSheetVisible by remember { mutableStateOf(false) }
 
+    // Cache markers và vị trí cho bản đồ: my/partner markers, GeoPoints
     var myMarker by remember { mutableStateOf<Marker?>(null) }
     var partnerMarker by remember { mutableStateOf<Marker?>(null) }
     var myLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var partnerLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
+    // Đánh dấu đã căn bản đồ lần đầu (chỉ auto-center 1 lần)
     var hasCenteredOnce by remember { mutableStateOf(false) }
 
+    // DisposableEffect: theo dõi lifecycle để load lại goals khi resume.
+    // Khi quay lại từ màn hình khác (ON_RESUME) → refresh danh sách mục tiêu.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -136,7 +194,7 @@ fun HomeScreen(
         }
     }
 
-    // Hiển thị thông báo lỗi nếu có
+    // Hiển thị Toast lỗi từ CoupleViewModel nếu có
     LaunchedEffect(coupleState.errorMessage) {
         coupleState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
@@ -191,12 +249,17 @@ fun HomeScreen(
         hasCenteredOnce = false
     }
 
+    // LaunchedEffect: tạo MapView khi couple đã kết nối và chia sẻ vị trí được bật.
+    // Chỉ tạo 1 lần, không tạo lại nếu đã có.
     LaunchedEffect(coupleState.paired, isShareLocationEnabled) {
         if (coupleState.paired && isShareLocationEnabled) {
             createMapViewIfNeeded()
         }
     }
 
+    // DisposableEffect: đăng ký BroadcastReceiver để nhận vị trí real-time từ ForegroundService.
+    // Lắng nghe ACTION_MY_LOCATION và ACTION_PARTNER_LOCATION.
+    // Cleanup: unregister receiver khi coupleState.paired thay đổi hoặc composable bị dispose.
     DisposableEffect(coupleState.paired) {
         if (!coupleState.paired) return@DisposableEffect onDispose {}
 
@@ -232,6 +295,9 @@ fun HomeScreen(
         onDispose { context.unregisterReceiver(receiver) }
     }
 
+    // Permission launcher: xin quyền ACCESS_FINE_LOCATION và ACCESS_COARSE_LOCATION.
+    // Nếu được cấp → start ForegroundService chia sẻ vị trí.
+    // Nếu bị từ chối → tắt chia sẻ vị trí và hiện Toast.
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -247,8 +313,9 @@ fun HomeScreen(
         }
     }
 
+    // LaunchedEffect: load vị trí cuối cùng từ API khi couple đã kết nối.
+    // Chỉ chạy 1 lần khi các dependency thay đổi.
     LaunchedEffect(coupleState.paired, accessToken, isShareLocationEnabled) {
-        if (coupleState.paired && isShareLocationEnabled && accessToken.isNotBlank()) {
             val mv = createMapViewIfNeeded()
             scope.launch {
                 runCatching {
@@ -266,6 +333,9 @@ fun HomeScreen(
         }
     }
 
+    // LaunchedEffect: quản lý start/stop ForegroundService chia sẻ vị trí.
+    // Khi paired + shareLocationEnabled + có permission → start service.
+    // Khi unpaired hoặc tắt share → stop service và release MapView.
     LaunchedEffect(coupleState.paired, coupleState.coupleId, accessToken, isShareLocationEnabled) {
         if (!coupleState.paired || !isShareLocationEnabled) {
             MapShareForegroundService.stop(context)
@@ -292,12 +362,14 @@ fun HomeScreen(
         }
     }
 
+    // LaunchedEffect: load couple status khi có accessToken
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
             coupleViewModel.loadStatus(accessToken)
         }
     }
 
+    // LaunchedEffect: load wallet và goals khi có coupleId
     LaunchedEffect(coupleState.coupleId) {
         if (coupleState.coupleId != null) {
             walletViewModel.loadData()
@@ -320,7 +392,9 @@ fun HomeScreen(
     val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
     val colorScheme = MaterialTheme.colorScheme
+    // remember: cache danh sách saving goals đã filter, chỉ tính lại khi sortedGoals thay đổi
     val savingGoals = remember(sortedGoals) { sortedGoals.filterIsInstance<SavingGoal>() }
+    // remember: tính khoảng cách Haversine giữa 2 vị trí, chỉ tính lại khi location thay đổi
     val distanceKm = remember(myLocationPoint, partnerLocationPoint, isShareLocationEnabled) {
         if (!isShareLocationEnabled || myLocationPoint == null || partnerLocationPoint == null) {
             null
@@ -414,6 +488,13 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Composable item FAB mở rộng: hiển thị label + icon cho mỗi action.
+ *
+ * @param text Nhãn hiển thị bên cạnh FAB.
+ * @param icon Icon hiển thị trên FAB button.
+ * @param onClick Callback khi nhấn vào item.
+ */
 @Composable
 private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
@@ -455,6 +536,39 @@ private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.
     }
 }
 
+/**
+ * Composable nội dung chính của HomeScreen.
+ *
+ * Hiển thị:
+ * - SharedBalanceCard: số dư chung + nút nạp/chuyển/đóng góp.
+ * - DaysTogetherModernCard: số ngày bên nhau với animation tim.
+ * - MiniMetricCards: thống kê tiết kiệm và kỷ niệm.
+ * - GoalListSection: danh sách mục tiêu tương lai và tiết kiệm.
+ * - PairSection hoặc MapSection: kết nối cặp đôi hoặc bản đồ vị trí.
+ *
+ * Layout: Column cuộn dọc với gradient nền.
+ *
+ * @param state Trạng thái CoupleUiState (paired, coupleId, daysTogether...).
+ * @param walletBalance Số dư hiển thị (đã điều chỉnh).
+ * @param actualWalletBalance Số dư thực tế trong ví.
+ * @param daysTogether Số ngày bên nhau.
+ * @param goals Danh sách mục tiêu đã sắp xếp.
+ * @param canContribute Có thể đóng góp vào mục tiêu không.
+ * @param onTopUpClick Callback nạp tiền.
+ * @param onTransferClick Callback chuyển tiền.
+ * @param onContributeClick Callback đóng góp.
+ * @param onPairNow Callback kết nối cặp đôi.
+ * @param onCenterMe Callback căn bản đồ về vị trí mình.
+ * @param onCenterPartner Callback căn bản đồ về vị trí đối phương.
+ * @param onSeeAllGoals Callback xem tất cả saving goals.
+ * @param onSeeAllFutureGoals Callback xem tất cả future goals.
+ * @param onTaskToggle Callback toggle task trong future goal.
+ * @param mapView Instance MapView (OSM) cho bản đồ.
+ * @param accessToken Token xác thực.
+ * @param shareLocationEnabled Trạng thái bật/tắt chia sẻ vị trí.
+ * @param distanceKm Khoảng cách giữa 2 người (km).
+ * @param onShareLocationEnabledChange Callback bật/tắt chia sẻ vị trí.
+ */
 @Composable
 private fun HomeContent(
     state: CoupleUiState,
@@ -682,6 +796,17 @@ private fun HomeContent(
     }
 }
 
+/**
+ * Composable section hiển thị danh sách mục tiêu (saving hoặc future).
+ *
+ * Chỉ hiện khi danh sách không rỗng. Hiển thị tối đa 2 mục tiêu đầu tiên.
+ *
+ * @param title Tiêu đề section (ví dụ: "Mục tiêu tiết kiệm").
+ * @param goals Danh sách mục tiêu cần hiển thị.
+ * @param onSeeAllClick Callback khi nhấn "Xem tất cả".
+ * @param onTaskToggle Callback toggle task.
+ * @param stickerRes Resource sticker trang trí (tùy chọn).
+ */
 @Composable
 private fun GoalListSection(
     title: String,
@@ -710,6 +835,18 @@ private fun GoalListSection(
     }
 }
 
+/**
+ * Composable card hiển thị số dư chung của cặp đôi.
+ *
+ * Sử dụng gradient background tùy chỉnh (extendedColors.balanceCardGradient).
+ * Font size tự động co lại khi số tiền quá dài (auto-shrink).
+ *
+ * @param balance Số dư hiện tại (đã điều chỉnh).
+ * @param canContribute Có thể đóng góp vào mục tiêu không.
+ * @param onTopUpClick Callback nạp tiền.
+ * @param onTransferClick Callback chuyển tiền.
+ * @param onContributeClick Callback đóng góp.
+ */
 @Composable
 fun SharedBalanceCard(
     balance: Long,
@@ -838,6 +975,14 @@ private fun SharedBalanceActionButton(
     }
 }
 
+/**
+ * Composable card hiển thị số ngày bên nhau.
+ *
+ * Hiệu ứng: icon tim có animation pulse (scale 1.0 → 1.08) lặp vô hạn.
+ * Layout: Column căn giữa với sticker trang trí bên trái.
+ *
+ * @param daysTogether Số ngày bên nhau.
+ */
 @Composable
 fun DaysTogetherModernCard(daysTogether: Long) {
     val colorScheme = MaterialTheme.colorScheme
@@ -895,6 +1040,14 @@ fun DaysTogetherModernCard(daysTogether: Long) {
     }
 }
 
+/**
+ * Composable card metric nhỏ: hiển thị 1 chỉ số (tiết kiệm hoặc kỷ niệm).
+ *
+ * @param title Nhãn chỉ số.
+ * @param value Giá trị hiển thị.
+ * @param icon Icon minh họa.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
@@ -919,6 +1072,10 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
     }
 }
 
+/**
+ * Composable section "Kết nối cặp đôi".
+ * Hiển thị nút "Kết nối ngay" khi chưa có couple.
+ */
 @Composable
 private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
@@ -936,6 +1093,11 @@ private fun PairSection(state: CoupleUiState, accessToken: String, onPairNow: ()
     }
 }
 
+/**
+ * Tính số ngày bên nhau từ chuỗi startAt (định dạng ISO date).
+ * @param startAt Chuỗi ngày bắt đầu (yyyy-MM-dd...).
+ * @return Số ngày hoặc null nếu parse lỗi.
+ */
 private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
     if (startAt == null || startAt.length < 10) return null
     return try {
@@ -950,6 +1112,10 @@ private fun computeDaysTogetherFromStartAt(startAt: String?): Long? {
     } catch (e: Exception) { null }
 }
 
+/**
+ * Tính khoảng cách giữa 2 điểm trên Trái Đất bằng công thức Haversine.
+ * @return Khoảng cách tính bằng kilomet.
+ */
 private fun haversineDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
     val earthRadiusKm = 6371.0
     val dLat = Math.toRadians(lat2 - lat1)

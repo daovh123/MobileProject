@@ -6,6 +6,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/**
+ * Entity đại diện cho một tin nhắn chat giữa cặp đôi.
+ * Ánh xạ tới collection {@code chat_messages}.
+ *
+ * <p><strong>Compound index:</strong> {@code coupleId + createdAt} để tối ưu
+ * truy vấn lịch sử tin nhắn theo couple, sắp xếp theo thời gian.</p>
+ */
 @Document(collection = "chat_messages")
 @CompoundIndex(name = "couple_created_at_idx", def = "{'coupleId': 1, 'createdAt': 1}")
 public class ChatMessage {

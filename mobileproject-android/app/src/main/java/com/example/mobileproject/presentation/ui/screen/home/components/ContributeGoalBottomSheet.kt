@@ -1,3 +1,17 @@
+/**
+ * ContributeGoalBottomSheet - Bottom sheet cho phép đóng góp tiền vào mục tiêu tiết kiệm.
+ *
+ * Mục đích:
+ * - Chọn mục tiêu tiết kiệm (nếu có nhiều).
+ * - Chọn phương thức thanh toán: từ ví hoặc đóng góp trực tiếp.
+ * - Nhập số tiền và ghi chú.
+ *
+ * Layout:
+ * - [ModalBottomSheet] với nội dung cuộn dọc.
+ * - Goal picker (nếu > 1 mục tiêu) → Amount input → Note input → Confirm button.
+ *
+ * Được sử dụng bởi: [HomeScreen] khi nhấn nút "Đóng góp".
+ */
 package com.example.mobileproject.presentation.ui.screen.home.components
 
 import androidx.compose.foundation.background
@@ -46,6 +60,23 @@ import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.utils.formatSimpleAmount
 
+/**
+ * ContributeGoalBottomSheet - Bottom sheet cho phép đóng góp tiền vào mục tiêu tiết kiệm.
+ *
+ * Mục đích:
+ * - Chọn mục tiêu tiết kiệm (nếu có nhiều).
+ * - Chọn phương thức thanh toán: từ ví hoặc đóng góp trực tiếp.
+ * - Nhập số tiền và ghi chú.
+ *
+ * Layout:
+ * - [ModalBottomSheet] với nội dung cuộn dọc.
+ * - Goal picker (nếu > 1 mục tiêu) → Amount input → Note input → Confirm button.
+ *
+ * @param selectedGoal Mục tiêu đã chọn trước (null nếu chưa chọn).
+ * @param availableGoals Danh sách mục tiêu tiết kiệm khả dụng.
+ * @param onDismiss Callback khi đóng bottom sheet.
+ * @param onConfirm Callback khi xác nhận: (goalId, amount, note, isDirect).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContributeGoalBottomSheet(
@@ -232,6 +263,15 @@ fun ContributeGoalBottomSheet(
     }
 }
 
+/**
+ * Composable card chọn phương thức thanh toán (ví hoặc trực tiếp).
+ *
+ * @param title Nhãn phương thức.
+ * @param icon Icon minh họa.
+ * @param isSelected Có đang được chọn không.
+ * @param modifier Modifier tùy chỉnh.
+ * @param onClick Callback khi nhấn.
+ */
 @Composable
 fun PaymentMethodCard(
     title: String,
@@ -268,6 +308,14 @@ fun PaymentMethodCard(
     }
 }
 
+/**
+ * Composable bottom sheet chọn mục tiêu tiết kiệm.
+ * Hiển thị danh sách mục tiêu với tên và số tiền hiện tại.
+ *
+ * @param goals Danh sách mục tiêu khả dụng.
+ * @param onGoalSelected Callback khi chọn mục tiêu.
+ * @param onDismiss Callback khi đóng sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalPickerSheet(

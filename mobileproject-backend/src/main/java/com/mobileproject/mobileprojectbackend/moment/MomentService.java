@@ -19,6 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Service xử lý nghiệp vụ kỷ niệm (moment) của cặp đôi.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Lưu moment: upload ảnh base64 lên Firebase Storage → lưu MongoDB</li>
+ *   <li>Tự động gửi thông báo cho partner khi tạo kỷ niệm mới ({@link NotificationType#PARTNER_MEMORY})</li>
+ *   <li>Khi lấy danh sách moment, đính kèm reaction summary và comment count</li>
+ *   <li>Xác thực quyền truy cập: chỉ user trong couple mới được xem/sửa moment</li>
+ * </ul>
+ */
 @Service
 public class MomentService {
     private final MomentRepository momentRepository;
@@ -43,6 +54,17 @@ public class MomentService {
         this.coupleInfoRepository = coupleInfoRepository;
     }
 
+    /**
+     * Tạo kỷ niệm mới. Upload ảnh base64 lên Firebase Storage, lưu vào MongoDB,
+     * và gửi thông báo cho partner.
+     *
+     * @param coupleId     ID cặp đôi
+     * @param title        tiêu đề kỷ niệm
+     * @param base64Image  ảnh mã hóa base64 (có thể kèm data URI header)
+     * @param viewerUserId ID người tạo (để gửi thông báo cho partner)
+     * @return moment view đã lưu
+     * @throws IllegalArgumentException nếu coupleId hoặc ảnh không hợp lệ
+     */
     public MomentView saveMoment(String coupleId, String title, String base64Image, String viewerUserId) {
         if (coupleId == null || coupleId.isBlank()) {
             throw new IllegalArgumentException("Couple id is required");
@@ -91,12 +113,23 @@ public class MomentService {
         return savedView;
     }
 
+    /**
+     * Lấy danh sách kỷ niệm của couple, kèm reaction summary và comment count.
+     */
     public List<MomentView> getMoments(String coupleId, String viewerUserId) {
         return momentRepository.findByCoupleIdOrderByCreatedAtDesc(coupleId).stream()
                 .map(moment -> toView(moment, viewerUserId))
                 .toList();
     }
 
+    /**
+     * Xác thực moment thuộc về couple. Ném exception nếu không tìm thấy hoặc không thuộc couple.
+     *
+     * @param momentId ID moment
+     * @param coupleId ID couple
+     * @return entity moment
+     * @throws ResponseStatusException 404 nếu moment không tồn tại, 403 nếu không thuộc couple
+     */
     public Moment requireMomentInCouple(String momentId, String coupleId) {
         Moment moment = momentRepository.findById(momentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Moment not found"));

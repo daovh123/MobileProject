@@ -17,6 +17,20 @@ import org.springframework.stereotype.Service;
 import com.mobileproject.mobileprojectbackend.auth.CoupleInfo;
 import com.mobileproject.mobileprojectbackend.auth.CoupleInfoRepository;
 
+/**
+ * Service xử lý nghiệp vụ thông báo.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Tạo thông báo + gửi FCM push cho một user</li>
+ *   <li>Tạo thông báo cho cả couple (cả 2 user)</li>
+ *   <li>Tạo thông báo cho partner (user còn lại trong couple)</li>
+ *   <li>Thông báo dedup theo ngày: {@link #createAndPushIfAbsentToday} chỉ tạo 1 lần/ngày
+ *       cho cùng (userId, type, title) – dùng cho special day reminder</li>
+ *   <li>Đánh dấu đã đọc: đơn lẻ hoặc tất cả</li>
+ *   <li>Phân trang danh sách thông báo (20/trang)</li>
+ * </ul>
+ */
 @Service
 public class NotificationService {
 
@@ -42,6 +56,9 @@ public class NotificationService {
     /**
      * Creates a notification for a single user and sends FCM push.
      */
+    /**
+     * Tạo thông báo và gửi FCM push cho một user.
+     */
     public void createAndPush(String userId, NotificationType type, String title, String body) {
         if (userId == null || userId.isBlank())
             return;
@@ -54,6 +71,13 @@ public class NotificationService {
     /**
      * Creates and pushes a notification only once per local day for the same (user,
      * type, title).
+     */
+    /**
+     * Tạo thông báo chỉ khi trong ngày hôm nay chưa có thông báo cùng (userId, type, title).
+     * Dùng cho special day reminder để tránh gửi trùng.
+     *
+     * @param date   ngày hiện tại (local date)
+     * @param zoneId múi giờ để xác định ranh giới ngày
      */
     public void createAndPushIfAbsentToday(
             String userId,
@@ -82,6 +106,9 @@ public class NotificationService {
     /**
      * Creates notifications for both users in a couple and sends FCM push.
      */
+    /**
+     * Tạo thông báo cho cả hai user trong couple.
+     */
     public void createAndPushForCouple(String coupleId, NotificationType type, String title, String body) {
         if (coupleId == null || coupleId.isBlank())
             return;
@@ -99,6 +126,9 @@ public class NotificationService {
     /**
      * Creates a notification for the partner (the other user) only.
      */
+    /**
+     * Tạo thông báo chỉ cho partner (user còn lại trong couple, không phải sender).
+     */
     public void createAndPushForPartner(String coupleId, String senderUserId, NotificationType type, String title,
             String body) {
         if (coupleId == null || coupleId.isBlank() || senderUserId == null)
@@ -114,21 +144,25 @@ public class NotificationService {
         }
     }
 
+    /** Lấy danh sách thông báo phân trang. */
     public Page<AppNotification> getNotifications(String userId, int page) {
         Pageable pageable = PageRequest.of(page, PAGE_SIZE);
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
 
+    /** Đếm số thông báo chưa đọc. */
     public long getUnreadCount(String userId) {
         return notificationRepository.countByUserIdAndReadFalse(userId);
     }
 
+    /** Đánh dấu tất cả thông báo đã đọc (bulk update qua MongoTemplate). */
     public void markAllRead(String userId) {
         Query query = new Query(Criteria.where("userId").is(userId).and("read").is(false));
         Update update = new Update().set("read", true);
         mongoTemplate.updateMulti(query, update, AppNotification.class);
     }
 
+    /** Đánh dấu một thông báo đã đọc. */
     public void markRead(String userId, String notificationId) {
         Query query = new Query(Criteria.where("id").is(notificationId).and("userId").is(userId));
         Update update = new Update().set("read", true);

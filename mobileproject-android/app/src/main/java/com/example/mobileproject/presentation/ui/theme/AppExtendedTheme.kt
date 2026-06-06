@@ -1,3 +1,9 @@
+/**
+ * Extended color scheme cho "Love Wallet Design System".
+ *
+ * Cung cấp [ExtendedColorScheme] với gradient, glass effect, accent colors
+ * đặc trưng, và [AppTheme] object để truy cập từ composable.
+ */
 package com.example.mobileproject.presentation.ui.theme
 
 import androidx.compose.runtime.Composable
@@ -6,11 +12,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 /**
- * Love Wallet Extended Color Scheme
+ * Bảng màu mở rộng cho "Love Wallet Design System".
  *
- * Provides gradient, overlay, and accent colors specific to the Love Wallet design language.
- * Light mode: Warm pink gradients, soft glass, romantic accents
- * Dark mode: Warm dark tones with rose undertones (NOT cold crypto-exchange dark)
+ * Cung cấp các gradient, overlay và accent color đặc trưng
+ * ngoài hệ thống Material 3 tiêu chuẩn.
+ *
+ * - Light mode: Gradient hồng ấm, glass effect nhẹ, accent lãng mạn.
+ * - Dark mode: Tông tối ấm với undertone hồng (KHÔNG phải dark mode lạnh).
+ *
+ * Các thuộc tính gradient đã được tính sẵn:
+ * - [primaryGradient]: Gradient chính (gradientStart → gradientEnd).
+ * - [cardGradient]: Gradient cho card (cardGradientStart → cardGradientEnd).
+ * - [surfaceGradient]: Gradient dọc cho surface.
+ * - [balanceCardGradient]: Gradient 3 màu cho card số dư ví.
  */
 data class ExtendedColorScheme(
     val gradientStart: Color,
@@ -92,10 +106,18 @@ data class ExtendedColorScheme(
     }
 }
 
+/**
+ * CompositionLocal cung cấp [ExtendedColorScheme] cho cây composable.
+ *
+ * Mặc định sử dụng [ExtendedColorScheme.light()]. Được override
+ * trong [MobileProjectTheme] tùy theo dark/light mode.
+ */
 val LocalExtendedColors = staticCompositionLocalOf { ExtendedColorScheme.light() }
 
 /**
- * Access extended colors from composable functions.
+ * Đối tượng tiện ích truy cập [ExtendedColorScheme] từ composable.
+ *
+ * Sử dụng: `AppTheme.extendedColors.gradientStart`
  */
 object AppTheme {
     val extendedColors: ExtendedColorScheme

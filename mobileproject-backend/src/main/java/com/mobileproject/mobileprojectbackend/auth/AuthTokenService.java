@@ -14,6 +14,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+/**
+ * Service quản lý JWT token tự phát hành (custom, không dùng thư viện JWT).
+ *
+ * <p>Định dạng token: {@code v1.<base64-payload>.<base64-signature>}</p>
+ * <ul>
+ *   <li><b>Payload</b>: {@code username|expiresAtEpoch|tokenId} (Base64 URL-safe)</li>
+ *   <li><b>Chữ ký</b>: HMAC-SHA256(payload, secret) (Base64 URL-safe)</li>
+ * </ul>
+ *
+ * <p>Tính năng:</p>
+ * <ul>
+ *   <li>Phát hành token với TTL mặc định 7 ngày</li>
+ *   <li>Xác minh chữ ký bằng HMAC-SHA256 (constant-time comparison)</li>
+ *   <li>Thu hồi (revoke) token theo tokenId, lưu trong ConcurrentHashMap</li>
+ *   <li>Tự dọn dẹp các token đã hết hạn khỏi danh sách thu hồi</li>
+ * </ul>
+ *
+ * <p>Cấu hình: {@code app.auth.token-secret} (bắt buộc), {@code app.auth.token-ttl-seconds} (mặc định 604800).</p>
+ */
 @Service
 public class AuthTokenService {
 
@@ -23,6 +42,7 @@ public class AuthTokenService {
 
     private final byte[] signingSecret;
     private final long tokenTtlSeconds;
+    /** Map tokenId → thời điểm hết hạn (epoch seconds) của các token đã bị thu hồi. */
     private final Map<String, Long> revokedTokenIds = new ConcurrentHashMap<>();
 
     public AuthTokenService(
@@ -34,6 +54,12 @@ public class AuthTokenService {
                 : DEFAULT_TOKEN_TTL_SECONDS;
     }
 
+    /**
+     * Phát hành JWT token mới cho người dùng.
+     *
+     * @param username tên đăng nhập (sẽ được normalize về viết thường)
+     * @return chuỗi token theo định dạng {@code v1.<payload>.<signature>}
+     */
     public String issueToken(String username) {
         String normalizedUsername = normalizeUsername(username);
         long expiresAtEpochSeconds = (System.currentTimeMillis() / 1000L) + tokenTtlSeconds;
@@ -45,12 +71,24 @@ public class AuthTokenService {
         return TOKEN_VERSION + "." + payloadSegment + "." + signatureSegment;
     }
 
+    /**
+     * Xác minh token từ header Authorization và trích xuất username.
+     *
+     * @param authorizationHeader header Authorization (hỗ trợ cả "Bearer xxx" và token thô)
+     * @return Optional chứa username nếu token hợp lệ, Optional.empty() nếu không
+     */
     public Optional<String> resolveUsername(String authorizationHeader) {
         return extractToken(authorizationHeader)
                 .flatMap(this::parseVerifiedToken)
                 .map(TokenClaims::username);
     }
 
+    /**
+     * Thu hồi token hiện tại (thêm tokenId vào danh sách revoked).
+     *
+     * @param authorizationHeader header Authorization chứa token cần thu hồi
+     * @return {@code true} nếu thu hồi thành công, {@code false} nếu token không hợp lệ
+     */
     public boolean revokeToken(String authorizationHeader) {
         long nowEpochSeconds = System.currentTimeMillis() / 1000L;
         cleanupExpiredRevocations(nowEpochSeconds);

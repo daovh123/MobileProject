@@ -23,6 +23,22 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Service tạo kế hoạch khám phá (explore plan) cho cặp đôi.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Tự động gợi ý các địa điểm ăn/uống xen kẽ (food → drink → food...)</li>
+ *   <li>Ưu tiên địa điểm phù hợp với từ khóa tìm kiếm gần đây (recentKeywords)</li>
+ *   <li>Loại trừ các địa điểm đã xem/đã gửi/đã đi (excludePlaceIds)</li>
+ *   <li>Tối ưu theo ngân sách: phân bổ đều budget cho mỗi stop</li>
+ *   <li>Tránh lặp brand/cuisine liên tiếp để đa dạng trải nghiệm</li>
+ *   <li>Sử dụng randomSeed để đảm bảo kết quả ổn định (deterministic)</li>
+ * </ul>
+ *
+ * <p><strong>Ước tính chi phí:</strong> Parse priceRange từ text (hỗ trợ format VN:
+ * "30k", "50.000đ", "3-5 triệu/người"), fallback mặc định 80k cho food, 35k cho drink.</p>
+ */
 @Service
 public class ExplorePlanService {
 
@@ -43,6 +59,12 @@ public class ExplorePlanService {
         this.placeService = placeService;
     }
 
+    /**
+     * Tạo kế hoạch khám phá dựa trên ngân sách, bộ lọc và vị trí.
+     *
+     * @param request thông tin ngân sách, số người, số điểm dừng, bộ lọc
+     * @return kế hoạch khám phá với danh sách địa điểm gợi ý và tóm tắt chi phí
+     */
     public ExplorePlanResponse buildPlan(ExplorePlanRequest request) {
         int peopleCount = request.peopleCount() == null ? 2 : request.peopleCount();
         int desiredStops = request.desiredStops() == null ? 2 : request.desiredStops();

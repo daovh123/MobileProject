@@ -52,6 +52,20 @@ import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.example.mobileproject.presentation.viewmodel.UserSettingsViewModel
 
+/**
+ * Các màn hình cài đặt chi tiết – Privacy, Notifications, Appearance, Help.
+ *
+ * Được gọi từ [SettingsScreen] hoặc NavHost trong [HomeScaffold].
+ *
+ * Cấu trúc chung: [SettingsSectionLayout] (header + scrollable column) +
+ * [AppSurfaceCard] chứa [DropdownSettingItem] (accordion expandable).
+ *
+ * Các màn hình:
+ * - [SettingsPrivacyScreen]: cài đặt bảo mật (hiện trạng thái, tìm kiếm email, đăng xuất).
+ * - [SettingsNotificationsScreen]: toggle thông báo theo nhóm (chat, payment, transaction, goal, memory).
+ * - [SettingsAppearanceScreen]: chọn theme System/Light/Dark qua SegmentedButton.
+ * - [SettingsHelpScreen]: phiên bản, điều khoản dịch vụ, chính sách quyền riêng tư.
+ */
 @Composable
 fun SettingsPrivacyScreen(
     accessToken: String,
@@ -335,6 +349,10 @@ fun SettingsHelpScreen() {
     }
 }
 
+/**
+ * Layout chung cho các màn hình cài đặt chi tiết.
+ * Header (tiêu đề + phụ đề) + content scrollable.
+ */
 @Composable
 private fun SettingsSectionLayout(
     title: String,
@@ -356,6 +374,10 @@ private fun SettingsSectionLayout(
     }
 }
 
+/**
+ * Item cài đặt dạng accordion – ListItem có thể mở rộng/thu gọn.
+ * Nhấn vào tiêu đề hoặc nút "Mở rộng/Thu gọn" để toggle nội dung con.
+ */
 @Composable
 private fun DropdownSettingItem(
     title: String,
@@ -413,6 +435,9 @@ private fun DropdownSettingItem(
     }
 }
 
+/**
+ * Hàng toggle Switch – dùng cho cài đặt bật/tắt trong DropdownSettingItem.
+ */
 @Composable
 private fun SwitchRow(
     title: String,

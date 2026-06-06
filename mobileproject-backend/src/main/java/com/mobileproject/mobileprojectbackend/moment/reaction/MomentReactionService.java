@@ -11,6 +11,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Service xử lý reaction cho kỷ niệm.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Nếu user đã reaction cùng loại → toggle (xóa reaction)</li>
+ *   <li>Nếu user đã reaction khác loại → cập nhật reaction mới</li>
+ *   <li>Nếu user chưa reaction → tạo mới</li>
+ *   <li>Chỉ cho phép các reaction hợp lệ: HEART, FIRE, WOW, LAUGH</li>
+ * </ul>
+ */
 @Service
 public class MomentReactionService {
 
@@ -24,6 +35,15 @@ public class MomentReactionService {
         this.momentReactionRepository = momentReactionRepository;
     }
 
+    /**
+     * Xử lý reaction: toggle (nếu cùng loại), update (nếu khác loại), hoặc tạo mới.
+     *
+     * @param momentId ID kỷ niệm
+     * @param coupleId ID couple
+     * @param userId   ID người reaction
+     * @param reaction loại reaction (HEART, FIRE, WOW, LAUGH)
+     * @return response chứa reaction hiện tại và tổng hợp reaction
+     */
     public MomentReactionResponse react(
             String momentId,
             String coupleId,
@@ -55,6 +75,9 @@ public class MomentReactionService {
         return toResponse(momentId, viewerReaction, reactions, userId);
     }
 
+    /**
+     * Lấy tổng hợp reaction của một moment.
+     */
     public MomentReactionResponse getReactionSummary(String momentId, String viewerUserId) {
         List<MomentReaction> reactions = momentReactionRepository.findByMomentIdOrderByCreatedAtDesc(momentId);
         return toResponse(momentId, null, reactions, viewerUserId);

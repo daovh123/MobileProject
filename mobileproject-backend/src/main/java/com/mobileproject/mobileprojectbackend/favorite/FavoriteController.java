@@ -13,6 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller cho tính năng yêu thích địa điểm.
+ * Base path: {@code /api/favorites}
+ *
+ * <p>Endpoints:</p>
+ * <ul>
+ *   <li>POST /toggle?placeId=... – toggle yêu thích</li>
+ *   <li>GET  / – lấy danh sách yêu thích</li>
+ *   <li>GET  /check?placeId=... – kiểm tra trạng thái yêu thích</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/favorites")
 public class FavoriteController {
@@ -25,6 +36,7 @@ public class FavoriteController {
         this.authIdentityService = authIdentityService;
     }
 
+    /** Toggle yêu thích địa điểm (thêm nếu chưa có, xếu nếu đã có). */
     @PostMapping("/toggle")
     public ResponseEntity<FavoriteResponse> toggleFavorite(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
@@ -33,6 +45,7 @@ public class FavoriteController {
         return ResponseEntity.ok(favoriteService.toggleFavorite(user.getId(), placeId));
     }
 
+    /** Lấy danh sách địa điểm yêu thích. */
     @GetMapping
     public ResponseEntity<FavoriteListResponse> getFavorites(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -40,6 +53,7 @@ public class FavoriteController {
         return ResponseEntity.ok(favoriteService.getUserFavorites(user.getId()));
     }
 
+    /** Kiểm tra địa điểm có nằm trong danh sách yêu thích hay không. */
     @GetMapping("/check")
     public ResponseEntity<FavoriteResponse> checkFavorite(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,

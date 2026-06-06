@@ -1,3 +1,26 @@
+/**
+ * # TransferMoneyScreen - Màn hình chuyển tiền thủ công
+ *
+ * Cho phép người dùng chuyển tiền đến tài khoản ngân hàng khác bằng cách:
+ * - Nhập số tài khoản đích (chỉ cho phép chữ số)
+ * - Chọn ngân hàng từ danh sách (ModalBottomSheet)
+ * - Nhập số tiền với hiển thị format số tiền phía dưới
+ * - Nhập nội dung chuyển khoản (có nút "dùng nội dung mặc định" tự sinh)
+ *
+ * Hỗ trợ tiền điền tự động từ QR đã quét qua tham số [scannedQrRaw].
+ * Sử dụng [QrTransferResolver] để parse VietQR payload.
+ *
+ * ## ViewModel bindings
+ * - [TransferMoneyViewModel]: submit lệnh chuyển tiền, quản lý trạng thái success/waiting
+ *
+ * ## Key integrations
+ * - **QR auto-fill**: [LaunchedEffect] trên scannedQrRaw tự động điền thông tin từ QR
+ * - **Snackbar**: hiển thị lỗi và cảnh báo qua SnackbarHostState
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại
+ * - Hiển thị SuccessContent khi uiState.isSuccess = true
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.border
@@ -64,6 +87,15 @@ import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLo
 import com.example.mobileproject.presentation.viewmodel.TransferMoneyViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 
+/**
+ * Màn hình chuyển tiền thủ công.
+ * Cho phép nhập số tài khoản, chọn ngân hàng (bottom sheet), nhập số tiền và nội dung.
+ * Hỗ trợ auto-fill từ QR đã quét qua tham số [scannedQrRaw].
+ *
+ * @param onNavigateBack quay lại
+ * @param scannedQrRaw raw string từ QR đã quét (mặc định rỗng)
+ * @param viewModel TransferMoneyViewModel
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransferMoneyScreen(
@@ -77,6 +109,7 @@ fun TransferMoneyScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val banks = remember { VietnamBankCatalog.banks }
 
+    // State cục bộ cho form nhập liệu (không lưu trong ViewModel để đơn giản)
     var accountNumber by remember { mutableStateOf("") }
     var selectedBank by remember { mutableStateOf<VietnamBank?>(null) }
     var amount by remember { mutableStateOf("") }
@@ -84,12 +117,14 @@ fun TransferMoneyScreen(
     var showBankSheet by remember { mutableStateOf(false) }
 
     val amountValue = amount.toLongOrNull() ?: 0L
+    // Điều kiện xác nhận: tài khoản ≥ 6 số, đã chọn bank, amount > 0, không đang submit
     val canConfirm = accountNumber.length >= 6 &&
         selectedBank != null &&
         amountValue > 0L &&
         !uiState.isSubmitting &&
         !uiState.isWaitingBankConfirmation
 
+    // Auto-fill: parse QR raw string khi received từ QRScannerScreen
     LaunchedEffect(scannedQrRaw) {
         if (scannedQrRaw.isBlank()) return@LaunchedEffect
         val resolved = resolveTransferQr(context, scannedQrRaw)
@@ -113,6 +148,7 @@ fun TransferMoneyScreen(
         )
     }
 
+    // Hiển thị lỗi qua Snackbar khi có errorMessage
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -321,6 +357,10 @@ fun TransferMoneyScreen(
     }
 }
 
+/**
+ * BottomSheet chọn ngân hàng từ danh sách VietnamBankCatalog.
+ * Sử dụng ModalBottomSheet với LazyColumn danh sách BankItem.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BankSelectionSheet(
@@ -371,6 +411,9 @@ private fun BankSelectionSheet(
     }
 }
 
+/**
+ * Item ngân hàng trong bottom sheet chọn, highlight viền và nền khi được chọn.
+ */
 @Composable
 private fun BankItem(
     bank: VietnamBank,
@@ -412,6 +455,11 @@ private fun BankItem(
     }
 }
 
+/**
+ * Nội dung hiển thị khi chuyển tiền thành công.
+ * Hiển thị icon checkmark, tóm tắt giao dịch (ngân hàng, số TK, số tiền, nội dung),
+ * và nút quay lại.
+ */
 @Composable
 private fun SuccessContent(
     accountNumber: String,
@@ -491,6 +539,10 @@ private fun SuccessContent(
     }
 }
 
+/**
+ * Card hiển thị trạng thái chờ ngân hàng xác nhận lệnh rút tiền.
+ * Hiển thị mã giao dịch, trạng thái, và hướng dẫn người dùng mở app ngân hàng.
+ */
 @Composable
 private fun WaitingBankCard(
     uiState: com.example.mobileproject.presentation.viewmodel.TransferMoneyUiState,
@@ -533,6 +585,9 @@ private fun WaitingBankCard(
     }
 }
 
+/**
+ * Row hiển thị 1 cặp label-value trong tóm tắt chuyển khoản.
+ */
 @Composable
 private fun TransferSummaryRow(
     label: String,

@@ -1,3 +1,18 @@
+/**
+ * AddGoalBottomSheet - Bottom sheet tạo mục tiêu mới (tiết kiệm hoặc tương lai).
+ *
+ * Mục đích:
+ * - Form tạo mục tiêu nhanh dưới dạng bottom sheet.
+ * - Hỗ trợ 2 loại: "SAVING" (tiết kiệm) và "FUTURE" (tương lai).
+ * - Saving: tên + số tiền + danh mục + deadline.
+ * - Future: tên + danh sách tasks + danh mục + deadline.
+ *
+ * Layout:
+ * - [ModalBottomSheet] với SecondaryScrollableTabRow cho danh mục.
+ * - Conditional rendering: hiện TextField số tiền (SAVING) hoặc danh sách tasks (FUTURE).
+ *
+ * Được sử dụng bởi: HomeScreen (legacy, hiện tại dùng AddSavingGoalScreen/AddFutureGoalScreen).
+ */
 package com.example.mobileproject.presentation.ui.screen.home.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +56,24 @@ import com.example.mobileproject.domain.entity.GoalTask
 import com.example.mobileproject.domain.model.ExpenseCategory
 import java.util.UUID
 
+/**
+ * AddGoalBottomSheet - Bottom sheet tạo mục tiêu mới (tiết kiệm hoặc tương lai).
+ *
+ * Mục đích:
+ * - Form tạo mục tiêu nhanh dưới dạng bottom sheet.
+ * - Hỗ trợ 2 loại: "SAVING" (tiết kiệm) và "FUTURE" (tương lai).
+ * - Saving: tên + số tiền + danh mục + deadline.
+ * - Future: tên + danh sách tasks + danh mục + deadline.
+ *
+ * Layout:
+ * - [ModalBottomSheet] với SecondaryScrollableTabRow cho danh mục.
+ * - Conditional rendering: hiện TextField số tiền (SAVING) hoặc danh sách tasks (FUTURE).
+ *
+ * @param type Loại mục tiêu: "SAVING" hoặc "FUTURE".
+ * @param onDismiss Callback khi đóng bottom sheet.
+ * @param onConfirmSaving Callback khi xác nhận saving goal: (name, amount, category, deadline).
+ * @param onConfirmFuture Callback khi xác nhận future goal: (name, category, deadline, tasks).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddGoalBottomSheet(

@@ -26,17 +26,65 @@ import javax.inject.Inject
 
 private const val EXPLORE_VM_LOG_TAG: String = "ExploreViewModel"
 
+/**
+ * Kiểu địa điểm khi tìm kiếm: tất cả, đồ ăn, hoặc đồ uống.
+ *
+ * @property value Giá trị string gửi lên API backend
+ */
 enum class ExplorePlaceType(val value: String) {
     ALL("all"),
     FOOD("food"),
     DRINK("drink"),
 }
 
+/**
+ * Nguồn ngân sách cho kế hoạch khám phá:
+ * - [WALLET]: Lấy từ số dư ví chung của cặp đôi
+ * - [MANUAL]: Người dùng tự nhập số tiền
+ */
 enum class ExploreBudgetSource {
     WALLET,
     MANUAL,
 }
 
+/**
+ * Trạng thái UI cho màn hình Khám phá (Explore).
+ *
+ * @property query Từ khóa tìm kiếm quán ăn/uống
+ * @property selectedProvince Tỉnh/thành phố đã chọn để lọc
+ * @property availableProvinces Danh sách tỉnh/thành phố khả dụng từ API
+ * @property selectedType Kiểu địa điểm đã chọn (tất cả/đồ ăn/đồ uống)
+ * @property nearMeOnly True nếu chỉ hiển thị quán gần vị trí hiện tại
+ * @property currentLat Vĩ độ hiện tại của người dùng (null nếu chưa có quyền vị trí)
+ * @property currentLng Kinh độ hiện tại của người dùng
+ * @property selectedMinRating Số sao tối thiểu để lọc (null = không lọc)
+ * @property radiusKmInput Bán kính tìm kiếm (km) do người dùng nhập
+ * @property randomSuggestion Quán được gợi ý ngẫu nhiên (hiển thị trên card/dialog)
+ * @property randomSuggestionToken Token tăng dần mỗi lần gợi ý mới, dùng để trigger animation/hiệu ứng
+ * @property trending Danh sách quán trending hiển thị ở section riêng
+ * @property trendingLoading True khi đang tải danh sách trending
+ * @property places Danh sách quán đã tìm kiếm (hỗ trợ phân trang, tích lũy)
+ * @property totalPlaces Tổng số quán từ API (dùng để xác định còn trang tiếp không)
+ * @property loadedPlaces Số quán đã load tính đến hiện tại
+ * @property hasMore True nếu còn dữ liệu trang tiếp theo
+ * @property isPaging True khi đang tải thêm trang (infinite scroll)
+ * @property isLoading True khi đang tải lần đầu hoặc refresh
+ * @property isRandomLoading True khi đang gọi API gợi ý ngẫu nhiên
+ * @property budgetSource Nguồn ngân sách: từ ví hoặc nhập tay
+ * @property walletBalance Số dư ví chung (null nếu chưa tải hoặc chưa ghép đôi)
+ * @property walletLoading True khi đang tải số dư ví
+ * @property manualBudgetInput Ngân sách người dùng nhập tay (chuỗi số)
+ * @property peopleCountInput Số người tham gia kế hoạch (tối đa [MAX_EXPLORE_PEOPLE_COUNT])
+ * @property desiredStopsInput Số điểm dừng mong muốn (tối đa [MAX_EXPLORE_STOPS])
+ * @property recentHistoryPlaces Các quán đã xem gần đây, dùng để tránh gợi ý trùng lặp
+ * @property recentSharedPlanPlaces Các quán đã chia sẻ lên chat gần đây
+ * @property recentGeneratedPlanPlaces Các quán đã được gợi ý trong plan gần đây
+ * @property explorePlan Kế hoạch khám phá được tạo từ API (null nếu chưa tạo)
+ * @property planItems Danh sách điểm dừng trong kế hoạch (đã lọc bỏ trùng lặp)
+ * @property isPlanLoading True khi đang tạo kế hoạch khám phá
+ * @property planErrorMessage Thông báo lỗi riêng cho việc tạo kế hoạch
+ * @property errorMessage Thông báo lỗi chung (tìm kiếm, vị trí, ...)
+ */
 data class ExploreUiState(
     val query: String = "",
     val selectedProvince: String = "",
@@ -74,6 +122,24 @@ data class ExploreUiState(
     val errorMessage: String? = null,
 )
 
+/**
+ * ViewModel cho màn hình Khám phá (Explore).
+ *
+ * Quản lý business logic:
+ * - Tìm kiếm quán ăn/uống với nhiều bộ lọc (tỉnh, loại, đánh giá, bán kính, vị trí)
+ * - Phân trang danh sách kết quả tìm kiếm (infinite scroll)
+ * - Gợi ý quán ngẫu nhiên theo bộ lọc hiện tại
+ * - Tạo kế hoạch khám phá (explore plan) dựa trên ngân sách và số người
+ * - Tải danh sách quán trending
+ * - Quản lý ngân sách từ ví hoặc nhập tay
+ * - Theo dõi lịch sử xem/chia sẻ để tránh gợi ý trùng lặp
+ *
+ * Sử dụng [runCatching] cho các API call một lần (load provinces, random, plan)
+ * và try/catch cho phân trang vì cần re-throw [CancellationException].
+ *
+ * Phân trang sử dụng requestId để bỏ qua response cũ khi người dùng thay đổi bộ lọc
+ * (race condition prevention).
+ */
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
     private val searchPlacesUseCase: SearchPlacesUseCase,
@@ -101,6 +167,7 @@ class ExploreViewModel @Inject constructor(
     private var currentExplorePage: Int = 0
 
     init {
+        // Khởi tạo dữ liệu khi ViewModel được tạo: danh sách tỉnh, số dư ví, trending, và kết quả tìm kiếm đầu tiên
         debugLog("init")
         loadAreaOptions()
         loadWalletBalance()
@@ -108,6 +175,11 @@ class ExploreViewModel @Inject constructor(
         refreshPlaces()
     }
 
+    /**
+     * Cập nhật từ khóa tìm kiếm khi người dùng nhập text.
+     *
+     * @param query Chuỗi tìm kiếm mới
+     */
     fun onQueryChanged(query: String) {
         _uiState.value = _uiState.value.copy(
             query = query,
@@ -115,6 +187,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Cập nhật tỉnh/thành phố đã chọn để lọc kết quả.
+     *
+     * @param province Tên tỉnh/thành phố
+     */
     fun onProvinceChanged(province: String) {
         _uiState.value = _uiState.value.copy(
             selectedProvince = province,
@@ -122,6 +199,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Thay đổi loại địa điểm (tất cả / đồ ăn / đồ uống) và tự động refresh kết quả.
+     *
+     * @param type Kiểu địa điểm mới
+     */
     fun onTypeChanged(type: ExplorePlaceType) {
         _uiState.value = _uiState.value.copy(
             selectedType = type,
@@ -131,6 +213,12 @@ class ExploreViewModel @Inject constructor(
         refreshPlaces()
     }
 
+    /**
+     * Bật/tắt chế độ chỉ hiển thị quán gần vị trí hiện tại.
+     * Nếu bật mà chưa có tọa độ, sẽ chờ [onCurrentLocationUpdated] gọi refreshPlaces.
+     *
+     * @param checked True để bật chế độ "gần tôi"
+     */
     fun onNearMeChanged(checked: Boolean) {
         _uiState.value = _uiState.value.copy(
             nearMeOnly = checked,
@@ -142,6 +230,13 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cập nhật tọa độ vị trí hiện tại từ GPS.
+     * Nếu đang ở chế độ "gần tôi", tự động refresh kết quả tìm kiếm.
+     *
+     * @param lat Vĩ độ
+     * @param lng Kinh độ
+     */
     fun onCurrentLocationUpdated(lat: Double, lng: Double) {
         _uiState.value = _uiState.value.copy(
             currentLat = lat,
@@ -154,6 +249,12 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Xử lý khi vị trí hiện tại không khả dụng (mất quyền, GPS tắt).
+     * Tắt chế độ "gần tôi" và hiển thị thông báo lỗi.
+     *
+     * @param errorMessage Thông báo lỗi từ hệ thống vị trí
+     */
     fun onCurrentLocationUnavailable(errorMessage: String?) {
         debugLog("onCurrentLocationUnavailable message=${errorMessage?.take(60)}")
         _uiState.value = _uiState.value.copy(
@@ -165,6 +266,11 @@ class ExploreViewModel @Inject constructor(
         refreshPlaces()
     }
 
+    /**
+     * Thay đổi bộ lọc đánh giá tối thiểu và refresh kết quả.
+     *
+     * @param minRating Số sao tối thiểu (null = bỏ lọc)
+     */
     fun onMinRatingChanged(minRating: Int?) {
         _uiState.value = _uiState.value.copy(
             selectedMinRating = minRating,
@@ -174,6 +280,11 @@ class ExploreViewModel @Inject constructor(
         refreshPlaces()
     }
 
+    /**
+     * Cập nhật giá trị bán kính tìm kiếm (km) từ input người dùng.
+     *
+     * @param radiusKmInput Chuỗi bán kính
+     */
     fun onRadiusChanged(radiusKmInput: String) {
         _uiState.value = _uiState.value.copy(
             radiusKmInput = radiusKmInput,
@@ -181,6 +292,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Chuyển đổi nguồn ngân sách giữa ví chung và nhập tay.
+     *
+     * @param source Nguồn ngân sách mới
+     */
     fun onBudgetSourceChanged(source: ExploreBudgetSource) {
         _uiState.value = _uiState.value.copy(
             budgetSource = source,
@@ -189,6 +305,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Cập nhật ngân sách nhập tay (chỉ giữ ký tự số).
+     *
+     * @param value Chuỗi số tiền
+     */
     fun onManualBudgetChanged(value: String) {
         _uiState.value = _uiState.value.copy(
             manualBudgetInput = value.filter { it.isDigit() },
@@ -197,6 +318,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Cập nhật số người tham gia, giới hạn tối đa [MAX_EXPLORE_PEOPLE_COUNT].
+     *
+     * @param value Chuỗi số người
+     */
     fun onPeopleCountChanged(value: String) {
         val sanitized = value.filter { it.isDigit() }
         val normalized = sanitized
@@ -212,6 +338,11 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Cập nhật số điểm dừng mong muốn, giới hạn tối đa [MAX_EXPLORE_STOPS].
+     *
+     * @param value Chuỗi số điểm dừng
+     */
     fun onDesiredStopsChanged(value: String) {
         val sanitized = value.filter { it.isDigit() }
         val normalized = sanitized
@@ -227,12 +358,24 @@ class ExploreViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Cập nhật danh sách quán đã xem gần đây (từ HistoryScreen).
+     * Loại bỏ trùng lặp theo [Place.id].
+     *
+     * @param history Danh sách quán đã xem
+     */
     fun onHistoryUpdated(history: List<Place>) {
         _uiState.value = _uiState.value.copy(
             recentHistoryPlaces = history.distinctBy { it.id },
         )
     }
 
+    /**
+     * Ghi nhận quán đã được chia sẻ lên chat để tránh gợi ý lại.
+     * Giữ tối đa 10 quán gần nhất.
+     *
+     * @param place Quán đã chia sẻ
+     */
     fun onPlanSharedToChat(place: Place) {
         val updatedSharedPlaces = buildList {
             add(place)
@@ -241,6 +384,11 @@ class ExploreViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(recentSharedPlanPlaces = updatedSharedPlaces)
     }
 
+    /**
+     * Ghi nhận quán đã được xem chi tiết, thêm vào đầu danh sách lịch sử.
+     *
+     * @param place Quán đã xem
+     */
     fun onPlaceViewed(place: Place) {
         val updatedHistory = buildList {
             add(place)
@@ -249,6 +397,16 @@ class ExploreViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(recentHistoryPlaces = updatedHistory)
     }
 
+    /**
+     * Tạo kế hoạch khám phá (explore plan) dựa trên bộ lọc và ngân sách hiện tại.
+     *
+     * Business logic:
+     * 1. Validate ngân sách, số người, số điểm dừng
+     * 2. Gộp lịch sử xem + chia sẻ + đã gợi ý để loại trừ trùng lặp
+     * 3. Gọi [GetExplorePlanUseCase] với các tham số đã chuẩn hóa
+     * 4. Lọc bỏ quán đã xem/đi/gợi ý trước đó và đánh lại số thứ tự
+     * 5. Nếu budget không đủ, hiển thị thông báo phù hợp
+     */
     fun buildExplorePlan() {
         viewModelScope.launch {
             val currentState = _uiState.value
@@ -360,16 +518,26 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Trigger tìm kiếm lại từ đầu (reset phân trang).
+     */
     fun search() {
         debugLog("search")
         refreshPlaces()
     }
 
+    /**
+     * Thử lại khi gặp lỗi (tương đương refreshPlaces).
+     */
     fun retry() {
         debugLog("retry")
         refreshPlaces()
     }
 
+    /**
+     * Tải thêm trang kết quả tiếp theo (infinite scroll).
+     * Bỏ qua nếu đang loading, đang paging, hoặc đã hết dữ liệu.
+     */
     fun loadNextPage() {
         val state = _uiState.value
         if (state.isLoading || state.isPaging || !state.hasMore) {
@@ -380,6 +548,11 @@ class ExploreViewModel @Inject constructor(
         loadPlacesPage(page = currentExplorePage + 1, append = true)
     }
 
+    /**
+     * Gợi ý một quán ngẫu nhiên theo bộ lọc hiện tại.
+     * Sử dụng [runCatching] vì đây là single-shot API call.
+     * [randomSuggestionToken] tăng dần để UI biết cần hiển thị kết quả mới.
+     */
     fun randomPlace() {
         viewModelScope.launch {
             debugLog("randomPlace")
@@ -434,6 +607,10 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tải danh sách tỉnh/thành phố cho bộ lọc.
+     * Thử API provinces trước, nếu lỗi thì fallback sang filter options.
+     */
     private fun loadAreaOptions() {
         viewModelScope.launch {
             runCatching {
@@ -460,6 +637,12 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tải số dư ví chung cho cặp đôi.
+     * Nếu chưa đăng nhập hoặc chưa ghép đôi, chuyển sang chế độ nhập tay ngân sách.
+     *
+     * Sử dụng [collectLatest] vì wallet repository trả về Flow (realtime updates).
+     */
     private fun loadWalletBalance() {
         val session = authSessionStore.load()
         val coupleId = session?.coupleId
@@ -491,6 +674,10 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Refresh danh sách quán từ trang đầu tiên.
+     * Hủy job đang chạy trước đó để tránh race condition.
+     */
     private fun refreshPlaces() {
         debugLog(
             "refreshPlaces nearMe=${_uiState.value.nearMeOnly} type=${_uiState.value.selectedType.value} provinceBlank=${_uiState.value.selectedProvince.isBlank()}",
@@ -499,6 +686,19 @@ class ExploreViewModel @Inject constructor(
         loadPlacesPage(page = 0, append = false)
     }
 
+    /**
+     * Tải một trang kết quả tìm kiếm.
+     *
+     * @param page Số trang (0-indexed)
+     * @param append True nếu tích lũy thêm vào danh sách hiện có (infinite scroll),
+     *   False nếu thay thế hoàn toàn (refresh/search mới)
+     *
+     * Sử dụng try/catch thay vì runCatching để có thể re-throw [CancellationException],
+     * đảm bảo coroutine bị hủy đúng cách khi job bị cancel.
+     *
+     * [latestPlacesRequestId] được tăng mỗi lần refresh mới, bỏ qua response từ request cũ
+     * khi người dùng thay đổi bộ lọc liên tục.
+     */
     private fun loadPlacesPage(page: Int, append: Boolean) {
         if (append && page <= 0) {
             return
@@ -510,6 +710,7 @@ class ExploreViewModel @Inject constructor(
             loadPlacesJob?.cancel()
         }
 
+        // Tăng requestId mỗi lần refresh mới để bỏ qua response cũ (race condition prevention)
         val requestId = if (append) {
             latestPlacesRequestId
         } else {
@@ -576,6 +777,7 @@ class ExploreViewModel @Inject constructor(
                     sort = sort,
                 )
 
+                // Bỏ qua response từ request cũ khi người dùng đã thay đổi bộ lọc liên tục
                 if (requestId != latestPlacesRequestId) {
                     return@launch
                 }
@@ -603,6 +805,8 @@ class ExploreViewModel @Inject constructor(
                     errorMessage = null,
                 )
             } catch (cancellation: CancellationException) {
+                // Re-throw CancellationException để đảm bảo coroutine bị hủy đúng cách.
+                // Nếu catch tất cả Exception, coroutine sẽ không nhận được signal cancel.
                 throw cancellation
             } catch (throwable: Throwable) {
                 warnLog("loadPlacesPage failure", throwable)
@@ -628,6 +832,10 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tải danh sách quán trending (xu hướng) cho section riêng trên UI.
+     * Sử dụng [runCatching] vì single-shot request, lỗi không cần propagate.
+     */
     private fun loadTrending() {
         viewModelScope.launch {
             debugLog("loadTrending")
@@ -660,6 +868,10 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Xác định ngân sách hiệu quả dựa trên nguồn (ví hoặc nhập tay).
+     * Nếu ví không khả dụng, fallback về nhập tay, rồi về mặc định.
+     */
     private fun resolveEffectiveBudget(state: ExploreUiState): Long {
         val manualBudget = state.manualBudgetInput.toLongOrNull()
         return when (state.budgetSource) {
@@ -668,6 +880,11 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Trích xuất từ khóa liên quan từ lịch sử quán đã xem,
+     * dùng làm gợi ý ngữ cảnh cho API tạo kế hoạch.
+     * Lấy tối đa 10 quán gần nhất, mỗi quán lấy tag, category, tên, địa chỉ, ...
+     */
     private fun buildRecentKeywords(history: List<Place>): List<String> {
         return history.asSequence()
             .take(10)

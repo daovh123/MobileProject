@@ -14,6 +14,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * REST controller cho hệ thống thông báo.
+ * Base path: {@code /api/notifications}
+ *
+ * <p>Endpoints:</p>
+ * <ul>
+ *   <li>POST /fcm-token – đăng ký FCM token</li>
+ *   <li>GET  / – lấy danh sách thông báo (phân trang)</li>
+ *   <li>GET  /unread-count – đếm thông báo chưa đọc</li>
+ *   <li>PUT  /read-all – đánh dấu tất cả đã đọc</li>
+ *   <li>PUT  /{id}/read – đánh dấu một thông báo đã đọc</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -25,6 +38,7 @@ public class NotificationController {
     private final UserFcmTokenRepository userFcmTokenRepository;
     private final NotificationService notificationService;
 
+    /** Đăng ký FCM token để nhận push notification. */
     @PostMapping("/fcm-token")
     public ResponseEntity<Void> registerFcmToken(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
@@ -39,6 +53,7 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    /** Lấy danh sách thông báo phân trang (20/trang). */
     @GetMapping
     public ResponseEntity<NotificationPageResponse> getNotifications(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
@@ -62,6 +77,7 @@ public class NotificationController {
                 result.hasNext()));
     }
 
+    /** Đếm số thông báo chưa đọc. */
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -70,6 +86,7 @@ public class NotificationController {
         return ResponseEntity.ok(Map.of("count", count));
     }
 
+    /** Đánh dấu tất cả thông báo đã đọc. */
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllRead(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -78,6 +95,7 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    /** Đánh dấu một thông báo đã đọc. */
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markRead(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
@@ -89,9 +107,11 @@ public class NotificationController {
 
     // --- Records ---
 
+    /** Request đăng ký FCM token. */
     public record FcmTokenRequest(String token) {
     }
 
+    /** DTO hiển thị thông tin thông báo. */
     public record NotificationDto(
             String id,
             String type,
@@ -101,6 +121,7 @@ public class NotificationController {
             Instant createdAt) {
     }
 
+    /** Response phân trang danh sách thông báo. */
     public record NotificationPageResponse(
             List<NotificationDto> content,
             long totalElements,

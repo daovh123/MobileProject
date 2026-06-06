@@ -1,3 +1,25 @@
+/**
+ * Màn hình Chụp khoảnh khắc (Capture Moment) – tích hợp CameraX để chụp ảnh
+ * và lưu vào hệ thống dưới dạng Base64 data-URL.
+ *
+ * Tính năng chính:
+ * - Camera preview sử dụng [CameraX] với [PreviewView] embedded qua AndroidView.
+ * - Nút chụp ảnh (shutter) ở giữa, nút lật camera (front/back) bên phải,
+ *   nút mở lưới ảnh (gallery grid) bên trái.
+ * - Phần "Lịch sử" hiển thị danh sách khoảnh khắc đã lưu dạng Card.
+ * - [MomentGridBottomSheet]: LazyVerticalGrid 4 cột hiển thị tất cả ảnh.
+ *
+ * CameraX integration:
+ * - [ProcessCameraProvider] bind [Preview] + [ImageCapture] vào lifecycle owner.
+ * - Ảnh chụp được nén (maxWidth 1080px, JPEG quality 82%) trước khi encode Base64.
+ * - Hỗ trợ cả data-URL (base64) và URL HTTP cho hiển thị ảnh.
+ *
+ * ViewModel: [MemoriesViewModel] – load(), saveMoment(), refreshMoments().
+ *
+ * Quyền: yêu cầu [Manifest.permission.CAMERA] qua ActivityResultContracts.
+ *
+ * Layout: LazyColumn dọc, camera preview aspect ratio 0.82 (dọc hơn ngang).
+ */
 package com.example.mobileproject.presentation.ui.screen.memories
 
 import android.Manifest
@@ -145,6 +167,10 @@ fun CaptureMomentScreen(
         }
     }
 
+    // CameraX integration: bind Preview + ImageCapture vào lifecycle
+    // DisposableEffect re-run khi hasCameraPermission hoặc lensFacing thay đổi
+    // ProcessCameraProvider.getInstance() trả về Future, listener chạy trên mainExecutor
+    // ImageCapture dùng CAPTURE_MODE_MINIMIZE_LATENCY để chụp nhanh
     DisposableEffect(hasCameraPermission, lensFacing, lifecycleOwner) {
         if (!hasCameraPermission) {
             imageCapture = null
@@ -270,6 +296,9 @@ fun CaptureMomentScreen(
                         )
                     }
 
+                    // CameraX ImageCapture: chụp ảnh và lưu vào file tạm
+                    // Sau đó nén bitmap (maxWidth 1080px, JPEG 82%) → encode Base64 → tạo data-URL
+                    // data-URL format: "data:image/jpeg;base64,<base64_string>"
                     Surface(
                         modifier = Modifier
                             .size(88.dp)

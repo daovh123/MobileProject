@@ -23,6 +23,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * ViewModel cho màn hình Hồ sơ (Profile) của người dùng.
+ *
+ * Quản lý business logic:
+ * - Tải và hiển thị hồ sơ cá nhân (tên, nickname, ngày sinh, giới tính, email)
+ * - Chỉnh sửa hồ sơ với validation đầy đủ (tên bắt buộc, định dạng ngày sinh, email, ...)
+ * - Theo dõi trạng thái "dirty" (có thay đổi chưa lưu) để enable/disable nút Lưu
+ * - Upload ảnh đại diện (base64)
+ * - Quản lý khung ảnh đại diện (avatar frame)
+ * - Tải trạng thái ghép đôi và thông tin đối phương
+ * - Xử lý session expired (401) để điều hướng về Login
+ *
+ * Sử dụng [async] để tải hồ sơ và trạng thái ghép đôi song song,
+ * giảm thời gian chờ tổng thể.
+ *
+ * Sử dụng [runCatching] cho tất cả API call vì single-shot requests.
+ * [Dispatchers.Default] cho decode base64 bitmap (CPU-intensive task).
+ */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
@@ -32,6 +50,15 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    /**
+     * Tải hồ sơ cá nhân và trạng thái ghép đôi song song.
+     *
+     * @param token JWT access token
+     *
+     * Sử dụng [async] để chạy 2 request concurrently:
+     * 1. getProfile: Lấy thông tin cá nhân + decode avatar base64
+     * 2. getCoupleStatus: Lấy trạng thái ghép đôi + partner profile (nếu đã ghép)
+     */
     fun loadProfile(token: String) {
         if (token.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
@@ -99,6 +126,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tải thông tin tóm tắt hồ sơ đối phương (avatar, tên, ...).
+     * Chỉ gọi khi đã ghép đôi (paired = true).
+     */
     private fun loadPartnerProfile(token: String) {
         viewModelScope.launch {
             runCatching {
@@ -116,6 +147,16 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cập nhật draft (bản nháp) hồ sơ khi người dùng chỉnh sửa form.
+     * Tự động so sánh với [initialProfile] để xác định [isDirty].
+     *
+     * @param fullName Họ tên
+     * @param nickName Biệt danh
+     * @param birthDate Ngày sinh (format yyyy-MM-dd)
+     * @param gender Giới tính ("MALE"/"FEMALE"/"OTHER")
+     * @param email Email (mặc định giữ nguyên giá trị hiện tại)
+     */
     fun updateDraft(
         fullName: String,
         nickName: String,
@@ -140,6 +181,18 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Lưu hồ sơ sau khi validate đầy đủ.
+     *
+     * Validation rules:
+     * - Họ tên: bắt buộc, tối đa 100 ký tự
+     * - Biệt danh: tối đa 50 ký tự (không bắt buộc)
+     * - Ngày sinh: format yyyy-MM-dd, không được ở tương lai
+     * - Giới tính: MALE/FEMALE/OTHER
+     * - Email: đúng định dạng (không bắt buộc)
+     *
+     * @param token JWT access token
+     */
     fun saveProfile(token: String) {
         if (token.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Phien dang nhap het han, vui long dang nhap lai") }
@@ -226,6 +279,13 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Upload ảnh đại diện mới.
+     *
+     * @param token JWT access token
+     * @param imageBytes Dữ liệu ảnh dưới dạng byte array
+     * @param contentType MIME type của ảnh (vd: "image/jpeg")
+     */
     fun uploadAvatar(token: String, imageBytes: ByteArray, contentType: String) {
         if (token.isBlank()) return
         viewModelScope.launch {
@@ -246,6 +306,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tải danh sách khung ảnh đại diện khả dụng.
+     *
+     * @param token JWT access token
+     */
     fun loadAvatarFrames(token: String) {
         if (token.isBlank()) return
         viewModelScope.launch {
@@ -265,6 +330,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Chọn và áp dụng khung ảnh đại diện mới.
+     *
+     * @param token JWT access token
+     * @param frameId ID khung ảnh mới (null để xóa khung)
+     */
     fun selectFrame(token: String, frameId: String?) {
         if (token.isBlank()) return
         viewModelScope.launch {
@@ -285,30 +356,43 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /** Hiển thị dialog chọn khung ảnh. */
     fun showFrameSelector() {
         _uiState.update { it.copy(showFrameSelector = true) }
     }
 
+    /** Ẩn dialog chọn khung ảnh. */
     fun hideFrameSelector() {
         _uiState.update { it.copy(showFrameSelector = false) }
     }
 
+    /** Xóa lỗi liên quan đến avatar. */
     fun clearAvatarError() {
         _uiState.update { it.copy(avatarUploadError = null) }
     }
 
+    /** Xóa tất cả thông báo lỗi (hồ sơ + ghép đôi). */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null, coupleError = null) }
     }
 
+    /** Đánh dấu đã xử lý thông báo lưu thành công. */
     fun consumeSaveSuccess() {
         _uiState.update { it.copy(saveSuccessMessage = null) }
     }
 
+    /** Đánh dấu đã xử lý trạng thái session hết hạn. */
     fun clearSessionExpired() {
         _uiState.update { it.copy(sessionExpired = false) }
     }
 
+    /**
+     * Decode chuỗi base64 data URL thành Bitmap trên background thread.
+     * Sử dụng [Dispatchers.Default] vì decode bitmap là CPU-intensive task.
+     *
+     * @param dataUrl Chuỗi "data:image/...;base64,..."
+     * @return Bitmap đã decode, hoặc null nếu data URL không hợp lệ
+     */
     private suspend fun decodeBase64DataUrl(dataUrl: String): Bitmap? = withContext(Dispatchers.Default) {
         runCatching {
             val base64 = dataUrl.substringAfter(",", missingDelimiterValue = "")
@@ -319,6 +403,10 @@ class ProfileViewModel @Inject constructor(
     }
 }
 
+/**
+ * Kiểm tra exception có phải do session hết hạn (401 Unauthorized) hay không.
+ * Dùng để hiển thị dialog "Phiên đăng nhập hết hạn" thay vì message lỗi chung.
+ */
 private fun Throwable.isSessionExpiredError(): Boolean {
     val reason = message.orEmpty()
     return this is IllegalStateException && (
@@ -328,6 +416,35 @@ private fun Throwable.isSessionExpiredError(): Boolean {
         )
 }
 
+/**
+ * Trạng thái UI cho màn hình Hồ sơ (Profile).
+ *
+ * @property isLoading True khi đang tải hồ sơ
+ * @property isSaving True khi đang lưu hồ sơ
+ * @property savedProfile Hồ sơ đã lưu trên server (dùng để reload/reference)
+ * @property initialProfile Hồ sơ khi vừa load xong (dùng so sánh isDirty)
+ * @property fullName Họ tên đang chỉnh sửa
+ * @property nickName Biệt danh đang chỉnh sửa
+ * @property birthDate Ngày sinh (format yyyy-MM-dd)
+ * @property gender Giới tính ("MALE"/"FEMALE"/"OTHER")
+ * @property email Email đang chỉnh sửa
+ * @property isDirty True nếu có thay đổi so với [initialProfile] (enable nút Lưu)
+ * @property errorMessage Thông báo lỗi chung (validation, API)
+ * @property saveSuccessMessage Thông báo lưu thành công
+ * @property sessionExpired True nếu session hết hạn, UI hiển thị dialog đăng nhập lại
+ * @property isLoadingCouple True khi đang tải trạng thái ghép đôi
+ * @property coupleStatus Trạng thái ghép đôi hiện tại
+ * @property coupleError Thông báo lỗi khi tải trạng thái ghép đôi
+ * @property partnerProfile Thông tin tóm tắt hồ sơ đối phương
+ * @property avatarUrl Data URL base64 của ảnh đại diện
+ * @property avatarBitmap Bitmap đã decode từ [avatarUrl] để hiển thị
+ * @property avatarFrameId ID khung ảnh đại diện đang sử dụng
+ * @property isUploadingAvatar True khi đang upload ảnh đại diện
+ * @property availableFrames Danh sách khung ảnh khả dụng
+ * @property isLoadingFrames True khi đang tải danh sách khung ảnh
+ * @property showFrameSelector True khi dialog chọn khung ảnh đang hiển thị
+ * @property avatarUploadError Thông báo lỗi liên quan đến avatar/khung ảnh
+ */
 data class ProfileUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,

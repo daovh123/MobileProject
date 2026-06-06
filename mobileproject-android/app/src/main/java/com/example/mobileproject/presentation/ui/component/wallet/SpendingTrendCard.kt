@@ -1,3 +1,9 @@
+/**
+ * Component hiển thị xu hướng chi tiêu bằng biểu đồ đường.
+ *
+ * Cung cấp [SpendingTrendCard] composable với 2 đường biểu thị
+ * thu nhập (xanh lá) và chi tiêu (đỏ) qua các tháng.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.Canvas
@@ -16,6 +22,20 @@ import androidx.compose.ui.unit.dp
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.SpendingTrend
 
+/**
+ * Card hiển thị xu hướng chi tiêu qua các tháng bằng biểu đồ đường.
+ *
+ * Component này render:
+ * - Tiêu đề "Xu hướng chi tiêu".
+ * - Biểu đồ đường với 2 đường: thu nhập (xanh lá - tertiary) và chi tiêu (đỏ - primary).
+ * - Trục X biểu thị thời gian, trục Y biểu thị số tiền.
+ * - Nhãn tháng đầu và tháng cuối ở dưới cùng.
+ *
+ * Nếu danh sách rỗng, hiển thị thông báo "Chưa có dữ liệu xu hướng".
+ *
+ * @param trends Danh sách [SpendingTrend] chứa dữ liệu thu nhập/chi tiêu theo tháng.
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun SpendingTrendCard(
     trends: List<SpendingTrend>,

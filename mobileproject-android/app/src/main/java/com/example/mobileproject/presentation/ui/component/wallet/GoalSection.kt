@@ -1,3 +1,9 @@
+/**
+ * Component hiển thị danh sách mục tiêu tiết kiệm.
+ *
+ * Cung cấp [GoalSection] composable hiển thị tối đa 2 mục tiêu
+ * với nút "Xem tất cả" để điều hướng đến danh sách đầy đủ.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.layout.*
@@ -15,6 +21,20 @@ import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 
+/**
+ * Hiển thị danh sách mục tiêu tiết kiệm trên màn hình ví.
+ *
+ * Component này render tối đa 2 mục tiêu tiết kiệm, sắp xếp theo:
+ * 1. Mục tiêu chưa đạt được hiển thị trước (đã đạt ở dưới cùng).
+ * 2. Trong cùng trạng thái, mục tiêu có hạn gần nhất hiển thị trước.
+ *
+ * Nếu danh sách trống, hiển thị thông báo "Chưa có mục tiêu tiết kiệm".
+ * Có nút "Xem tất cả" để điều hướng đến danh sách đầy đủ.
+ *
+ * @param goals Danh sách [SavingGoal] cần hiển thị.
+ * @param onSeeAllClick Callback khi người dùng nhấn "Xem tất cả".
+ * @param modifier [Modifier] tùy chỉnh.
+ */
 @Composable
 fun GoalSection(
     goals: List<SavingGoal>,

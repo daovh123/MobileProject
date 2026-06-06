@@ -1,3 +1,10 @@
+/**
+ * Cấu hình điều hướng tập trung cho ứng dụng.
+ *
+ * Cung cấp [NavigationItem] data class và [NavigationConfig] object
+ * với danh sách 5 tab: Home, Explore, Wallet, Memories, Profile.
+ * Đảm bảo tính nhất quán trên tất cả màn hình sử dụng bottom navigation.
+ */
 package com.example.mobileproject.presentation.ui.navigation
 
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -22,6 +29,14 @@ import com.example.mobileproject.presentation.ui.icons.LucideWallet
  * Centralized navigation configuration for Material Design 3 consistency
  * Ensures all navigation items are synchronized across the entire app
  */
+/**
+ * Cấu hình item điều hướng cho bottom navigation bar.
+ *
+ * @param route Route identifier (ví dụ: "home", "explore").
+ * @param labelRes Resource ID của văn bản nhãn hiển thị.
+ * @param icon [ImageVector] hiển thị trên tab.
+ * @param contentDescriptionRes Resource ID của content description cho accessibility.
+ */
 data class NavigationItem(
     val route: String,
     val labelRes: Int,
@@ -29,6 +44,16 @@ data class NavigationItem(
     val contentDescriptionRes: Int,
 )
 
+/**
+ * Cấu hình điều hướng tập trung cho toàn bộ ứng dụng.
+ *
+ * Chứa danh sách [NavigationItem] cho bottom navigation bar,
+ * đảm bảo tính nhất quán trên tất cả màn hình.
+ *
+ * Thứ tự tab: Home → Explore → Wallet → Memories → Profile.
+ *
+ * Cung cấp phương thức [getItemByRoute] để tra cứu item theo route.
+ */
 object NavigationConfig {
     val navigationItems = listOf(
         NavigationItem(
@@ -63,6 +88,12 @@ object NavigationConfig {
         ),
     )
 
+    /**
+     * Tìm [NavigationItem] theo route.
+     *
+     * @param route Route cần tìm (ví dụ: "home").
+     * @return [NavigationItem] tương ứng, hoặc null nếu không tìm thấy.
+     */
     fun getItemByRoute(route: String): NavigationItem? =
         navigationItems.firstOrNull { it.route == route }
 }

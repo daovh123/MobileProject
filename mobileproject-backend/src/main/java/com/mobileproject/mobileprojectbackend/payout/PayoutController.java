@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST Controller quản lý yêu cầu rút tiền (payout) từ ví chung qua SePay.
+ *
+ * <p>Base path: {@code /api/v1/payouts}</p>
+ */
 @RestController
 @RequestMapping("/api/v1/payouts")
 public class PayoutController {
@@ -32,6 +37,14 @@ public class PayoutController {
         this.sePayProperties = sePayProperties;
     }
 
+    /**
+     * Tạo yêu cầu rút tiền mới.
+     *
+     * <p><b>POST</b> {@code /api/v1/payouts}</p>
+     *
+     * @param request {@link CreatePayoutRequest} với validation Jakarta Bean Validation
+     * @return {@link PayoutResponse} với thông tin yêu cầu; 400 nếu số dư không đủ hoặc lỗi
+     */
     @PostMapping
     public ResponseEntity<PayoutResponse> createPayout(@Valid @RequestBody CreatePayoutRequest request) {
         PayoutResponse response = payoutService.createPayoutRequest(request);
@@ -41,6 +54,14 @@ public class PayoutController {
         return ResponseEntity.badRequest().body(response);
     }
 
+    /**
+     * Lấy thông tin yêu cầu rút tiền theo ID.
+     *
+     * <p><b>GET</b> {@code /api/v1/payouts/{id}}</p>
+     *
+     * @param id ID yêu cầu rút tiền (path variable)
+     * @return {@link PayoutResponse} nếu tìm thấy; 404 nếu không tồn tại
+     */
     @GetMapping("/{id}")
     public ResponseEntity<PayoutResponse> getPayout(@PathVariable String id) {
         return payoutService.findPayoutRequest(id)
@@ -48,6 +69,19 @@ public class PayoutController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * Webhook endpoint nhận callback từ SePay khi giao dịch rút tiền được xác nhận.
+     *
+     * <p><b>POST</b> {@code /api/v1/payouts/sepay/webhook}</p>
+     *
+     * <p><b>Authentication:</b> Kiểm tra header {@code Authorization: Apikey <key>}
+     * khớp với cấu hình {@code sepay.api-key}. Nếu không cấu hình → cho phép tất cả.</p>
+     *
+     * @param authorization header Authorization (optional)
+     * @param request       {@link SePayWebhookRequest} payload từ SePay
+     * @return {@link SePayWebhookResponse} với {@code success: true/false};
+     *         401 nếu unauthorized; 400 nếu webhook bị reject
+     */
     @PostMapping("/sepay/webhook")
     public ResponseEntity<SePayWebhookResponse> handleWebhook(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,

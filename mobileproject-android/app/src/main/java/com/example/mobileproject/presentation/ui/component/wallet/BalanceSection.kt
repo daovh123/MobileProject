@@ -1,3 +1,9 @@
+/**
+ * Component hiển thị số dư ví tình yêu.
+ *
+ * Cung cấp [BalanceSection] composable với gradient background hồng ấm
+ * và [formatSimpleAmount] utility để định dạng số tiền.
+ */
 package com.example.mobileproject.presentation.ui.component.wallet
 
 import androidx.compose.foundation.background
@@ -20,6 +26,17 @@ import androidx.compose.ui.unit.sp
 import com.example.mobileproject.presentation.ui.theme.AppTheme
 import java.text.DecimalFormat
 
+/**
+ * Hiển thị số dư ví tình yêu với gradient background đặc trưng.
+ *
+ * Component này render một [ElevatedCard] chứa gradient hồng ấm
+ * (từ [ExtendedColorScheme.balanceCardGradient]), hiển thị tiêu đề
+ * "VÍ TÌNH YÊU" và số dư hiện tại được định dạng theo kiểu Việt Nam
+ * (phân cách bằng dấu phẩy).
+ *
+ * @param balance Số dư hiện tại của ví, đơn vị là VND.
+ * @param modifier [Modifier] tùy chỉnh cho card bên ngoài.
+ */
 @Composable
 fun BalanceSection(
     balance: Long,
@@ -61,6 +78,14 @@ fun BalanceSection(
     }
 }
 
+/**
+ * Định dạng số tiền thành chuỗi dễ đọc với dấu phân cách hàng nghìn.
+ *
+ * Ví dụ: 1000000L -> "1,000,000"
+ *
+ * @param amount Số tiền cần định dạng.
+ * @return Chuỗi đã định dạng.
+ */
 fun formatSimpleAmount(amount: Long): String {
     val formatter = DecimalFormat("#,###")
     return formatter.format(amount)

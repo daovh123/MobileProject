@@ -1,4 +1,21 @@
-﻿package com.example.mobileproject.presentation.ui.screen.wallet
+﻿/**
+ * # SavingGoalsScreen - Màn hình danh sách mục tiêu tiết kiệm
+ *
+ * Hiển thị tất cả mục tiêu tiết kiệm (SavingGoal) của người dùng.
+ * Danh sách được sắp xếp: mục tiêu chưa hoàn thành lên trước, sau đó theo deadline gần nhất.
+ *
+ * ## ViewModel bindings
+ * - [SavingGoalViewModel]: tải danh sách mục tiêu qua loadGoals()
+ *
+ * ## Layout
+ * - Scaffold với TopAppBar "Mục tiêu tiết kiệm"
+ * - LazyColumn hiển thị GoalCard cho từng mục tiêu
+ * - Loading state: CircularProgressIndicator khi đang tải lần đầu
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại màn hình trước
+ */
+package com.example.mobileproject.presentation.ui.screen.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,6 +39,13 @@ import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 
+/**
+ * Màn hình danh sách mục tiêu tiết kiệm.
+ * Hiển thị tất cả SavingGoal, sắp xếp: chưa hoàn thành trước, theo deadline.
+ *
+ * @param onNavigateBack quay lại
+ * @param viewModel SavingGoalViewModel
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SavingGoalsScreen(
@@ -31,6 +55,7 @@ fun SavingGoalsScreen(
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
+    // Tải danh sách mục tiêu khi composable mount
     LaunchedEffect(Unit) {
         viewModel.loadGoals()
     }

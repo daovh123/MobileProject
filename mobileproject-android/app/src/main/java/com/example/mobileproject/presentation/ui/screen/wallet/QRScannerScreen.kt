@@ -1,3 +1,26 @@
+/**
+ * # QRScannerScreen - Màn hình quét mã QR
+ *
+ * Cho phép người dùng quét mã QR bằng camera hoặc chọn ảnh từ thư viện.
+ * Sử dụng CameraX cho preview camera realtime và MLKit Barcode Scanning để decode QR.
+ *
+ * ## Tính năng
+ * - **CameraX Preview**: hiển thị camera realtime với [PreviewView] trong AndroidView
+ * - **MLKit Barcode Scanning**: phân tích từng frame (ImageAnalysis) để tìm mã QR
+ * - **Chọn ảnh từ thư viện**: quét QR từ ảnh có sẵn qua ActivityResultContracts.GetContent
+ * - **Quyền camera**: tự động yêu cầu quyền CAMERA khi chưa cấp
+ * - **Nhập thủ công**: nút chuyển sang nhập mã bằng tay
+ *
+ * ## Key integrations
+ * - **CameraX**: ProcessCameraProvider.bindToLifecycle với Preview + ImageAnalysis use cases
+ * - **MLKit**: BarcodeScannerOptions chỉ định FORMAT_QR_CODE, phân tích frame trong single thread executor
+ * - **AndroidView**: nhét PreviewView (View system) vào Compose tree
+ *
+ * ## Navigation triggers
+ * - onNavigateBack: quay lại
+ * - onManualInput: chuyển sang nhập thủ công
+ * - onScanned(rawValue): trả kết quả QR raw về màn hình trước (payout/transfer)
+ */
 package com.example.mobileproject.presentation.ui.screen.wallet
 
 import android.Manifest
@@ -62,8 +85,12 @@ import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 
 /**
- * Quet QR that: CameraX + MLKit.
- * Tra ve rawValue cho man truoc (payout/transfer).
+ * Màn hình quét mã QR bằng CameraX + MLKit.
+ * Trả rawValue về màn hình trước (payout/transfer) qua callback onScanned.
+ *
+ * @param onNavigateBack quay lại
+ * @param onManualInput chuyển sang nhập thủ công
+ * @param onScanned callback trả raw QR string khi quét thành công
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,15 +103,18 @@ fun QRScannerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val colorScheme = MaterialTheme.colorScheme
 
+    // State kiểm tra quyền camera, trạng thái scanning, và thông báo lỗi
     var hasCameraPermission by remember { mutableStateOf(hasCameraPermission(context)) }
     var isScanningEnabled by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Launcher yêu cầu quyền CAMERA, cập nhật state khi người dùng cấp/từ chối
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted -> hasCameraPermission = granted },
     )
 
+    // Launcher chọn ảnh từ thư viện, quét QR từ ảnh được chọn bằng MLKit
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
@@ -205,6 +235,17 @@ fun QRScannerScreen(
     }
 }
 
+/**
+ * Composable hiển thị CameraX preview với MLKit QR scanning.
+ * Sử dụng AndroidView để nhét PreviewView vào Compose tree.
+ * ImageAnalysis phân tích từng frame để tìm mã QR.
+ *
+ * @param isEnabled bật/tắt scanning (tắt sau khi tìm thấy QR)
+ * @param onQrFound callback khi tìm thấy QR
+ * @param onError callback khi có lỗi
+ * @param context Android context
+ * @param lifecycleOwner lifecycle owner cho CameraX bindToLifecycle
+ */
 @Composable
 private fun CameraQrPreview(
     isEnabled: Boolean,
@@ -213,12 +254,10 @@ private fun CameraQrPreview(
     context: Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
 ) {
+    // State để giữ reference đến PreviewView, cần thiết cho CameraX binding
     var previewView: PreviewView? by remember { mutableStateOf(null) }
 
-    LaunchedEffect(Unit) {
-        // no-op; binding happens in AndroidView factory/update
-    }
-
+    // AndroidView: bridge giữa Compose và View system, tạo PreviewView cho camera
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { ctx ->
@@ -228,20 +267,26 @@ private fun CameraQrPreview(
             }
         },
         update = { pv ->
+            // Bỏ qua nếu scanning đã tắt (đã tìm thấy QR)
             if (!isEnabled) return@AndroidView
 
+            // CameraX: lấy ProcessCameraProvider bất đồng bộ
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             cameraProviderFuture.addListener(
                 {
                     val cameraProvider = cameraProviderFuture.get()
+                    // CameraX Preview use case: hiển thị camera feed
                     val preview = Preview.Builder().build().also { it.setSurfaceProvider(pv.surfaceProvider) }
 
+                    // MLKit Barcode Scanner: chỉ quét QR code format
                     val executor = Executors.newSingleThreadExecutor()
                     val options = BarcodeScannerOptions.Builder()
                         .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
                         .build()
                     val scanner = BarcodeScanning.getClient(options)
 
+                    // CameraX ImageAnalysis use case: phân tích frame để tìm QR
+                    // STRATEGY_KEEP_ONLY_LATEST: chỉ giữ frame mới nhất, drop frame cũ
                     val analysis = ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build()
@@ -255,6 +300,7 @@ private fun CameraQrPreview(
                     }
 
                     try {
+                        // Bind Preview + ImageAnalysis vào lifecycle, sử dụng camera sau
                         cameraProvider.unbindAll()
                         cameraProvider.bindToLifecycle(
                             lifecycleOwner,
@@ -272,6 +318,16 @@ private fun CameraQrPreview(
     )
 }
 
+/**
+ * Phân tích từng frame camera để tìm mã QR.
+ * Sử dụng MLKit BarcodeScanner với InputImage từ ImageProxy.
+ * Tự động đóng imageProxy sau khi xử lý xong.
+ *
+ * @param imageProxy frame ảnh từ CameraX ImageAnalysis
+ * @param scanner MLKit BarcodeScanner instance
+ * @param onQrFound callback khi tìm thấy QR raw value
+ * @param onError callback khi có lỗi
+ */
 private fun analyzeFrameForQr(
     imageProxy: ImageProxy,
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
@@ -300,6 +356,17 @@ private fun analyzeFrameForQr(
         }
 }
 
+/**
+ * Quét QR từ ảnh trong thư viện (URI).
+ * Hỗ trợ cả Android 28+ (ImageDecoder) và phiên bản cũ hơn (MediaStore).
+ * Sử dụng MLKit BarcodeScanner để decode.
+ *
+ * @param context Android context
+ * @param uri URI của ảnh được chọn
+ * @param onFound callback khi tìm thấy QR
+ * @param onNotFound callback khi ảnh không chứa QR
+ * @param onError callback khi có lỗi
+ */
 private fun scanQrFromImageUri(
     context: Context,
     uri: Uri,
@@ -335,6 +402,9 @@ private fun scanQrFromImageUri(
     }
 }
 
+/**
+ * Kiểm tra quyền CAMERA đã được cấp chưa.
+ */
 private fun hasCameraPermission(context: Context): Boolean {
     return ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 }

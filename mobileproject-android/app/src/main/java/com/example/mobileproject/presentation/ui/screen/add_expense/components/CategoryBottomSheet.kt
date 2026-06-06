@@ -25,6 +25,20 @@ import androidx.compose.ui.unit.sp
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.model.ExpenseCategory
 
+/**
+ * Bottom sheet chọn danh mục chi tiêu – hiển thị đầy đủ tất cả danh mục
+ * được nhóm theo loại (Essentials/Lifestyle/Financials).
+ *
+ * Cấu trúc UI:
+ * - Header: tiêu đề + nút đóng.
+ * - SearchBar: ô tìm kiếm danh mục (placeholder, chưa filter).
+ * - LazyColumn: danh mục nhóm theo [ExpenseCategory.CategoryType],
+ *   mỗi nhóm có header label + các [CategoryRowItem].
+ *
+ * @param selectedCategory danh mục đang chọn.
+ * @param onCategorySelected callback khi chọn danh mục.
+ * @param onDismiss callback khi đóng bottom sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryBottomSheet(

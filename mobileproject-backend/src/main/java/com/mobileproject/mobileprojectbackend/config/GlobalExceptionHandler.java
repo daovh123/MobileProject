@@ -18,11 +18,37 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+/**
+ * Xử lý ngoại lệ toàn cục (Global Exception Handler) cho tất cả các controller.
+ *
+ * <p>Kế thừa {@link ResponseEntityExceptionHandler} để xử lý các exception chuẩn của Spring MVC,
+ * đồng thời bổ sung handler cho các exception chưa được xử lý.</p>
+ *
+ * <p>Các loại exception được xử lý:</p>
+ * <ul>
+ *   <li><b>HttpMessageNotReadableException</b> - Request body JSON sai định dạng → HTTP 400</li>
+ *   <li><b>MethodArgumentNotValidException</b> - Validation {@code @Valid} thất bại → HTTP 400,
+ *       trả về danh sách lỗi theo từng field</li>
+ *   <li><b>Exception (generic)</b> - Các exception chưa xử lý → HTTP 500,
+ *       log lỗi đầy đủ nhưng không lộ chi tiết implementation cho client</li>
+ * </ul>
+ *
+ * <p>Response body luôn chứa: {@code timestamp}, {@code status}, {@code error}, {@code message}, {@code path}.</p>
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    /**
+     * Xử lý lỗi parse JSON request body (malformed JSON, sai type, ...).
+     *
+     * @param ex      exception gốc
+     * @param headers HTTP headers
+     * @param status  HTTP status code
+     * @param request web request hiện tại
+     * @return ResponseEntity chứa thông tin lỗi chi tiết
+     */
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
             HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -37,6 +63,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, headers, status);
     }
 
+    /**
+     * Xử lý lỗi validation {@code @Valid} trên request body.
+     * Trả về danh sách lỗi chi tiết theo từng field trong key {@code fields}.
+     *
+     * @param ex      exception validation
+     * @param headers HTTP headers
+     * @param status  HTTP status code
+     * @param request web request hiện tại
+     * @return ResponseEntity chứa map các lỗi field-level
+     */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
             HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -55,6 +91,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, headers, status);
     }
 
+    /**
+     * Xử lý tất cả các exception chưa được xử lý cụ thể.
+     * Log lỗi đầy đủ (stack trace) nhưng chỉ trả message chung chung cho client.
+     *
+     * @param ex      exception gốc
+     * @param request web request hiện tại
+     * @return ResponseEntity với HTTP 500 và thông tin lỗi an toàn
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleUnhandledException(Exception ex, WebRequest request) {
         String path = ((ServletWebRequest) request).getRequest().getRequestURI();

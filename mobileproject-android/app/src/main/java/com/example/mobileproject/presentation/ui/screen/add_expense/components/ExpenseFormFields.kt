@@ -21,6 +21,19 @@ import com.example.mobileproject.R
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Các trường nhập liệu cho form chi tiêu: ghi chú và ngày.
+ *
+ * Cấu trúc UI:
+ * - Trường "Ghi chú": OutlinedTextField với leading icon Edit, bo góc 24dp.
+ * - Trường "Ngày": Surface clickable hiển thị ngày đã chọn (hoặc "Hôm nay"),
+ *   mở DatePickerDialog native của Android khi chạm.
+ *
+ * @param note nội dung ghi chú hiện tại.
+ * @param onNoteChange callback khi thay đổi ghi chú.
+ * @param date thời gian chọn (epoch millis).
+ * @param onDateChange callback khi chọn ngày mới (epoch millis).
+ */
 @Composable
 fun ExpenseFormFields(
     note: String,

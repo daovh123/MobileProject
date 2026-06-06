@@ -5,6 +5,10 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
+/**
+ * Cấu hình WebSocket cho module chia sẻ vị trí.
+ * Đăng ký handler tại endpoint {@code /ws/map/share/{coupleId}}.
+ */
 @Configuration
 @EnableWebSocket
 public class MapWebSocketConfig implements WebSocketConfigurer {

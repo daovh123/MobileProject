@@ -6,6 +6,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/**
+ * Entity lưu địa điểm yêu thích của user.
+ * Ánh xạ tới collection {@code user_favorites}.
+ *
+ * <p><strong>Unique compound index:</strong> {@code userId + placeId} đảm bảo
+ * mỗi user chỉ có thể yêu thích một địa điểm đúng một lần.</p>
+ */
 @Document(collection = "user_favorites")
 @CompoundIndex(name = "user_place_idx", def = "{'userId': 1, 'placeId': 1}", unique = true)
 public class UserFavorite {

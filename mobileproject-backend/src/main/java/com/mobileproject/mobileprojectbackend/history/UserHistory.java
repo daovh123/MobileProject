@@ -5,6 +5,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/**
+ * Entity lưu lịch sử xem địa điểm của user.
+ * Ánh xạ tới collection {@code user_history}.
+ *
+ * <p>Mỗi lần user xem chi tiết một địa điểm, một bản ghi mới được tạo.
+ * Không có index unique – user có thể xem cùng một địa điểm nhiều lần.</p>
+ */
 @Document(collection = "user_history")
 public class UserHistory {
 

@@ -1,3 +1,9 @@
+/**
+ * Service xử lý tin nhắn FCM cho ứng dụng.
+ *
+ * Xử lý chat_message, payment, transaction, goal, memory và các loại
+ * thông báo khác. Kiểm tra tùy chọn người dùng trước khi hiển thị.
+ */
 package com.example.mobileproject.presentation.notification
 
 import android.app.NotificationChannel
@@ -22,6 +28,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Service xử lý tin nhắn FCM (Firebase Cloud Messaging) cho ứng dụng.
+ *
+ * Xử lý các loại thông báo:
+ * - **chat_message**: Tin nhắn chat. Kiểm tra [ChatNotificationGate] để quyết định
+ *   hiển thị hệ thống notification, in-app notification, hoặc ẩn hoàn toàn.
+ * - **payment**: Thông báo nạp tiền.
+ * - **transaction**: Thông báo chi tiêu.
+ * - **goal_created/updated/completed/goal**: Thông báo mục tiêu tiết kiệm.
+ * - **partner_memory/memory**: Thông báo kỷ niệm.
+ * - **other**: Hiển thị notification chung nếu có payload.
+ *
+ * Mỗi loại thông báo kiểm tra [NotificationPreferencesStore] để xác định
+ * người dùng có bật thông báo cho loại đó không.
+ *
+ * Khi nhận token mới, tự động đăng ký với backend nếu người dùng đã đăng nhập.
+ */
 @AndroidEntryPoint
 class ChatFirebaseMessagingService : FirebaseMessagingService() {
 

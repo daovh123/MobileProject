@@ -12,6 +12,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * UI state cho màn hình danh sách yêu thích.
+ *
+ * @property isLoading Đang tải dữ liệu từ server
+ * @property favorites Danh sách địa điểm yêu thích
+ * @property errorMessage Thông báo lỗi nếu có
+ * @property favoriteIds Set chứa ID các địa điểm đã được đánh dấu yêu thích (dùng cho quick lookup)
+ * @property toggleInProgress Set chứa ID các địa điểm đang trong quá trình toggle (tránh double-click)
+ */
 data class FavoriteUiState(
     val isLoading: Boolean = false,
     val favorites: List<Place> = emptyList(),
@@ -20,14 +29,35 @@ data class FavoriteUiState(
     val toggleInProgress: Set<String> = emptySet(),
 )
 
+/**
+ * ViewModel phục vụ màn hình quản lý danh sách địa điểm yêu thích.
+ *
+ * Xử lý business logic:
+ * - Tải danh sách địa điểm yêu thích từ [FavoriteRepository]
+ * - Toggle yêu thích/bỏ yêu thích một địa điểm
+ * - Kiểm tra trạng thái yêu thích của một địa điểm cụ thể
+ * - Theo dõi trạng thái đang toggle để disable UI, tránh gọi API trùng lặp
+ *
+ * Optimistic update: cập nhật favoriteIds và favorites ngay trong UI
+ * sau khi API toggle thành công, không cần reload toàn bộ danh sách.
+ */
 @HiltViewModel
 class FavoriteViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
 ) : ViewModel() {
 
+    // StateFlow pattern: MutableStateFlow nội bộ + expose read-only asStateFlow
     private val _uiState = MutableStateFlow(FavoriteUiState())
     val uiState: StateFlow<FavoriteUiState> = _uiState.asStateFlow()
 
+    /**
+     * Tải danh sách địa điểm yêu thích từ server.
+     *
+     * Kiểm tra token trước khi gọi API. Cập nhật cả favorites list
+     * và favoriteIds set để UI có thể lookup nhanh bằng ID.
+     *
+     * @param token JWT token xác thực người dùng
+     */
     fun loadFavorites(token: String) {
         if (token.isBlank()) {
             _uiState.update {
@@ -66,6 +96,17 @@ class FavoriteViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Toggle trạng thái yêu thích của một địa điểm.
+     *
+     * Thêm placeId vào toggleInProgress trước khi gọi API để disable UI.
+     * Sau khi API trả về, cập nhật favoriteIds (thêm/bớt) và favorites list
+     * (loại bỏ nếu bỏ yêu thích) ngay lập tức.
+     * Nếu lỗi, chỉ xóa placeId khỏi toggleInProgress.
+     *
+     * @param token JWT token xác thực người dùng
+     * @param placeId ID địa điểm cần toggle yêu thích
+     */
     fun toggleFavorite(token: String, placeId: String) {
         if (token.isBlank() || placeId.isBlank()) {
             return
@@ -106,6 +147,14 @@ class FavoriteViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Kiểm tra một địa điểm có nằm trong danh sách yêu thích hay không.
+     *
+     * Cập nhật favoriteIds trong UI state dựa trên kết quả từ server.
+     *
+     * @param token JWT token xác thực người dùng
+     * @param placeId ID địa điểm cần kiểm tra
+     */
     fun checkFavorite(token: String, placeId: String) {
         if (token.isBlank() || placeId.isBlank()) {
             return

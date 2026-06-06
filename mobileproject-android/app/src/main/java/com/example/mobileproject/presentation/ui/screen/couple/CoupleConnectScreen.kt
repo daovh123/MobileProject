@@ -1,3 +1,25 @@
+/**
+ * CoupleConnectScreen - Màn hình kết nối cặp đôi (phiên bản mới với background ảnh).
+ *
+ * Mục đích:
+ * - Cho phép người dùng kết nối với đối phương qua mã couple.
+ * - Hiển thị mã couple của mình để chia sẻ.
+ * - Nhận và phản hồi yêu cầu kết nối từ đối phương.
+ * - Hỗ trợ polling tự động để kiểm tra trạng thái kết nối.
+ *
+ * Layout:
+ * - [Box] với background ảnh full-screen + gradient overlay.
+ * - [LazyColumn] cuộn dọc chứa: header, card mã couple, divider, card nhập mã, incoming request.
+ * - Sử dụng glass effect (Surface trong suốt + border) cho các card.
+ *
+ * ViewModel: [CoupleViewModel] - quan sát uiState (myCoupleCode, paired, incoming/outgoing status).
+ *
+ * Được host bởi: [CoupleConnectActivity]
+ *
+ * Navigation:
+ * - Kết nối thành công (paired = true) → onContinue → [CoupleConnectedActivity].
+ * - "Để sau" → onContinue (bỏ qua kết nối).
+ */
 package com.example.mobileproject.presentation.ui.screen.couple
 
 import androidx.compose.animation.core.RepeatMode
@@ -61,6 +83,32 @@ import com.example.mobileproject.presentation.ui.icons.LucideShare2
 import com.example.mobileproject.presentation.ui.theme.AppTheme
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 
+/**
+ * CoupleConnectScreen - Màn hình kết nối cặp đôi (phiên bản mới với background ảnh).
+ *
+ * Mục đích:
+ * - Cho phép người dùng kết nối với đối phương qua mã couple.
+ * - Hiển thị mã couple của mình để chia sẻ.
+ * - Nhận và phản hồi yêu cầu kết nối từ đối phương.
+ * - Hỗ trợ polling tự động để kiểm tra trạng thái kết nối.
+ *
+ * Layout:
+ * - [Box] với background ảnh full-screen + gradient overlay.
+ * - [LazyColumn] cuộn dọc chứa: header, card mã couple, divider, card nhập mã, incoming request.
+ * - Sử dụng glass effect (Surface trong suốt + border) cho các card.
+ *
+ * ViewModel: [CoupleViewModel] - quan sát uiState (myCoupleCode, paired, incoming/outgoing status).
+ *
+ * Được host bởi: [CoupleConnectActivity]
+ *
+ * Navigation:
+ * - Kết nối thành công (paired = true) → onContinue → [CoupleConnectedActivity].
+ * - "Để sau" → onContinue (bỏ qua kết nối).
+ *
+ * @param accessToken Token xác thực để gọi API.
+ * @param coupleViewModel ViewModel quản lý logic kết nối cặp đôi.
+ * @param onContinue Callback khi kết nối thành công hoặc bỏ qua.
+ */
 @Composable
 fun CoupleConnectContent(
     accessToken: String,
@@ -73,10 +121,13 @@ fun CoupleConnectContent(
     val colorScheme = MaterialTheme.colorScheme
     val extendedColors = AppTheme.extendedColors
 
+    // LaunchedEffect: bắt đầu polling couple status khi có accessToken.
+    // Polling tự động kiểm tra trạng thái kết nối định kỳ.
     LaunchedEffect(accessToken) {
         coupleViewModel.startPolling(accessToken)
     }
 
+    // LaunchedEffect: theo dõi paired. Khi kết nối thành công → chuyển sang màn hình tiếp theo.
     LaunchedEffect(uiState.paired) {
         if (uiState.paired) {
             onContinue()
@@ -93,6 +144,8 @@ fun CoupleConnectContent(
         cursorColor = colorScheme.primary,
     )
 
+    // rememberInfiniteTransition: animation tim đập cho icon heart.
+    // Scale từ 1.0 → 1.10 lặp vô hạn, tốc độ 1000ms.
     val pulseTransition = rememberInfiniteTransition(label = "heart-couple")
     val pulseScale by pulseTransition.animateFloat(
         initialValue = 1f,

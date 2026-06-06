@@ -13,6 +13,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Service xử lý lịch sử xem địa điểm.
+ *
+ * <p><strong>Business logic:</strong></p>
+ * <ul>
+ *   <li>Ghi nhận lượt xem: xác thực place tồn tại qua cache → lưu bản ghi mới</li>
+ *   <li>Lấy lịch sử: query theo userId → batch load place từ cache → trả về danh sách PlaceDto</li>
+ *   <li>Xóa lịch sử: xóa toàn bộ bản ghi theo userId</li>
+ * </ul>
+ *
+ * <p>Sử dụng {@link PlaceCacheService} để load thông tin địa điểm từ cache,
+ * tránh N+1 query MongoDB.</p>
+ */
 @Service
 @RequiredArgsConstructor
 public class HistoryService {
@@ -20,6 +33,14 @@ public class HistoryService {
     private final UserHistoryRepository historyRepository;
     private final PlaceCacheService placeCacheService;
 
+    /**
+     * Ghi nhận lượt xem địa điểm.
+     *
+     * @param userId  ID người xem
+     * @param placeId ID địa điểm
+     * @return kết quả {"success": true}
+     * @throws ResponseStatusException 404 nếu place không tồn tại
+     */
     public Map<String, Object> recordView(String userId, String placeId) {
         if (placeCacheService.findById(placeId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found");
@@ -29,6 +50,9 @@ public class HistoryService {
         return Map.of("success", true, "message", "View recorded");
     }
 
+    /**
+     * Lấy lịch sử xem địa điểm của user (mới nhất trước).
+     */
     public HistoryListResponse getUserHistory(String userId) {
         List<UserHistory> histories = historyRepository.findByUserIdOrderByViewedAtDesc(userId);
         List<String> placeIds = histories.stream().map(UserHistory::getPlaceId).toList();
@@ -44,6 +68,9 @@ public class HistoryService {
         return new HistoryListResponse(true, "History retrieved", places);
     }
 
+    /**
+     * Xóa toàn bộ lịch sử xem của user.
+     */
     public Map<String, Object> clearHistory(String userId) {
         historyRepository.deleteByUserId(userId);
         return Map.of("success", true, "message", "History cleared");

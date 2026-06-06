@@ -22,6 +22,20 @@ import com.mobileproject.mobileprojectbackend.analytics.dto.CategoryBreakdownIte
 import com.mobileproject.mobileprojectbackend.analytics.dto.MonthlyTrendItem;
 import com.mobileproject.mobileprojectbackend.analytics.dto.SpendingTrendItem;
 
+/**
+ * Service xử lý logic phân tích tài chính cho cặp đôi.
+ *
+ * <p><b>Nghiệp vụ chính:</b></p>
+ * <ul>
+ *   <li>Phân tích chi tiêu theo danh mục (category breakdown)</li>
+ *   <li>Xu hướng chi tiêu theo ngày trong tháng (spending trend)</li>
+ *   <li>Chi tiêu theo danh mục cho tháng cụ thể (expense by category)</li>
+ *   <li>Xu hướng thu/chi theo tháng trong năm (monthly trend)</li>
+ * </ul>
+ *
+ * <p><b>Triển khai:</b> Sử dụng MongoDB Aggregation Pipeline qua {@link MongoTemplate}
+ * để tính toán trực tiếp trên database, đảm bảo hiệu năng với dữ liệu lớn.</p>
+ */
 @Service
 public class AnalyticsService {
 
@@ -31,6 +45,16 @@ public class AnalyticsService {
         this.mongoTemplate = mongoTemplate;
     }
 
+    /**
+     * Phân tích chi tiêu theo danh mục với bộ lọc tùy chọn.
+     *
+     * <p>Sử dụng MongoDB aggregation: match EXPENSE → group by category → sum amount.</p>
+     *
+     * @param coupleId  ID cặp đôi (optional, null = tất cả)
+     * @param startDate thời điểm bắt đầu (optional)
+     * @param endDate   thời điểm kết thúc (optional)
+     * @return danh sách {@link CategoryBreakdownItem} với tổng tiền theo từng danh mục
+     */
     public List<CategoryBreakdownItem> getCategoryBreakdown(String coupleId, Instant startDate, Instant endDate) {
         System.out.println("=== DEBUG getCategoryBreakdown ===");
         System.out.println("coupleId: " + coupleId);
@@ -65,6 +89,17 @@ public class AnalyticsService {
         return results.getMappedResults();
     }
 
+    /**
+     * Lấy xu hướng chi tiêu theo ngày trong một tháng cụ thể.
+     *
+     * <p>Sử dụng MongoDB aggregation để group EXPENSE transactions theo ngày,
+     * trả về mảng đủ số ngày trong tháng (ngày không có giao dịch = 0).</p>
+     *
+     * @param coupleId ID cặp đôi (optional)
+     * @param year     năm
+     * @param month    tháng (1–12)
+     * @return danh sách {@link SpendingTrendItem} cho mỗi ngày trong tháng
+     */
     public List<SpendingTrendItem> getSpendingTrend(String coupleId, Integer year, Integer month) {
         if (year == null || month == null) {
             return List.of();
@@ -140,6 +175,17 @@ public class AnalyticsService {
         return trend;
     }
 
+    /**
+     * Lấy chi tiêu theo danh mục cho một tháng cụ thể (timezone Asia/Ho_Chi_Minh).
+     *
+     * <p>Khác với {@link #getCategoryBreakdown} – phương thức này bắt buộc có coupleId
+     * và sử dụng múi giờ Việt Nam để xác định khoảng thời gian.</p>
+     *
+     * @param coupleId ID cặp đôi (bắt buộc)
+     * @param month    tháng (1–12)
+     * @param year     năm
+     * @return danh sách {@link CategoryBreakdownItem}
+     */
     public List<CategoryBreakdownItem> getExpenseByCategory(String coupleId, int month, int year) {
         System.out.println("=== DEBUG getExpenseByCategory ===");
         System.out.println("coupleId: " + coupleId);
@@ -181,6 +227,16 @@ public class AnalyticsService {
         return list != null ? list : new ArrayList<>();
     }
 
+    /**
+     * Lấy xu hướng thu/chi theo tháng trong một năm (timezone Asia/Ho_Chi_Minh).
+     *
+     * <p>Sử dụng MongoDB aggregation: match theo năm → group theo (month, type) → sum amount.
+     * Trả về đủ 12 tháng, tháng không có giao dịch = 0.</p>
+     *
+     * @param coupleId ID cặp đôi (bắt buộc)
+     * @param year     năm
+     * @return danh sách {@link MonthlyTrendItem} cho mỗi tháng (1–12)
+     */
     public List<MonthlyTrendItem> getMonthlyTrend(String coupleId, int year) {
         System.out.println("=== DEBUG getMonthlyTrend ===");
         System.out.println("coupleId: " + coupleId);

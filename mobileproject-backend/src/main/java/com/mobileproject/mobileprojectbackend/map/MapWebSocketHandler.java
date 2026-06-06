@@ -17,6 +17,29 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+/**
+ * WebSocket handler xử lý chia sẻ vị trí real-time giữa cặp đôi.
+ *
+ * <p><strong>Message protocol (JSON):</strong></p>
+ * <ul>
+ *   <li><b>Client → Server:</b>
+ *     {@code {"type":"location","lat":10.77,"lng":106.69,"updatedAt":"2024-01-01T00:00:00Z"}}
+ *   </li>
+ *   <li><b>Server → Client:</b>
+ *     <ul>
+ *       <li>{@code {"type":"partner_location","latitude":...,"longitude":...,"updatedAt":"..."}} – vị trí mới của partner</li>
+ *       <li>{@code {"type":"partner_status","online":true/false,"updatedAt":"..."}} – trạng thái online của partner</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ *
+ * <p><strong>Connection lifecycle:</strong></p>
+ * <ol>
+ *   <li>{@code afterConnectionEstablished} – thêm session vào pool, broadcast partner_status</li>
+ *   <li>{@code handleTextMessage} – lưu DB (upsert), broadcast partner_location cho partner</li>
+ *   <li>{@code afterConnectionClosed} – xóa session, broadcast partner_status (offline)</li>
+ * </ol>
+ */
 @Component
 public class MapWebSocketHandler extends TextWebSocketHandler {
 
@@ -32,6 +55,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
         this.objectMapper = objectMapper;
     }
 
+    /** Khi kết nối thành công: thêm session, broadcast trạng thái online. */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String coupleId = coupleIdOf(session);
@@ -47,6 +71,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
         broadcastPartnerStatus(coupleId);
     }
 
+    /** Khi nhận tin nhắn vị trí: lưu DB, broadcast cho partner. */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String coupleId = coupleIdOf(session);
@@ -77,6 +102,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
         broadcastPartnerLocation(coupleId, session, payload);
     }
 
+    /** Khi đóng kết nối: xóa session, broadcast trạng thái offline. */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         String coupleId = coupleIdOf(session);
@@ -98,6 +124,7 @@ public class MapWebSocketHandler extends TextWebSocketHandler {
         broadcastPartnerStatus(coupleId);
     }
 
+    /** Xử lý lỗi transport: log và đóng session. */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         LOGGER.debug("WebSocket transport error", exception);

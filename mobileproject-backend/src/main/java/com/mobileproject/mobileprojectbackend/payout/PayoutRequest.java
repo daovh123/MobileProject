@@ -6,36 +6,81 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
+/**
+ * Entity đại diện cho yêu cầu rút tiền (payout) từ ví chung ra ngân hàng qua SePay.
+ *
+ * <p>Lưu trong MongoDB collection {@code payout_requests}.
+ * Tương tự TopUpRequest nhưng theo chiều ngược lại: tiền đi ra từ ví.</p>
+ *
+ * <h3>Indexes:</h3>
+ * <ul>
+ *   <li>{@code transferCode} – unique, mã chuyển khoản để đối soát với SePay webhook</li>
+ * </ul>
+ *
+ * <h3>Luồng trạng thái:</h3>
+ * <pre>PENDING → PROCESSING → PAID
+ *                   ↘ FAILED</pre>
+ *
+ * <h3>Mối quan hệ:</h3>
+ * <ul>
+ *   <li>{@code coupleId} → tham chiếu đến {@code CoupleInfo.id}</li>
+ *   <li>{@code transactionId} → tham chiếu đến {@code Transaction.id} (sau khi payout thành công)</li>
+ * </ul>
+ */
 @Document(collection = "payout_requests")
 public class PayoutRequest {
 
+    /** ID duy nhất của yêu cầu rút tiền (MongoDB ObjectId). */
     @Id
     private String id;
 
+    /** ID cặp đôi yêu cầu rút tiền. */
     private String coupleId;
+    /** Số tiền rút (VND). */
     private Long amount;
 
+    /** Mã chuyển khoản duy nhất, dùng để đối soát với SePay webhook. */
     @Indexed(unique = true)
     private String transferCode;
 
+    /** Trạng thái yêu cầu rút tiền. */
     private PayoutRequestStatus status;
 
+    /** ID giao dịch từ SePay (dùng để deduplicate webhook). */
     private Long sepayId;
+    /** Mã tham chiếu từ SePay. */
     private String referenceCode;
+    /** Nội dung webhook từ SePay (lưu để debug). */
     private String webhookContent;
+    /** Mô tả từ webhook SePay. */
     private String webhookDescription;
 
+    /** ID giao dịch {@code Transaction} sau khi payout thành công. */
     private String transactionId;
+    /** Lỗi gần nhất nếu xử lý thất bại. */
     private String lastError;
 
+    /** Thời điểm tạo yêu cầu. */
     private Instant createdAt;
+    /** Thời điểm cập nhật gần nhất. */
     private Instant updatedAt;
+    /** Thời điểm rút tiền thành công. */
     private Instant paidAt;
 
+    /**
+     * Constructor mặc định bắt buộc bởi MongoDB driver.
+     */
     public PayoutRequest() {
         // for Mongo
     }
 
+    /**
+     * Tạo yêu cầu rút tiền mới với trạng thái mặc định là {@code PENDING}.
+     *
+     * @param coupleId     ID cặp đôi
+     * @param amount       số tiền rút (VND)
+     * @param transferCode mã chuyển khoản duy nhất
+     */
     public PayoutRequest(String coupleId, Long amount, String transferCode) {
         this.coupleId = coupleId;
         this.amount = amount;

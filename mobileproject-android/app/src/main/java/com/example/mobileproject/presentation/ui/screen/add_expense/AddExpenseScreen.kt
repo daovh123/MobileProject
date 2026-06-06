@@ -23,6 +23,26 @@ import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.screen.add_expense.components.*
 import com.example.mobileproject.presentation.viewmodel.AddExpenseViewModel
 
+/**
+ * Màn hình Thêm chi tiêu (Add Expense) – form nhập khoản chi mới.
+ *
+ * Cấu trúc UI chính:
+ * - TopAppBar: tiêu đề "Thêm chi tiêu" + số dư khả dụng, nút back.
+ * - [AmountInput]: ô nhập số tiền lớn ở giữa, font size tự động co theo độ dài.
+ * - [CategorySelector]: hàng 3 danh mục nhanh (Ăn uống/Hẹn hò/Khác) + nút More.
+ * - [ExpenseFormFields]: ô nhập ghi chú + chọn ngày (DatePickerDialog native).
+ * - [AttachReceiptSection]: placeholder đính kèm hóa đơn (chưa implement).
+ * - Nút "Thêm chi tiêu" ở cuối (floating footer button).
+ * - [CategoryBottomSheet]: bottom sheet chọn danh mục đầy đủ (hiện khi nhấn More).
+ *
+ * ViewModel: [AddExpenseViewModel] (Hilt-injected) – onAmountChange(), onCategorySelect(),
+ * onNoteChange(), onDateChange(), saveExpense().
+ *
+ * Navigation: onNavigateBack khi lưu thành công (isSuccess) hoặc nhấn back.
+ *
+ * Layout: Scaffold + Column dọc scrollable, spacing 24dp, footer button
+ * cố định ở bottom center.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
