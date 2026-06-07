@@ -63,6 +63,7 @@ class ProfileViewModel @Inject constructor(
                         birthDate = profile.birthDate ?: "",
                         gender = profile.gender ?: "",
                         email = profile.email ?: "",
+                        phoneNumber = profile.phoneNumber ?: "",
                         isDirty = false,
                         avatarUrl = profile.avatarUrl,
                         avatarBitmap = bitmap,
@@ -104,7 +105,14 @@ class ProfileViewModel @Inject constructor(
             runCatching {
                 onboardingRepository.getPartnerProfileSummary(token)
             }.onSuccess { profile ->
-                _uiState.update { it.copy(partnerProfile = profile, coupleError = null) }
+                val bitmap = profile.avatarUrl?.let { decodeBase64DataUrl(it) }
+                _uiState.update {
+                    it.copy(
+                        partnerProfile = profile,
+                        partnerAvatarBitmap = bitmap,
+                        coupleError = null
+                    )
+                }
             }.onFailure { error ->
                 _uiState.update {
                     it.copy(
@@ -122,6 +130,7 @@ class ProfileViewModel @Inject constructor(
         birthDate: String,
         gender: String,
         email: String = _uiState.value.email,
+        phoneNumber: String = _uiState.value.phoneNumber,
     ) {
         val initial = _uiState.value.initialProfile
         _uiState.update { state ->
@@ -131,11 +140,13 @@ class ProfileViewModel @Inject constructor(
                 birthDate = birthDate,
                 gender = gender,
                 email = email,
+                phoneNumber = phoneNumber,
                 isDirty = fullName.trim() != (initial?.fullName?.trim() ?: "") ||
                     nickName.trim() != (initial?.nickName?.trim() ?: "") ||
                     birthDate != (initial?.birthDate ?: "") ||
                     gender != (initial?.gender ?: "") ||
-                    email.trim() != (initial?.email?.trim() ?: ""),
+                    email.trim() != (initial?.email?.trim() ?: "") ||
+                    phoneNumber.trim() != (initial?.phoneNumber?.trim() ?: ""),
             )
         }
     }
@@ -198,6 +209,7 @@ class ProfileViewModel @Inject constructor(
                     birthDate = birthDate.trim(),
                     gender = gender.trim(),
                     email = email.trim().takeIf { it.isNotBlank() },
+                    phoneNumber = state.phoneNumber.trim().takeIf { it.isNotBlank() },
                 )
             }.onSuccess { profile ->
                 authSessionStore?.updateProfileState(
@@ -338,6 +350,7 @@ data class ProfileUiState(
     val birthDate: String = "",
     val gender: String = "",
     val email: String = "",
+    val phoneNumber: String = "",
     val isDirty: Boolean = false,
     val errorMessage: String? = null,
     val saveSuccessMessage: String? = null,
@@ -346,6 +359,7 @@ data class ProfileUiState(
     val coupleStatus: CoupleStatus? = null,
     val coupleError: String? = null,
     val partnerProfile: PartnerProfileSummary? = null,
+    val partnerAvatarBitmap: Bitmap? = null,
     val avatarUrl: String? = null,
     val avatarBitmap: Bitmap? = null,
     val avatarFrameId: String? = null,

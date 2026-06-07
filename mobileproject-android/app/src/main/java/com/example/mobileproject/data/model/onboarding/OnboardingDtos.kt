@@ -8,6 +8,7 @@ data class ProfileUpsertRequestDto(
     @SerializedName("birthDate") val birthDate: String,
     @SerializedName("gender") val gender: String,
     @SerializedName("email") val email: String? = null,
+    @SerializedName("phoneNumber") val phoneNumber: String? = null,
 )
 
 data class ProfileResponseDto(
@@ -21,6 +22,7 @@ data class ProfileResponseDto(
     @SerializedName("profileCompleted") val profileCompleted: Boolean,
     @SerializedName(value = "coupleConnected", alternate = ["paired"]) val coupleConnected: Boolean,
     @SerializedName("email") val email: String? = null,
+    @SerializedName("phoneNumber") val phoneNumber: String? = null,
     @SerializedName("avatarUrl") val avatarUrl: String? = null,
     @SerializedName("avatarFrameId") val avatarFrameId: String? = null,
 )
@@ -57,6 +59,9 @@ data class CouplePartnerProfileResponseDto(
     @SerializedName("avatarUrl") val avatarUrl: String?,
     @SerializedName("startAt") val startAt: String?,
     @SerializedName("daysTogether") val daysTogether: Long?,
+    @SerializedName("birthDate") val birthDate: String?,
+    @SerializedName("gender") val gender: String?,
+    @SerializedName("phoneNumber") val phoneNumber: String?,
 )
 
 data class CoupleRequestCreateRequestDto(

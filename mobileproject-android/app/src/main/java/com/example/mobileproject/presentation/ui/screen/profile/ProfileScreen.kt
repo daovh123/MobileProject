@@ -88,6 +88,7 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onEditProfile: () -> Unit,
     onInvitePartner: () -> Unit,
+    onNavigateToPartnerProfile: () -> Unit,
 ) {
     val context = LocalContext.current
     val viewModel: ProfileViewModel = hiltViewModel()
@@ -180,6 +181,7 @@ fun ProfileScreen(
                 partnerProfile = uiState.partnerProfile,
                 isLoading = uiState.isLoadingCouple,
                 coupleError = uiState.coupleError,
+                onNavigateToPartnerProfile = onNavigateToPartnerProfile,
             )
 
             ProfileMenuCard(
@@ -399,6 +401,7 @@ private fun AnniversaryCard(
     partnerProfile: PartnerProfileSummary?,
     isLoading: Boolean,
     coupleError: String?,
+    onNavigateToPartnerProfile: () -> Unit,
 ) {
     val partnerName = partnerProfile?.fullName?.takeIf { it.isNotBlank() }
         ?: partnerProfile?.nickName?.takeIf { it.isNotBlank() }
@@ -418,7 +421,15 @@ private fun AnniversaryCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (status?.paired == true) {
+                    Modifier.clickable { onNavigateToPartnerProfile() }
+                } else {
+                    Modifier
+                }
+            ),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
     ) {
@@ -460,11 +471,13 @@ private fun AnniversaryCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Icon(
-                imageVector = LucideChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (status?.paired == true) {
+                Icon(
+                    imageVector = LucideChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -602,7 +615,6 @@ private fun ProfileMenuCard(
                 icon = LucideInfo,
                 trailingText = BuildConfig.VERSION_NAME,
             ) {
-                Text(
                 Button(
                     onClick = onOpenTerms,
                     modifier = Modifier

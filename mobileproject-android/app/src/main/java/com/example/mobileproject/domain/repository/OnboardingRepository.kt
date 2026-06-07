@@ -15,6 +15,7 @@ interface OnboardingRepository {
         birthDate: String,
         gender: String,
         email: String? = null,
+        phoneNumber: String? = null,
     ): ProfileResult
 
     suspend fun getProfile(token: String): ProfileResult

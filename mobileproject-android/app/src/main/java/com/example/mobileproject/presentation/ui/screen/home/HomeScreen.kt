@@ -51,6 +51,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.domain.entity.*
 import com.example.mobileproject.presentation.service.MapShareForegroundService
+import com.example.mobileproject.presentation.notification.ChatNotifications
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
@@ -292,9 +293,21 @@ fun HomeScreen(
         }
     }
 
+    var lastNotificationRequestId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(coupleState.incomingRequestId) {
+        val currentId = coupleState.incomingRequestId
+        if (!currentId.isNullOrBlank() && currentId != lastNotificationRequestId) {
+            lastNotificationRequestId = currentId
+            val requesterName = coupleState.incomingRequesterDisplayName 
+                ?: coupleState.incomingRequesterUsername 
+                ?: "Một người dùng"
+            ChatNotifications.showCoupleInvitationNotification(context, requesterName)
+        }
+    }
+
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
-            coupleViewModel.loadStatus(accessToken)
+            coupleViewModel.startPolling(accessToken)
         }
     }
 
@@ -368,6 +381,9 @@ fun HomeScreen(
                     releaseMapView()
                 }
             },
+            onRespondIncomingRequest = { id, accept ->
+                coupleViewModel.respondIncomingRequest(id, accept)
+            }
         )
 
         // FAB Logic — combined Chat + Add goals
@@ -477,6 +493,7 @@ private fun HomeContent(
     shareLocationEnabled: Boolean,
     distanceKm: Double?,
     onShareLocationEnabledChange: (Boolean) -> Unit,
+    onRespondIncomingRequest: (String, Boolean) -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -498,6 +515,17 @@ private fun HomeContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (!state.incomingRequestId.isNullOrBlank()) {
+                IncomingRequestHomeCard(
+                    requesterName = state.incomingRequesterDisplayName 
+                        ?: state.incomingRequesterUsername 
+                        ?: "Một người dùng",
+                    onAccept = { onRespondIncomingRequest(state.incomingRequestId, true) },
+                    onReject = { onRespondIncomingRequest(state.incomingRequestId, false) },
+                    isLoading = state.isLoading
+                )
+            }
+
             SharedBalanceCard(
                 balance = walletBalance,
                 canContribute = canContribute,
@@ -864,9 +892,9 @@ fun DaysTogetherModernCard(daysTogether: Long) {
                 painter = painterResource(R.drawable.sticker_5),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(98.dp)
-                    .align(Alignment.CenterStart)
-                    .offset(x = (-16).dp, y = 6.dp),
+                    .size(200.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-59).dp, y = 0.dp),
             )
             Column(
                 modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -958,4 +986,120 @@ private fun haversineDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: 
         cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2.0)
     val c = 2 * asin(sqrt(a))
     return earthRadiusKm * c
+}
+
+@Composable
+private fun IncomingRequestHomeCard(
+    requesterName: String,
+    onAccept: () -> Unit,
+    onReject: () -> Unit,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val primaryPink = Color(0xFFFE8A8E)
+    val lightPinkBg = Color(0xFFFFF0F1)
+    val textColor = Color(0xFF5C5254)
+
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Lời mời ghép đôi mới 💕",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = textColor,
+                    textAlign = TextAlign.Center
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = lightPinkBg
+                ) {
+                    Text(
+                        text = requesterName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = primaryPink,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onAccept,
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = primaryPink,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "Đồng ý",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = onReject,
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = textColor
+                        )
+                    ) {
+                        Text(
+                            text = "Từ chối",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+
+            Image(
+                painter = painterResource(R.drawable.sticker_2),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(70.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = 8.dp, y = (-8).dp)
+            )
+
+            Image(
+                painter = painterResource(R.drawable.sticker_12),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(70.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-8).dp, y = (-8).dp)
+            )
+        }
+    }
 }

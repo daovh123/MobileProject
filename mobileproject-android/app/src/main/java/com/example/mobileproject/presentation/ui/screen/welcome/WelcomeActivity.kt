@@ -12,11 +12,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
-import com.example.mobileproject.domain.entity.PostLoginDestination
-import com.example.mobileproject.domain.entity.resolvePostLoginDestination
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
-import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.ui.theme.resolveDarkTheme
@@ -37,11 +34,7 @@ class WelcomeActivity : ComponentActivity() {
         val openChat = intent.getBooleanExtra(HomeActivity.EXTRA_OPEN_CHAT, false)
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
-            val destinationIntent = when (savedSession.resolvePostLoginDestination()) {
-                PostLoginDestination.PROFILE -> Intent(this, PersonalInfoActivity::class.java)
-                PostLoginDestination.HOME -> Intent(this, HomeActivity::class.java)
-            }.apply {
-                putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
+            val destinationIntent = Intent(this, HomeActivity::class.java).apply {
                 putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
                 putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
             }

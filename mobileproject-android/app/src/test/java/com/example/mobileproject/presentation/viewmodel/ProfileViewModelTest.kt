@@ -104,6 +104,7 @@ class ProfileViewModelTest {
             birthDate: String,
             gender: String,
             email: String?,
+            phoneNumber: String?,
         ): ProfileResult = defaultProfile
 
         override suspend fun getProfile(token: String): ProfileResult {

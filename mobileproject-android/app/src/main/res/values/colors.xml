@@ -20,7 +20,7 @@
     <color name="secondary_fixed_dim">#FFBBC6EA</color>
 
     <!-- Surface Colors: Tonal layering -->
-    <color name="surface">#FFFFFBFA</color>
+    <color name="surface">#FFFFEBEF</color>
     <color name="on_surface">#FF201A1B</color>
     <color name="surface_dim">#FFF5EFF0</color>
     <color name="surface_bright">#FFFFFFFF</color>
@@ -35,7 +35,7 @@
     <color name="outline">#FF837375</color>
     <color name="outline_variant">#26D7C1C5</color>
     <color name="inverse_surface">#FF362E30</color>
-    <color name="inverse_on_surface">#FFFFFBFA</color>
+    <color name="inverse_on_surface">#FFFFEBEF</color>
 
     <!-- Error -->
     <color name="error">#FFB3261E</color>
@@ -44,7 +44,7 @@
     <color name="on_error_container">#FF410E0B</color>
 
     <!-- Background -->
-    <color name="background">#FFFFFBFA</color>
+    <color name="background">#FFFFEBEF</color>
     <color name="on_background">#FF201A1B</color>
 
     <!-- Gradient Colors -->
@@ -52,7 +52,7 @@
     <color name="gradient_end">#FFFFD9E1</color>
 
     <!-- Backdrop Colors: Glass surface light (80% opacity) -->
-    <color name="backdrop_color">#CCFFFBFA</color>
+    <color name="backdrop_color">#CCFFEBEF</color>
 
     <!-- Legacy compatibility - mapped to new system -->
     <color name="md3_primary">#FFBA1A4B</color>
@@ -70,7 +70,7 @@
     <color name="md3_tertiary_container">#FFFFD9E1</color>
     <color name="md3_on_tertiary_container">#FF3F0015</color>
 
-    <color name="md3_surface">#FFFFFBFA</color>
+    <color name="md3_surface">#FFFFEBEF</color>
     <color name="md3_on_surface">#FF201A1B</color>
     <color name="md3_surface_variant">#FFF3DFE2</color>
     <color name="md3_on_surface_variant">#FF524346</color>
@@ -85,16 +85,16 @@
     <color name="auth_text_primary">#FF201A1B</color>
     <color name="auth_text_secondary">#FF524346</color>
     <color name="auth_input_bg">#FFFBF3F4</color>
-    <color name="auth_bg_top">#FFFFFBFA</color>
+    <color name="auth_bg_top">#FFFFEBEF</color>
     <color name="auth_bg_bottom">#FFFBF3F4</color>
-    <color name="couple_bg_top">#FFFFFBFA</color>
+    <color name="couple_bg_top">#FFFFEBEF</color>
     <color name="couple_bg_bottom">#FFFBF3F4</color>
     <color name="couple_card">#FFFFFFFF</color>
     <color name="couple_code_bg">#FFF3DFE2</color>
     <color name="couple_soft_panel">#FFEED5D9</color>
 
     <!-- Glassmorphism & Overlay -->
-    <color name="nav_glass_surface">#CCFFFBFA</color>
+    <color name="nav_glass_surface">#CCFFEBEF</color>
     <color name="nav_glass_stroke">#26D7C1C5</color>
 
     <!-- Legacy support -->

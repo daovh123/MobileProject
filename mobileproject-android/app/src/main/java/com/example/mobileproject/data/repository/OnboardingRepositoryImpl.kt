@@ -31,10 +31,11 @@ class OnboardingRepositoryImpl @Inject constructor(
         birthDate: String,
         gender: String,
         email: String?,
+        phoneNumber: String?,
     ): ProfileResult {
         val response = apiService.upsertProfile(
             authorizationHeader(token),
-            ProfileUpsertRequestDto(fullName, nickName, birthDate, gender, email)
+            ProfileUpsertRequestDto(fullName, nickName, birthDate, gender, email, phoneNumber)
         )
         val body = response.requireSuccessfulBody(gson, "Luu ho so that bai")
         authSessionStore.updateProfileState(body.profileCompleted, body.coupleConnected, null)
@@ -100,6 +101,9 @@ class OnboardingRepositoryImpl @Inject constructor(
                 avatarUrl = body.avatarUrl,
                 startAt = body.startAt,
                 daysTogether = body.daysTogether,
+                birthDate = body.birthDate,
+                gender = body.gender,
+                phoneNumber = body.phoneNumber,
             )
         }
         val errorMsg = response.parseErrorMessage(gson) ?: "Khong the tai thong tin doi phuong"
@@ -161,7 +165,7 @@ class OnboardingRepositoryImpl @Inject constructor(
 private fun ProfileResponseDto.toProfileResult() = ProfileResult(
     username = username, fullName = fullName, nickName = nickName, birthDate = birthDate,
     gender = gender, profileCompleted = profileCompleted, coupleConnected = coupleConnected,
-    email = email, avatarUrl = avatarUrl, avatarFrameId = avatarFrameId,
+    email = email, phoneNumber = phoneNumber, avatarUrl = avatarUrl, avatarFrameId = avatarFrameId,
 )
 
 private fun AvatarFrameDto.toDomain() = AvatarFrame(id, name, resourceKey, color)

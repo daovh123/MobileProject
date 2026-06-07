@@ -9,6 +9,7 @@ data class ProfileResult(
     val profileCompleted: Boolean,
     val coupleConnected: Boolean,
     val email: String? = null,
+    val phoneNumber: String? = null,
     val avatarUrl: String? = null,
     val avatarFrameId: String? = null,
 )
@@ -57,4 +58,7 @@ data class PartnerProfileSummary(
     val avatarUrl: String?,
     val startAt: String?,
     val daysTogether: Long?,
+    val birthDate: String? = null,
+    val gender: String? = null,
+    val phoneNumber: String? = null,
 )

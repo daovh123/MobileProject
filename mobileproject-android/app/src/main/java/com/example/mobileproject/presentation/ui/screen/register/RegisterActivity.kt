@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,8 +77,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
+import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import java.time.Instant
+import java.time.ZoneId
 
 @AndroidEntryPoint
 class RegisterActivity : ComponentActivity() {
@@ -98,6 +113,7 @@ class RegisterActivity : ComponentActivity() {
                 dynamicColor = false
             ) {
                 val authViewModel: AuthViewModel = hiltViewModel()
+                val profileViewModel: ProfileViewModel = hiltViewModel()
                 RegisterScreen(
                     onBackToLogin = {
                         startActivity(Intent(this, LoginActivity::class.java))
@@ -113,6 +129,7 @@ class RegisterActivity : ComponentActivity() {
                         finish()
                     },
                     authViewModel = authViewModel,
+                    profileViewModel = profileViewModel,
                 )
             }
         }
@@ -132,27 +149,58 @@ private fun RegisterScreen(
     onBackToLogin: () -> Unit,
     onRegisterSuccess: (String) -> Unit,
     authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var nickname by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var birthday by rememberSaveable { mutableStateOf("") }
     var phoneNumber by rememberSaveable { mutableStateOf("") }
+    var fullName by rememberSaveable { mutableStateOf("") }
+    var gender by rememberSaveable { mutableStateOf("MALE") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    var fullNameError by rememberSaveable { mutableStateOf<String?>(null) }
+    var nicknameError by rememberSaveable { mutableStateOf<String?>(null) }
+    var birthdayError by rememberSaveable { mutableStateOf<String?>(null) }
+    var phoneNumberError by rememberSaveable { mutableStateOf<String?>(null) }
+    var emailError by rememberSaveable { mutableStateOf<String?>(null) }
+    var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
+
     val uiState by authViewModel.uiState.collectAsState()
+    val profileUiState by profileViewModel.uiState.collectAsState()
+
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+
+    var registerCompleted by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.authSession) {
         val session = uiState.authSession
         if (session != null) {
-            onRegisterSuccess(session.email.ifBlank { email.trim() })
-            authViewModel.consumeAuthSuccess()
+            registerCompleted = true
+            profileViewModel.updateDraft(
+                fullName = fullName.trim(),
+                nickName = nickname.trim(),
+                birthDate = birthday.trim(),
+                gender = gender,
+                email = email.trim(),
+                phoneNumber = phoneNumber.trim(),
+            )
+            profileViewModel.saveProfile(token = session.token)
         }
     }
 
-    val requiredFieldsMessage = stringResource(R.string.auth_required_fields)
+    LaunchedEffect(profileUiState.savedProfile, profileUiState.isSaving, registerCompleted) {
+        if (registerCompleted && !profileUiState.isSaving && profileUiState.savedProfile != null && profileUiState.errorMessage.isNullOrBlank()) {
+            registerCompleted = false
+            onRegisterSuccess(email.trim())
+            profileViewModel.consumeSaveSuccess()
+            authViewModel.consumeAuthSuccess()
+        }
+    }
 
     val submitRegistration: () -> Unit = {
         val trimmedEmail = email.trim()
@@ -160,19 +208,80 @@ private fun RegisterScreen(
         val trimmedPassword = password
         val trimmedBirthday = birthday.trim()
         val trimmedPhoneNumber = phoneNumber.trim()
-        when {
-            trimmedEmail.isBlank() || trimmedNickname.isBlank() || trimmedPassword.isBlank() || trimmedBirthday.isBlank() || trimmedPhoneNumber.isBlank() -> {
-                validationError = requiredFieldsMessage
-            }
+        val trimmedFullName = fullName.trim()
 
-            else -> {
-                validationError = null
-                authViewModel.register(
-                    username = trimmedNickname,
-                    email = trimmedEmail,
-                    password = trimmedPassword,
-                )
+        fullNameError = null
+        nicknameError = null
+        birthdayError = null
+        phoneNumberError = null
+        emailError = null
+        passwordError = null
+        validationError = null
+
+        var hasError = false
+
+        if (trimmedFullName.isBlank()) {
+            fullNameError = "Họ và tên không được để trống"
+            hasError = true
+        } else if (trimmedFullName.length > 100) {
+            fullNameError = "Họ tên quá dài (tối đa 100 ký tự)"
+            hasError = true
+        }
+
+        if (trimmedNickname.isBlank()) {
+            nicknameError = "Biệt danh không được để trống"
+            hasError = true
+        } else if (trimmedNickname.length > 50) {
+            nicknameError = "Biệt danh quá dài (tối đa 50 ký tự)"
+            hasError = true
+        }
+
+        if (trimmedBirthday.isBlank()) {
+            birthdayError = "Ngày sinh không được để trống"
+            hasError = true
+        } else {
+            val parsedDate = runCatching { java.time.LocalDate.parse(trimmedBirthday) }.getOrNull()
+            if (parsedDate == null) {
+                birthdayError = "Ngày sinh không hợp lệ"
+                hasError = true
+            } else if (parsedDate.isAfter(java.time.LocalDate.now())) {
+                birthdayError = "Ngày sinh không được ở tương lai"
+                hasError = true
             }
+        }
+
+        if (trimmedPhoneNumber.isBlank()) {
+            phoneNumberError = "Số điện thoại không được để trống"
+            hasError = true
+        } else if (!trimmedPhoneNumber.matches(Regex("^\\d{9,11}$"))) {
+            phoneNumberError = "Số điện thoại phải từ 9 đến 11 chữ số"
+            hasError = true
+        }
+
+        if (trimmedEmail.isBlank()) {
+            emailError = "Email không được để trống"
+            hasError = true
+        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+            emailError = "Email không hợp lệ"
+            hasError = true
+        }
+
+        if (trimmedPassword.isBlank()) {
+            passwordError = "Mật khẩu không được để trống"
+            hasError = true
+        } else if (trimmedPassword.length < 6) {
+            passwordError = "Mật khẩu phải có ít nhất 6 ký tự"
+            hasError = true
+        }
+
+        if (!hasError) {
+            authViewModel.register(
+                username = trimmedEmail,
+                email = trimmedEmail,
+                password = trimmedPassword,
+            )
+        } else {
+            validationError = "Vui lòng điền đầy đủ và đúng định dạng các thông tin"
         }
     }
 
@@ -218,7 +327,7 @@ private fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                    .background(Color.White.copy(alpha = 0.82f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -248,26 +357,28 @@ private fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // EMAIL ADDRESS Field
+                // FULL NAME Field
                 RegisterInputField(
-                    value = email,
+                    value = fullName,
                     onValueChange = {
-                        email = it
+                        fullName = it
+                        fullNameError = null
                         validationError = null
                         authViewModel.clearError()
                     },
-                    label = stringResource(R.string.register_email_label),
+                    label = stringResource(R.string.profile_fullname).uppercase(),
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Rounded.Email,
+                            imageVector = Icons.Rounded.Person,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
+                        keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
-                    )
+                    ),
+                    errorMessage = fullNameError
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -277,6 +388,7 @@ private fun RegisterScreen(
                     value = nickname,
                     onValueChange = {
                         nickname = it
+                        nicknameError = null
                         validationError = null
                         authViewModel.clearError()
                     },
@@ -291,7 +403,122 @@ private fun RegisterScreen(
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
+                    ),
+                    errorMessage = nicknameError
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // BIRTHDAY Field
+                RegisterInputField(
+                    value = birthday,
+                    onValueChange = { },
+                    label = stringResource(R.string.register_birthday_label).uppercase(),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarToday,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(pass = PointerEventPass.Initial)
+                                if (waitForUpOrCancellation(pass = PointerEventPass.Initial) != null) {
+                                    showDatePicker = true
+                                }
+                            }
+                        },
+                    errorMessage = birthdayError
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // GENDER Field
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.profile_gender).uppercase(),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 6.dp)
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = gender == "MALE",
+                            onClick = { gender = "MALE" },
+                            label = { Text(text = stringResource(R.string.profile_gender_male)) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = gender == "FEMALE",
+                            onClick = { gender = "FEMALE" },
+                            label = { Text(text = stringResource(R.string.profile_gender_female)) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = gender == "OTHER",
+                            onClick = { gender = "OTHER" },
+                            label = { Text(text = stringResource(R.string.profile_gender_other)) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // PHONE NUMBER Field
+                RegisterInputField(
+                    value = phoneNumber,
+                    onValueChange = {
+                        phoneNumber = it
+                        phoneNumberError = null
+                        validationError = null
+                        authViewModel.clearError()
+                    },
+                    label = stringResource(R.string.register_phone_label),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Phone,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    errorMessage = phoneNumberError
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // EMAIL ADDRESS Field
+                RegisterInputField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        emailError = null
+                        validationError = null
+                        authViewModel.clearError()
+                    },
+                    label = stringResource(R.string.register_email_label),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Email,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    errorMessage = emailError
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -301,6 +528,7 @@ private fun RegisterScreen(
                     value = password,
                     onValueChange = {
                         password = it
+                        passwordError = null
                         validationError = null
                         authViewModel.clearError()
                     },
@@ -328,54 +556,6 @@ private fun RegisterScreen(
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Next
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // BIRTHDAY Field
-                RegisterInputField(
-                    value = birthday,
-                    onValueChange = {
-                        birthday = it
-                        validationError = null
-                        authViewModel.clearError()
-                    },
-                    label = stringResource(R.string.register_birthday_label),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.CalendarToday,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Next
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // PHONE NUMBER Field
-                RegisterInputField(
-                    value = phoneNumber,
-                    onValueChange = {
-                        phoneNumber = it
-                        validationError = null
-                        authViewModel.clearError()
-                    },
-                    label = stringResource(R.string.register_phone_label),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Phone,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Phone,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
@@ -383,15 +563,17 @@ private fun RegisterScreen(
                             focusManager.clearFocus()
                             submitRegistration()
                         }
-                    )
+                    ),
+                    errorMessage = passwordError
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Primary Button: Create Account
+                val isRegisteringOrSaving = uiState.isLoading || profileUiState.isSaving
                 Button(
                     onClick = submitRegistration,
-                    enabled = !uiState.isLoading,
+                    enabled = !isRegisteringOrSaving,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -412,7 +594,7 @@ private fun RegisterScreen(
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
-                            text = if (uiState.isLoading) {
+                            text = if (isRegisteringOrSaving) {
                                 stringResource(R.string.register_loading)
                             } else {
                                 stringResource(R.string.register_button)
@@ -424,7 +606,7 @@ private fun RegisterScreen(
                 }
 
                 // Error display
-                val errorMessage = validationError ?: uiState.errorMessage
+                val errorMessage = validationError ?: uiState.errorMessage ?: profileUiState.errorMessage
                 AnimatedVisibility(visible = !errorMessage.isNullOrBlank()) {
                     Text(
                         text = errorMessage.orEmpty(),
@@ -478,6 +660,39 @@ private fun RegisterScreen(
 
         }
     }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState()
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            val selectedDate = Instant.ofEpochMilli(selectedMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            birthday = selectedDate.toString()
+                            validationError = null
+                            authViewModel.clearError()
+                        }
+                        showDatePicker = false
+                    },
+                ) {
+                    Text(text = stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(text = stringResource(android.R.string.cancel))
+                }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
 @Composable
@@ -485,16 +700,19 @@ private fun RegisterInputField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    modifier: Modifier = Modifier,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    errorMessage: String? = null,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    val isError = !errorMessage.isNullOrBlank()
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             modifier = Modifier.padding(start = 16.dp, bottom = 6.dp)
@@ -511,11 +729,12 @@ private fun RegisterInputField(
             visualTransformation = visualTransformation,
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
+            isError = isError,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
+                focusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.Transparent,
+                unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.Transparent,
                 cursorColor = MaterialTheme.colorScheme.onSurface,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -526,5 +745,13 @@ private fun RegisterInputField(
             ),
             shape = RoundedCornerShape(50.dp)
         )
+        if (isError) {
+            Text(
+                text = errorMessage.orEmpty(),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
     }
 }

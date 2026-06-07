@@ -326,6 +326,44 @@ object ChatNotifications {
             .apply()
     }
 
+    fun showCoupleInvitationNotification(context: Context, requesterName: String) {
+        val channelId = "couple_invitations"
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val existing = manager.getNotificationChannel(channelId)
+            if (existing == null) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "Lời mời ghép đôi",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Thông báo khi có lời mời ghép đôi từ người thương."
+                }
+                manager.createNotificationChannel(channel)
+            }
+        }
+
+        val intent = Intent(context, HomeActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_notifications_24)
+            .setContentTitle("Lời mời ghép đôi mới 💕")
+            .setContentText("Bạn có lời mời ghép đôi từ $requesterName. Nhấn để xem ngay.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        manager.notify(2002, builder.build())
+    }
+
     private fun notificationIdForConversation(conversationKey: String): Int {
         val hash = conversationKey.hashCode()
         return if (hash == Int.MIN_VALUE) {

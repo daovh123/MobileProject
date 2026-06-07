@@ -73,6 +73,7 @@ import java.util.Locale
 fun MemoriesScreen(
     accessToken: String,
     onOpenCapture: () -> Unit,
+    onNavigateToPartnerProfile: () -> Unit,
 ) {
     val viewModel: MemoriesViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
@@ -129,7 +130,7 @@ fun MemoriesScreen(
                 partnerUsername = uiState.partnerUsername,
                 relationshipStartAt = uiState.relationshipStartAt,
                 isLoading = uiState.isPartnerInfoLoading,
-                onClick = viewModel::onPartnerInfoClick,
+                onClick = onNavigateToPartnerProfile,
             )
             Spacer(modifier = Modifier.weight(1f))
         }
@@ -157,7 +158,8 @@ private fun RecentMomentsPreviewCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenCapture),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFCEFF1)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -187,7 +189,8 @@ private fun RecentMomentsPreviewCard(
                         .weight(1f)
                         .height(132.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F7)),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (first != null) {
@@ -224,7 +227,8 @@ private fun RecentMomentsPreviewCard(
                             .fillMaxWidth()
                             .weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F7)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     ) {
                         if (second != null) {
                             MomentPhoto(second.imageUrl, second.title)
@@ -282,7 +286,8 @@ private fun PartnerSection(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7E3E7)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier
@@ -313,7 +318,8 @@ private fun PartnerSection(
                     .fillMaxWidth()
                     .clickable(onClick = onClick),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8FA)),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
                 Row(
                     modifier = Modifier
@@ -342,7 +348,7 @@ private fun PartnerSection(
                         )
                     }
                     Icon(
-                        imageVector = LucideSettings,
+                        imageVector = LucideChevronRight,
                         contentDescription = null,
                         tint = Color(0xFF8E777B),
                         modifier = Modifier.size(18.dp),
@@ -370,7 +376,8 @@ private fun MemoriesCalendarCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenSpecialDays),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7E9EB)),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -394,7 +401,7 @@ private fun MemoriesCalendarCard(
                 )
             }
             CalendarMonthGrid(month = calendarMonth, selectedDay = selectedDay)
-            Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFF3EFF0)) {
+            Surface(shape = RoundedCornerShape(14.dp), color = Color.White, shadowElevation = 1.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -620,7 +627,8 @@ private fun EmptyMomentTile(
         modifier = Modifier
             .fillMaxSize()
             .clickable(onClick = onClick),
-        color = Color(0xFFFFEEF1),
+        color = Color.White,
+        shadowElevation = 1.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(

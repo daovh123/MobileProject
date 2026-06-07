@@ -74,7 +74,6 @@ import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AuthSession
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
-import com.example.mobileproject.presentation.ui.screen.profile.PersonalInfoActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
@@ -101,12 +100,7 @@ class LoginActivity : ComponentActivity() {
 
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
-            val intent = if (!savedSession.profileCompleted) {
-                Intent(this, PersonalInfoActivity::class.java)
-            } else {
-                Intent(this, HomeActivity::class.java)
-            }.apply {
-                putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
+            val intent = Intent(this, HomeActivity::class.java).apply {
                 putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
                 putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
             }
@@ -131,12 +125,7 @@ class LoginActivity : ComponentActivity() {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
                     onLoginSuccess = { session ->
-                        val intent = if (!session.profileCompleted) {
-                            Intent(this, PersonalInfoActivity::class.java)
-                        } else {
-                            Intent(this, HomeActivity::class.java)
-                        }.apply {
-                            putExtra(PersonalInfoActivity.EXTRA_ACCESS_TOKEN, session.token)
+                        val intent = Intent(this, HomeActivity::class.java).apply {
                             putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, session.token)
                             putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
                         }
@@ -237,7 +226,7 @@ private fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                    .background(Color.White.copy(alpha = 0.82f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,

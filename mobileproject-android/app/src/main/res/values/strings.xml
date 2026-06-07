@@ -48,10 +48,10 @@
     <string name="profile_save_continue">Lưu và tiếp tục</string>
     <string name="profile_saving">Đang lưu...</string>
     <string name="profile_title">Hồ sơ</string>
-    <string name="profile_fullname">Họ và tên *</string>
+    <string name="profile_fullname">Họ và tên</string>
     <string name="profile_nickname">Biệt danh</string>
     <string name="profile_birthdate">Ngày sinh *</string>
-    <string name="profile_gender">Giới tính *</string>
+    <string name="profile_gender">Giới tính</string>
     <string name="profile_gender_male">Nam</string>
     <string name="profile_gender_female">Nữ</string>
     <string name="profile_gender_other">Khác</string>

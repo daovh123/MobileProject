@@ -50,6 +50,7 @@ import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.CaptureMomentScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileScreen
+import com.example.mobileproject.presentation.ui.screen.profile.PartnerProfileScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsAppearanceScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsHelpScreen
 import com.example.mobileproject.presentation.ui.screen.settings.SettingsNotificationsScreen
@@ -84,6 +85,7 @@ object HomeRoutes {
     const val SETTINGS_HELP: String = "settings_help"
     const val PROFILE: String = "profile"
     const val PROFILE_EDIT: String = "profile_edit"
+    const val PARTNER_PROFILE: String = "partner_profile"
     const val CHAT: String = "chat"
     const val ADD_EXPENSE: String = "add_expense"
     const val TOP_UP: String = "top_up"
@@ -427,6 +429,9 @@ fun HomeScaffold(
                     MemoriesScreen(
                         accessToken = accessToken,
                         onOpenCapture = { navController.navigate(HomeRoutes.MEMORIES_CAPTURE) },
+                        onNavigateToPartnerProfile = {
+                            navController.navigate(HomeRoutes.PARTNER_PROFILE)
+                        }
                     )
                 }
                 composable(HomeRoutes.MEMORIES_CAPTURE) {
@@ -473,6 +478,20 @@ fun HomeScaffold(
                                     .putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken),
                             )
                         },
+                        onNavigateToPartnerProfile = {
+                            navController.navigate(HomeRoutes.PARTNER_PROFILE)
+                        }
+                    )
+                }
+                composable(HomeRoutes.PARTNER_PROFILE) {
+                    val profileViewModel: com.example.mobileproject.presentation.viewmodel.ProfileViewModel = hiltViewModel()
+                    LaunchedEffect(accessToken) {
+                        profileViewModel.loadProfile(accessToken)
+                    }
+                    PartnerProfileScreen(
+                        accessToken = accessToken,
+                        viewModel = profileViewModel,
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
                 composable(HomeRoutes.CHAT) {

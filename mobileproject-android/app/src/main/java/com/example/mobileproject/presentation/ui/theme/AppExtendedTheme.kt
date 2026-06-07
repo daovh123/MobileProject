@@ -56,19 +56,19 @@ data class ExtendedColorScheme(
     companion object {
         fun light() = ExtendedColorScheme(
             gradientStart = Color(0xFFFF6B8A),
-            gradientEnd = Color(0xFFFF385C),
+            gradientEnd = Color(0xFFFE8A8E),
             shimmer = Color(0xFFFFF1F3),
             cardGradientStart = Color(0xFFFF7A92),
-            cardGradientEnd = Color(0xFFFF385C),
+            cardGradientEnd = Color(0xFFFE8A8E),
             overlayScrim = Color(0xFF1F1F1F).copy(alpha = 0.48f),
             glassBackground = Color(0xFFFFFFFF).copy(alpha = 0.88f),
             glassBorder = Color(0xFFFFFFFF).copy(alpha = 0.45f),
             accentWarm = Color(0xFFFFA07A),
             accentSoft = Color(0xFFFFF1F3),
-            heartPulse = Color(0xFFFF385C),
+            heartPulse = Color(0xFFFE8A8E),
             successGreen = Color(0xFF22C55E),
             warningAmber = Color(0xFFF59E0B),
-            loveNoteBackground = Color(0xFFFFF7F8),
+            loveNoteBackground = Color(0xFFFFEBEF),
             anniversaryGold = Color(0xFFD4A574),
         )
 

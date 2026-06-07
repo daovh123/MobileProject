@@ -46,7 +46,7 @@ fun AuthBackdrop(
         )
     } else {
         listOf(
-            Color(0xFFFFFBFA),
+            Color(0xFFFFEBEF),
             Color(0xFFFFF1F3),
             Color(0xFFFFE8EC),
         )
@@ -137,7 +137,7 @@ fun AuthFormSurface(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = Color.White.copy(alpha = 0.97f),
+        color = Color.White.copy(alpha = 0.82f),
         shadowElevation = 8.dp,
         tonalElevation = 2.dp,
     ) {

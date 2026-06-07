@@ -261,6 +261,7 @@ class ProfileViewModelTest {
             birthDate: String,
             gender: String,
             email: String?,
+            phoneNumber: String?,
         ): ProfileResult {
             return saveProfileResult.getOrThrow()
         }

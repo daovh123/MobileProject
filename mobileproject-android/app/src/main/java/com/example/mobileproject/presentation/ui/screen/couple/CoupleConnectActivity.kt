@@ -53,6 +53,7 @@ import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.icons.LucideHeart
 import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideShare2
+import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -74,12 +75,19 @@ class CoupleConnectActivity : ComponentActivity() {
                 CoupleConnectContent(
                     accessToken = accessToken,
                     coupleViewModel = coupleViewModel,
-                    onContinue = {
+                    onPairSuccess = {
                         val startAt = coupleViewModel.uiState.value.startAt.orEmpty()
                         startActivity(
                             Intent(this, CoupleConnectedActivity::class.java)
                                 .putExtra(CoupleConnectedActivity.EXTRA_ACCESS_TOKEN, accessToken)
                                 .putExtra(CoupleConnectedActivity.EXTRA_RELATIONSHIP_START_DATE, startAt)
+                        )
+                        finish()
+                    },
+                    onSkip = {
+                        startActivity(
+                            Intent(this, HomeActivity::class.java)
+                                .putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, accessToken)
                         )
                         finish()
                     }

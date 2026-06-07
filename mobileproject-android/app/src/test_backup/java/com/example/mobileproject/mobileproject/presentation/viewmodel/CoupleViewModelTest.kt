@@ -142,6 +142,7 @@ class CoupleViewModelTest {
             birthDate: String,
             gender: String,
             email: String?,
+            phoneNumber: String?,
         ): ProfileResult {
             return ProfileResult(null, null, null, null, null, false, false)
         }

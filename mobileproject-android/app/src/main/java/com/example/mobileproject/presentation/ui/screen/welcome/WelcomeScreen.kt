@@ -62,7 +62,7 @@ fun WelcomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(MaterialTheme.colorScheme.background)
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             contentAlignment = Alignment.Center
@@ -74,7 +74,7 @@ fun WelcomeScreen(
                     .border(
                         border = BorderStroke(
                             width = 16.dp,
-                            color = MaterialTheme.colorScheme.surface
+                            color = Color.White
                         ),
                         shape = RoundedCornerShape(40.dp)
                     )
@@ -164,10 +164,10 @@ fun WelcomeScreen(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .clip(RoundedCornerShape(32.dp))
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Color.White)
                         .border(
                             width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
+                            color = Color.Transparent,
                             shape = RoundedCornerShape(32.dp)
                         )
                         .padding(vertical = 28.dp, horizontal = 10.dp),
@@ -250,7 +250,7 @@ fun WelcomeScreen(
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontSize = 14.sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.outline
                             )
                             Text(
                                 text = stringResource(R.string.welcome_login),
@@ -259,7 +259,7 @@ fun WelcomeScreen(
                                     fontWeight = FontWeight.Bold,
                                     textDecoration = TextDecoration.Underline
                                 ),
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
                         }
