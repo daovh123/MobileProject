@@ -1,6 +1,5 @@
 package com.example.mobileproject.presentation.ui.screen.wallet
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -61,6 +58,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.model.wallet.VietnamBank
 import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
+import com.example.mobileproject.presentation.ui.screen.wallet.components.SearchableBankPicker
 import com.example.mobileproject.presentation.viewmodel.TransferMoneyViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 
@@ -292,7 +290,7 @@ fun TransferMoneyScreen(
                 },
                 modifier = Modifier.align(Alignment.End),
             ) {
-                Text("Dùng nội dung mặc định", color = Color(0xFFFF3B6B))
+                Text("Dùng nội dung mặc định", color = MaterialTheme.colorScheme.primary)
             }
 
             Button(
@@ -350,64 +348,16 @@ private fun BankSelectionSheet(
                 modifier = Modifier.padding(bottom = 16.dp),
             )
 
-            LazyColumn(
+            SearchableBankPicker(
+                banks = banks,
+                selectedBank = selectedBank,
+                onBankSelected = onBankSelected,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(400.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(banks, key = { it.id }) { bank ->
-                    BankItem(
-                        bank = bank,
-                        isSelected = selectedBank?.id == bank.id,
-                        onClick = { onBankSelected(bank) },
-                        colorScheme = colorScheme,
-                    )
-                }
-            }
+                    .height(456.dp),
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun BankItem(
-    bank: VietnamBank,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    colorScheme: ColorScheme,
-) {
-    val borderColor = if (isSelected) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f)
-    val containerColor = if (isSelected) colorScheme.primaryContainer.copy(alpha = 0.35f) else colorScheme.surfaceVariant
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(16.dp)),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            BankLogo(bank = bank, size = 40.dp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = bank.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) colorScheme.primary else colorScheme.onSurface,
-                )
-                Text(
-                    text = bank.shortName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }

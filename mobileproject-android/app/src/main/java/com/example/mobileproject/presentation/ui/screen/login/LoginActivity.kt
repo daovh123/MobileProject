@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,6 +74,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AuthSession
+import com.example.mobileproject.presentation.ui.components.auth.AuthBackdrop
+import com.example.mobileproject.presentation.ui.components.auth.AuthBrandMark
 import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
@@ -163,6 +166,7 @@ private fun LoginScreen(
     var email by rememberSaveable(prefilledEmail) { mutableStateOf(prefilledEmail) }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var isOpeningApp by rememberSaveable { mutableStateOf(false) }
     val uiState by authViewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
@@ -171,9 +175,17 @@ private fun LoginScreen(
     LaunchedEffect(uiState.authSession) {
         val session = uiState.authSession
         if (session != null) {
+            isOpeningApp = true
             onLoginSuccess(session)
             authViewModel.consumeAuthSuccess()
         }
+    }
+
+    val showLoadingScreen = uiState.isLoading || uiState.authSession != null || isOpeningApp
+
+    if (showLoadingScreen) {
+        LoginLoadingScreen()
+        return
     }
 
     val onSubmitLogin: () -> Unit = {
@@ -226,7 +238,7 @@ private fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(Color.White.copy(alpha = 0.82f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.82f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -430,6 +442,62 @@ private fun LoginScreen(
                 }
             }
 
+        }
+    }
+}
+
+@Composable
+private fun LoginLoadingScreen() {
+    AuthBackdrop {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 28.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            AuthBrandMark()
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(32.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.9f),
+                tonalElevation = 6.dp,
+                shadowElevation = 12.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 28.dp, vertical = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(42.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.5.dp,
+                    )
+
+                    Text(
+                        text = "Đang đưa bạn vào Affinity...",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Text(
+                        text = "Hệ thống đang xác nhận tài khoản và chuẩn bị không gian chung cho hai bạn.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
     }
 }

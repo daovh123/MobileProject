@@ -27,6 +27,7 @@ fun AmountInput(
     onAmountChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -36,7 +37,7 @@ fun AmountInput(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(32.dp),
             colors = androidx.compose.material3.CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = colorScheme.surfaceContainerLowest
             ),
             elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
@@ -48,7 +49,7 @@ fun AmountInput(
                 Text(
                     text = "How much did you spend?",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray.copy(alpha = 0.8f)
+                    color = colorScheme.onSurfaceVariant
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -66,7 +67,7 @@ fun AmountInput(
                     textStyle = TextStyle(
                         fontSize = fontSize,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF8A80),
+                        color = colorScheme.primary,
                         textAlign = TextAlign.Center
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -83,7 +84,7 @@ fun AmountInput(
                                     style = TextStyle(
                                         fontSize = fontSize,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFF8A80).copy(alpha = 0.3f),
+                                        color = colorScheme.primary.copy(alpha = 0.3f),
                                         textAlign = TextAlign.Center
                                     )
                                 )
@@ -95,7 +96,6 @@ fun AmountInput(
             }
         }
 
-        // Overlay sticker 13.png (R.drawable.sticker_13) on the left side of the card, sized at 150.dp
         Image(
             painter = painterResource(R.drawable.sticker_13),
             contentDescription = null,

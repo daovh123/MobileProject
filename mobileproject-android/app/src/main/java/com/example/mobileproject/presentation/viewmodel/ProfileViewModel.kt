@@ -14,6 +14,7 @@ import com.example.mobileproject.domain.entity.ProfileResult
 import com.example.mobileproject.domain.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,8 +30,36 @@ class ProfileViewModel @Inject constructor(
     private val authSessionStore: AuthSessionStore? = null,
 ) : ViewModel() {
 
+    private companion object {
+        const val PROFILE_STALE_MS: Long = 60_000L
+        const val AVATAR_FRAMES_STALE_MS: Long = 5 * 60_000L
+    }
+
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+    private var lastProfileToken: String? = null
+    private var lastProfileLoadedAt: Long = 0L
+    private var lastFramesToken: String? = null
+    private var lastFramesLoadedAt: Long = 0L
+    private var loadProfileJob: Job? = null
+
+    fun ensureProfileLoaded(token: String, force: Boolean = false) {
+        val current = _uiState.value
+        val hasCachedProfile = current.savedProfile != null
+        val hasCachedCouple = current.coupleStatus != null
+        val sameToken = lastProfileToken == token.trim()
+        val isFresh = System.currentTimeMillis() - lastProfileLoadedAt < PROFILE_STALE_MS
+
+        if (!force && sameToken && hasCachedProfile && hasCachedCouple && isFresh) {
+            return
+        }
+
+        loadProfile(token)
+    }
+
+    fun refreshProfileIfStale(token: String) {
+        ensureProfileLoaded(token, force = false)
+    }
 
     fun loadProfile(token: String) {
         if (token.isBlank()) {
@@ -38,8 +67,17 @@ class ProfileViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, isLoadingCouple = true, errorMessage = null, coupleError = null) }
+        loadProfileJob?.cancel()
+        loadProfileJob = viewModelScope.launch {
+            val current = _uiState.value
+            _uiState.update {
+                it.copy(
+                    isLoading = current.savedProfile == null,
+                    isLoadingCouple = current.coupleStatus == null,
+                    errorMessage = null,
+                    coupleError = null,
+                )
+            }
 
             val profileDeferred = async {
                 runCatching { onboardingRepository.getProfile(token) }
@@ -53,6 +91,8 @@ class ProfileViewModel @Inject constructor(
 
             profileResult.onSuccess { profile ->
                 val bitmap = profile.avatarUrl?.let { decodeBase64DataUrl(it) }
+                lastProfileToken = token.trim()
+                lastProfileLoadedAt = System.currentTimeMillis()
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,
@@ -82,6 +122,8 @@ class ProfileViewModel @Inject constructor(
             }
 
             coupleResult.onSuccess { status ->
+                lastProfileToken = token.trim()
+                lastProfileLoadedAt = System.currentTimeMillis()
                 _uiState.update { it.copy(isLoadingCouple = false, coupleStatus = status) }
                 if (status.paired) {
                     loadPartnerProfile(token)
@@ -260,11 +302,19 @@ class ProfileViewModel @Inject constructor(
 
     fun loadAvatarFrames(token: String) {
         if (token.isBlank()) return
+        val trimmedToken = token.trim()
+        val hasFrames = _uiState.value.availableFrames.isNotEmpty()
+        val isFresh = System.currentTimeMillis() - lastFramesLoadedAt < AVATAR_FRAMES_STALE_MS
+        if (hasFrames && trimmedToken == lastFramesToken && isFresh) {
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingFrames = true) }
             runCatching {
                 onboardingRepository.getAvatarFrames(token)
             }.onSuccess { frames ->
+                lastFramesToken = trimmedToken
+                lastFramesLoadedAt = System.currentTimeMillis()
                 _uiState.update { it.copy(isLoadingFrames = false, availableFrames = frames) }
             }.onFailure { error ->
                 _uiState.update {

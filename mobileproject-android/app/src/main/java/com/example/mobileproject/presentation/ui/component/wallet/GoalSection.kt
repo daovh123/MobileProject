@@ -23,7 +23,7 @@ fun GoalSection(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val sortedGoals = goals.sortedWith(
-        compareBy<SavingGoal> { it.status == GoalStatus.ACHIEVED } // Achieved at bottom
+        compareBy<SavingGoal> { it.status != GoalStatus.IN_PROGRESS } // Closed goals at bottom
             .thenBy { it.deadline ?: "9999-99-99" } // Near deadline first
     )
 

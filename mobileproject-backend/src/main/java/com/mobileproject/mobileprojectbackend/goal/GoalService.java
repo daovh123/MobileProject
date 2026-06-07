@@ -187,7 +187,10 @@ public class GoalService {
                 goalId,
                 amount,
                 updatedGoal.getCurrentAmount(),
-                updatedCouple.getTotalBalance()
+                updatedCouple.getTotalBalance(),
+                updatedGoal.getStatus(),
+                updatedGoal.getWithdrawnAmount() != null ? updatedGoal.getWithdrawnAmount() : 0L,
+                "Contribution successful"
         );
     }
 
@@ -240,7 +243,70 @@ public class GoalService {
                 goalId,
                 amount,
                 updatedGoal.getCurrentAmount(),
-                null
+                null,
+                updatedGoal.getStatus(),
+                updatedGoal.getWithdrawnAmount() != null ? updatedGoal.getWithdrawnAmount() : 0L,
+                "Contribution successful"
+        );
+    }
+
+    public ContributeResponse withdrawGoalToWallet(String goalId) {
+        if (goalId == null || goalId.isBlank()) {
+            return ContributeResponse.failure("Goal ID is required");
+        }
+
+        SavingGoal goal = savingGoalRepository.findById(goalId).orElse(null);
+        if (goal == null) {
+            return ContributeResponse.failure("Goal not found or not a saving goal");
+        }
+
+        if (goal.getStatus() == GoalStatus.WITHDRAWN) {
+            return ContributeResponse.failure("Goal funds have already been moved back to wallet");
+        }
+
+        if (goal.getStatus() != GoalStatus.ACHIEVED) {
+            return ContributeResponse.failure("Goal must be completed before withdrawing");
+        }
+
+        Long withdrawAmount = goal.getCurrentAmount() != null ? goal.getCurrentAmount() : 0L;
+        if (withdrawAmount <= 0L) {
+            return ContributeResponse.failure("No available funds to withdraw");
+        }
+
+        CoupleInfo coupleInfo = coupleInfoRepository.findById(goal.getCoupleId()).orElse(null);
+        if (coupleInfo == null) {
+            return ContributeResponse.failure("Couple not found");
+        }
+
+        Query coupleQuery = new Query(Criteria.where("id").is(goal.getCoupleId()));
+        Update coupleUpdate = new Update().inc("totalBalance", withdrawAmount);
+        mongoTemplate.updateFirst(coupleQuery, coupleUpdate, CoupleInfo.class);
+
+        Query goalQuery = new Query(Criteria.where("id").is(goalId));
+        Long withdrawnAmount = (goal.getWithdrawnAmount() != null ? goal.getWithdrawnAmount() : 0L) + withdrawAmount;
+        Update goalUpdate = new Update()
+                .set("currentAmount", 0L)
+                .set("withdrawnAmount", withdrawnAmount)
+                .set("status", GoalStatus.WITHDRAWN);
+        mongoTemplate.updateFirst(goalQuery, goalUpdate, SavingGoal.class);
+
+        SavingGoal updatedGoal = savingGoalRepository.findById(goalId).orElse(goal);
+        CoupleInfo updatedCouple = coupleInfoRepository.findById(goal.getCoupleId()).orElse(coupleInfo);
+
+        String formattedAmount = String.format("%,d đ", withdrawAmount);
+        notificationService.createAndPushForCouple(goal.getCoupleId(), NotificationType.GOAL_UPDATED,
+                "Đã rút tiền từ mục tiêu",
+                "Đã chuyển " + formattedAmount + " từ \"" + goal.getName() + "\" về ví chung");
+
+        return ContributeResponse.success(
+                null,
+                goalId,
+                withdrawAmount,
+                updatedGoal.getCurrentAmount(),
+                updatedCouple.getTotalBalance(),
+                updatedGoal.getStatus(),
+                updatedGoal.getWithdrawnAmount() != null ? updatedGoal.getWithdrawnAmount() : withdrawnAmount,
+                "Goal funds moved back to wallet"
         );
     }
 

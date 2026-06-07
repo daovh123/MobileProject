@@ -7,10 +7,12 @@ import com.example.mobileproject.data.datasource.remote.GoalApiService
 import com.example.mobileproject.data.mapper.toDomain
 import com.example.mobileproject.data.model.goal.ContributeDirectRequestDto
 import com.example.mobileproject.data.model.goal.ContributeFromWalletRequestDto
+import com.example.mobileproject.data.model.goal.ContributionResponseDto
 import com.example.mobileproject.data.model.goal.CreateGoalRequestDto
 import com.example.mobileproject.data.model.goal.GoalTaskDto
 import com.example.mobileproject.domain.entity.Goal
 import com.example.mobileproject.domain.entity.GoalContributionResult
+import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.GoalTask
 import com.example.mobileproject.domain.repository.GoalRepository
 import com.google.gson.Gson
@@ -111,16 +113,7 @@ class GoalRepositoryImpl @Inject constructor(
             val response = apiService.contributeFromWallet(getAuthHeader(), goalId, request)
             val body = response.body()
             if (response.isSuccessful && body != null && body.success) {
-                emit(Resource.Success(GoalContributionResult(
-                    success = true,
-                    message = body.message ?: "Success",
-                    goalId = body.goalId ?: goalId,
-                    contributionId = body.contributionId ?: "",
-                    amount = body.amount ?: amount,
-                    currentAmount = body.currentGoalAmount ?: 0L,
-                    walletBalance = body.currentWalletBalance,
-                    timestamp = ""
-                )))
+                emit(Resource.Success(body.toGoalContributionResult(goalId, amount)))
             } else {
                 val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Contribution failed"
                 Log.e(TAG, "contributeFromWallet failed: code=${response.code()} message=$errorMessage")
@@ -143,16 +136,7 @@ class GoalRepositoryImpl @Inject constructor(
             val response = apiService.contributeDirect(getAuthHeader(), goalId, request)
             val body = response.body()
             if (response.isSuccessful && body != null && body.success) {
-                emit(Resource.Success(GoalContributionResult(
-                    success = true,
-                    message = body.message ?: "Success",
-                    goalId = body.goalId ?: goalId,
-                    contributionId = body.contributionId ?: "",
-                    amount = body.amount ?: amount,
-                    currentAmount = body.currentGoalAmount ?: 0L,
-                    walletBalance = null,
-                    timestamp = ""
-                )))
+                emit(Resource.Success(body.toGoalContributionResult(goalId, amount)))
             } else {
                 val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Contribution failed"
                 Log.e(TAG, "contributeDirect failed: code=${response.code()} message=$errorMessage")
@@ -162,6 +146,41 @@ class GoalRepositoryImpl @Inject constructor(
             emit(Resource.Error(e))
         }
     }
+
+    override fun withdrawToWallet(goalId: String): Flow<Resource<GoalContributionResult>> = flow {
+        emit(Resource.Loading)
+        try {
+            val response = apiService.withdrawToWallet(getAuthHeader(), goalId)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.success) {
+                emit(Resource.Success(body.toGoalContributionResult(goalId, body.amount ?: 0L)))
+            } else {
+                val errorMessage = body?.message ?: response.parseErrorMessage(gson) ?: "Withdraw failed"
+                Log.e(TAG, "withdrawToWallet failed: code=${response.code()} message=$errorMessage")
+                emit(Resource.Error(Exception(errorMessage)))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e))
+        }
+    }
+}
+
+private fun ContributionResponseDto.toGoalContributionResult(
+    fallbackGoalId: String,
+    fallbackAmount: Long,
+): GoalContributionResult {
+    return GoalContributionResult(
+        success = true,
+        message = message ?: "Success",
+        goalId = goalId ?: fallbackGoalId,
+        contributionId = contributionId ?: "",
+        amount = amount ?: fallbackAmount,
+        currentAmount = currentGoalAmount ?: 0L,
+        walletBalance = currentWalletBalance,
+        goalStatus = GoalStatus.fromString(goalStatus),
+        withdrawnAmount = withdrawnAmount ?: 0L,
+        timestamp = "",
+    )
 }
 
 private fun Response<*>.parseErrorMessage(gson: Gson): String? {

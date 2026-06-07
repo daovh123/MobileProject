@@ -54,7 +54,7 @@ fun BankLogo(
         modifier = modifier
             .size(size)
             .clip(RoundedCornerShape((size.value / 4f).dp))
-            .background(Color.White),
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
         contentScale = ContentScale.Crop,
     )
 }

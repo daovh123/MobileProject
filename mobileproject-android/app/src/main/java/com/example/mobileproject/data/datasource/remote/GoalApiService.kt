@@ -43,4 +43,10 @@ interface GoalApiService {
         @Path("goalId") goalId: String,
         @Body request: ContributeDirectRequestDto
     ): Response<ContributionResponseDto>
+
+    @POST("api/v1/goals/{goalId}/withdraw-to-wallet")
+    suspend fun withdrawToWallet(
+        @Header("Authorization") authorization: String,
+        @Path("goalId") goalId: String,
+    ): Response<ContributionResponseDto>
 }

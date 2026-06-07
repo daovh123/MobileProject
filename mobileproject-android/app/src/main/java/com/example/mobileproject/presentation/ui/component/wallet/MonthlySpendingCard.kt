@@ -232,14 +232,14 @@ fun MonthlySpendingCard(
             }
         }
 
-        // Image overlay: 14.png (R.drawable.sticker_14) at the top-right corner of the Card
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.sticker_14),
-            contentDescription = null,
-            modifier = Modifier
-                .size(70.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = (-8).dp, y = (-20).dp)
-        )
-    }
+//        // Image overlay: 14.png (R.drawable.sticker_14) at the top-right corner of the Card
+//        androidx.compose.foundation.Image(
+//            painter = androidx.compose.ui.res.painterResource(R.drawable.sticker_14),
+//            contentDescription = null,
+//            modifier = Modifier
+//                .size(70.dp)
+//                .align(Alignment.TopEnd)
+//                .offset(x = (-8).dp, y = (-20).dp)
+//        )
+                                                                                                                         }
 }

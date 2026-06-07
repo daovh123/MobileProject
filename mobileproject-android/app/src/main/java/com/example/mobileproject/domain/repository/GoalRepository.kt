@@ -33,4 +33,8 @@ interface GoalRepository {
         contributorId: String,
         note: String?
     ): Flow<Resource<GoalContributionResult>>
+
+    fun withdrawToWallet(
+        goalId: String,
+    ): Flow<Resource<GoalContributionResult>>
 }

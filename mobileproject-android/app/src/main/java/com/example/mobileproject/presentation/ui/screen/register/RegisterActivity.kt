@@ -327,7 +327,7 @@ private fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(36.dp))
-                    .background(Color.White.copy(alpha = 0.82f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.82f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.outlineVariant,

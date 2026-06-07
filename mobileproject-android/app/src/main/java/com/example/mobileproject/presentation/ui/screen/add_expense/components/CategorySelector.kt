@@ -32,15 +32,16 @@ fun CategorySelector(
     val quickCategories = listOf(
         ExpenseCategory.FoodDrink,
         ExpenseCategory.Dating,
-        ExpenseCategory.Others // Shopping thay bằng Others nếu chưa có Shopping cụ thể
+        ExpenseCategory.Others
     )
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = modifier.padding(horizontal = 24.dp)) {
         Text(
             text = "Category",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF2D2D2D)
+            color = colorScheme.onSurface
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -57,7 +58,6 @@ fun CategorySelector(
                 )
             }
             
-            // Nút More
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -66,21 +66,21 @@ fun CategorySelector(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .border(1.dp, Color(0xFFFF8A80).copy(alpha = 0.5f), CircleShape)
+                        .border(1.dp, colorScheme.primary.copy(alpha = 0.5f), CircleShape)
                         .clickable { onMoreClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "More",
-                        tint = Color(0xFFFF8A80),
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(32.dp)
                     )
                 }
                 Text(
                     text = "MORE",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFFF8A80),
+                    color = colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -94,6 +94,7 @@ fun CategoryItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -102,22 +103,22 @@ fun CategoryItem(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(if (isSelected) Color(0xFFFF8A80) else Color.White)
-                .border(1.dp, if (isSelected) Color.Transparent else Color.LightGray.copy(alpha = 0.5f), CircleShape)
+                .background(if (isSelected) colorScheme.primary else colorScheme.surfaceContainerLowest)
+                .border(1.dp, if (isSelected) Color.Transparent else colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = category.icon,
                 contentDescription = category.displayName,
-                tint = if (isSelected) Color.White else Color(0xFFFF8A80),
+                tint = if (isSelected) colorScheme.onPrimary else colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
         }
         Text(
             text = category.id.split("_").first(),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) Color(0xFFFF8A80) else Color.Gray,
+            color = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }

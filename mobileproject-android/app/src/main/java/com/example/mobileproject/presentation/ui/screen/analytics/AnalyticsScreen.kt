@@ -79,10 +79,11 @@ fun AnalyticsScreen(
 
 @Composable
 fun ChartCard(title: String, content: @Composable () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -95,6 +96,7 @@ fun ChartCard(title: String, content: @Composable () -> Unit) {
 
 @Composable
 fun PieChart(data: List<CategoryBreakdown>) {
+    val colorScheme = MaterialTheme.colorScheme
     val colors = listOf(
         Color(0xFF6200EE), Color(0xFF03DAC5), Color(0xFFBB86FC),
         Color(0xFF3700B3), Color(0xFF018786), Color(0xFFFF0266)
@@ -109,7 +111,7 @@ fun PieChart(data: List<CategoryBreakdown>) {
             data.forEachIndexed { index, item ->
                 val sweepAngle = item.percentage * 360f
                 drawArc(
-                    color = colors.getOrElse(index) { Color.Gray },
+                    color = colors.getOrElse(index) { colorScheme.outline },
                     startAngle = startAngle,
                     sweepAngle = sweepAngle,
                     useCenter = true
@@ -123,7 +125,7 @@ fun PieChart(data: List<CategoryBreakdown>) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             data.take(5).forEachIndexed { index, item ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).background(colors.getOrElse(index) { Color.Gray }))
+                    Box(modifier = Modifier.size(12.dp).background(colors.getOrElse(index) { colorScheme.outline }))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "${item.category}: ${(item.percentage * 100).toInt()}%", fontSize = 12.sp)
                 }
@@ -166,13 +168,14 @@ fun BarChart(data: List<SpendingTrend>) {
 
 @Composable
 fun AnalyticsShimmer(modifier: Modifier = Modifier) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(modifier = modifier.padding(16.dp)) {
         repeat(2) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .background(colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -1,9 +1,13 @@
 package com.example.mobileproject.presentation.ui.screen.memories
 
 import android.util.Base64
+import android.util.LruCache
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +16,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
@@ -33,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -40,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,11 +58,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.mobileproject.R
 import com.example.mobileproject.data.model.moment.MomentDto
 import com.example.mobileproject.domain.entity.PartnerProfileSummary
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
 import com.example.mobileproject.presentation.ui.icons.LucideChevronRight
 import com.example.mobileproject.presentation.ui.icons.LucideImage
@@ -68,6 +79,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+
+private val recentMomentImageCache = LruCache<String, ByteArray>(24)
 
 @Composable
 fun MemoriesScreen(
@@ -89,14 +102,13 @@ fun MemoriesScreen(
     val nearestReminder = upcomingSpecialDays.firstOrNull()
 
     LaunchedEffect(accessToken) {
-        viewModel.load(accessToken)
-        viewModel.onPartnerInfoClick()
+        viewModel.ensureLoaded(accessToken)
     }
 
     DisposableEffect(lifecycleOwner, accessToken) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.load(accessToken)
+                viewModel.refreshIfStale(accessToken)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -111,34 +123,31 @@ fun MemoriesScreen(
     }
 
     AppScreenBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            RecentMomentsPreviewCard(
-                moments = sortedMoments,
-                onOpenCapture = onOpenCapture,
-            )
-            MemoriesCalendarCard(
-                nearestReminder = nearestReminder,
-                onOpenSpecialDays = { showSpecialDaySheet = true },
-            )
-            PartnerSection(
-                partnerProfile = uiState.partnerProfile,
-                partnerUsername = uiState.partnerUsername,
-                relationshipStartAt = uiState.relationshipStartAt,
-                isLoading = uiState.isPartnerInfoLoading,
-                onClick = onNavigateToPartnerProfile,
-            )
-            Spacer(modifier = Modifier.weight(1f))
+        if (uiState.isLoading && uiState.moments.isEmpty()) {
+            AppFullScreenLoading(message = "Đang tải khoảnh khắc...")
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RecentMomentsPreviewCard(
+                    moments = sortedMoments,
+                    onOpenCapture = onOpenCapture,
+                )
+                MemoriesCalendarCard(
+                    nearestReminder = nearestReminder,
+                    onOpenSpecialDays = { showSpecialDaySheet = true },
+                )
+            }
         }
     }
 
     if (showSpecialDaySheet) {
-        SpecialDaysBottomSheet(
+        ModernSpecialDaysBottomSheet(
             days = upcomingSpecialDays,
+            today = today,
             onDismiss = { showSpecialDaySheet = false },
         )
     }
@@ -158,7 +167,7 @@ private fun RecentMomentsPreviewCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenCapture),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -173,13 +182,13 @@ private fun RecentMomentsPreviewCard(
                 Text(
                     text = "Khoảnh khắc gần đây",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
                 Icon(
                     imageVector = LucideImage,
                     contentDescription = null,
-                    tint = Color(0xFFF28A97),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -189,7 +198,7 @@ private fun RecentMomentsPreviewCard(
                         .weight(1f)
                         .height(132.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -200,12 +209,12 @@ private fun RecentMomentsPreviewCard(
                                     .align(Alignment.BottomStart)
                                     .padding(8.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF28A97),
+                                color = MaterialTheme.colorScheme.primary,
                             ) {
                                 Text(
                                     text = first.title.ifBlank { "Kỷ niệm mới" },
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -227,7 +236,7 @@ private fun RecentMomentsPreviewCard(
                             .fillMaxWidth()
                             .weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     ) {
                         if (second != null) {
@@ -241,13 +250,13 @@ private fun RecentMomentsPreviewCard(
                             .fillMaxWidth()
                             .weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF28A97)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text(
                                 text = if (remain > 0) "+$remain" else "Mở",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -286,7 +295,7 @@ private fun PartnerSection(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -308,7 +317,7 @@ private fun PartnerSection(
                 Text(
                     text = "Thông tin nửa kia",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -318,7 +327,7 @@ private fun PartnerSection(
                     .fillMaxWidth()
                     .clickable(onClick = onClick),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
                 Row(
@@ -330,7 +339,7 @@ private fun PartnerSection(
                     Icon(
                         imageVector = LucideUser,
                         contentDescription = null,
-                        tint = Color(0xFF2F3A40),
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(28.dp),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -339,18 +348,18 @@ private fun PartnerSection(
                             text = displayName,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF3D3033),
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = metaText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF8E777B),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Icon(
                         imageVector = LucideChevronRight,
                         contentDescription = null,
-                        tint = Color(0xFF8E777B),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -376,7 +385,7 @@ private fun MemoriesCalendarCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenSpecialDays),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -392,16 +401,16 @@ private fun MemoriesCalendarCard(
                     text = calendarMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Icon(
                     imageVector = LucideChevronRight,
                     contentDescription = null,
-                    tint = Color(0xFF8E777B),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             CalendarMonthGrid(month = calendarMonth, selectedDay = selectedDay)
-            Surface(shape = RoundedCornerShape(14.dp), color = Color.White, shadowElevation = 1.dp) {
+            Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, shadowElevation = 1.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -411,13 +420,13 @@ private fun MemoriesCalendarCard(
                     Surface(
                         modifier = Modifier.size(28.dp),
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFFFD8DE),
+                        color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Filled.Cake,
                                 contentDescription = null,
-                                tint = Color(0xFFF28A97),
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -428,7 +437,7 @@ private fun MemoriesCalendarCard(
                             text = nearestReminder?.title ?: "Chưa có ngày đặc biệt sắp tới",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF4B3A3D),
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         val subtitle = nearestReminder?.let { reminder ->
                             val days = ChronoUnit.DAYS.between(today, reminder.date).coerceAtLeast(0)
@@ -437,7 +446,7 @@ private fun MemoriesCalendarCard(
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF8E777B),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     AsyncImage(
@@ -455,8 +464,10 @@ private fun MemoriesCalendarCard(
 @Composable
 private fun SpecialDaysBottomSheet(
     days: List<CalendarReminder>,
+    today: LocalDate,
     onDismiss: () -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -465,15 +476,17 @@ private fun SpecialDaysBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "10 ngày đặc biệt sắp tới",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF3A2A2D),
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (days.isEmpty()) {
                 Text(
@@ -486,7 +499,7 @@ private fun SpecialDaysBottomSheet(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFF9EEF0),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
                     ) {
                         Row(
                             modifier = Modifier
@@ -498,20 +511,20 @@ private fun SpecialDaysBottomSheet(
                             Text(
                                 text = "${index + 1}.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E777B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = day.title,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF3D3033),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
                                     text = formatReminderDate(day.date),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF8E777B),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -519,6 +532,228 @@ private fun SpecialDaysBottomSheet(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModernSpecialDaysBottomSheet(
+    days: List<CalendarReminder>,
+    today: LocalDate,
+    onDismiss: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = colorScheme.surfaceContainer,
+                tonalElevation = 2.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(46.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            color = colorScheme.primaryContainer,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.Cake,
+                                    contentDescription = null,
+                                    tint = colorScheme.primary,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "10 ngày đặc biệt sắp tới",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colorScheme.onSurface,
+                            )
+                            Text(
+                                text = days.firstOrNull()?.let {
+                                    "${it.title} • ${buildReminderCountdownLabel(today, it.date)}"
+                                } ?: "Những mốc đáng nhớ của hai bạn sẽ hiện ở đây.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SpecialDayInfoChip(
+                            text = "${days.size} mốc sắp tới",
+                            containerColor = colorScheme.surfaceContainerHighest,
+                            contentColor = colorScheme.onSurfaceVariant,
+                        )
+                        days.firstOrNull()?.let { nextReminder ->
+                            SpecialDayInfoChip(
+                                text = buildReminderCountdownLabel(today, nextReminder.date),
+                                containerColor = colorScheme.primaryContainer,
+                                contentColor = colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (days.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    color = colorScheme.surfaceContainerLow.copy(alpha = 0.55f),
+                ) {
+                    Text(
+                        text = "Không có ngày đặc biệt nào sắp tới.",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                days.forEachIndexed { index, day ->
+                    val isMilestone = day.title.startsWith("Kỷ niệm")
+                    val accentContainer = if (isMilestone) {
+                        colorScheme.primaryContainer
+                    } else {
+                        colorScheme.tertiaryContainer
+                    }
+                    val accentColor = if (isMilestone) {
+                        colorScheme.primary
+                    } else {
+                        colorScheme.tertiary
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.18f)),
+                                shape = RoundedCornerShape(22.dp),
+                            ),
+                        shape = RoundedCornerShape(22.dp),
+                        color = colorScheme.surfaceContainerLowest,
+                        tonalElevation = 2.dp,
+                        shadowElevation = 4.dp,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(44.dp),
+                                shape = CircleShape,
+                                color = accentContainer,
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = (index + 1).toString(),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = accentColor,
+                                        fontWeight = FontWeight.ExtraBold,
+                                    )
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isMilestone) "KỶ NIỆM" else "DỊP ĐẶC BIỆT",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = accentColor,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Text(
+                                            text = day.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = colorScheme.onSurface,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    SpecialDayInfoChip(
+                                        text = buildReminderCountdownLabel(today, day.date),
+                                        containerColor = accentContainer,
+                                        contentColor = accentColor,
+                                    )
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    SpecialDayInfoChip(
+                                        text = formatReminderDate(day.date),
+                                        containerColor = colorScheme.surfaceContainerHigh,
+                                        contentColor = colorScheme.onSurfaceVariant,
+                                    )
+                                    if (day.date.year != today.year) {
+                                        SpecialDayInfoChip(
+                                            text = day.date.year.toString(),
+                                            containerColor = colorScheme.surfaceContainerHigh,
+                                            contentColor = colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpecialDayInfoChip(
+    text: String,
+    containerColor: Color,
+    contentColor: Color,
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = containerColor,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor,
+        )
     }
 }
 
@@ -540,7 +775,7 @@ private fun CalendarMonthGrid(
                 Text(
                     text = day,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFAA969A),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(28.dp),
                 )
             }
@@ -555,13 +790,13 @@ private fun CalendarMonthGrid(
                         Surface(
                             modifier = Modifier.width(28.dp).height(28.dp),
                             shape = RoundedCornerShape(14.dp),
-                            color = if (isSelected) Color(0xFFF28A97) else Color.Transparent,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = day.toString(),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSelected) Color.White else Color(0xFF4B3A3D),
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }
@@ -577,45 +812,66 @@ private fun MomentPhoto(
     model: String,
     contentDescription: String?,
 ) {
-    var imageModel by remember(model) { mutableStateOf<Any?>(null) }
+    val context = LocalContext.current
+    var shouldStartLoad by remember(model) { mutableStateOf(false) }
+    val imageModel by produceState<Any?>(initialValue = null, model, shouldStartLoad) {
+        if (!shouldStartLoad) return@produceState
 
-    LaunchedEffect(model) {
-        if (model.startsWith("data:")) {
-            val decoded = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        value = if (model.startsWith("data:")) {
+            recentMomentImageCache.get(model) ?: kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                 decodeDataUrl(model)
+            }?.also { decoded ->
+                recentMomentImageCache.put(model, decoded)
             }
-            imageModel = decoded
         } else {
-            imageModel = model
+            model
         }
     }
 
-    if (imageModel != null) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageModel)
-                .crossfade(true)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .networkCachePolicy(CachePolicy.ENABLED)
-                .build(),
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            androidx.compose.material3.CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned {
+                if (!shouldStartLoad) {
+                    shouldStartLoad = true
+                }
+            },
+    ) {
+        if (imageModel != null) {
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageModel)
+                    .crossfade(true)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .networkCachePolicy(CachePolicy.ENABLED)
+                    .build(),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                loading = { MomentPhotoPlaceholder() },
+                error = { MomentPhotoPlaceholder() },
             )
+        } else {
+            MomentPhotoPlaceholder()
         }
+    }
+}
+
+@Composable
+private fun MomentPhotoPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = LucideImage,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
@@ -627,14 +883,14 @@ private fun EmptyMomentTile(
         modifier = Modifier
             .fillMaxSize()
             .clickable(onClick = onClick),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.primaryContainer,
         shadowElevation = 1.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = "Chạm để mở camera",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFF28A97),
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
@@ -689,6 +945,18 @@ private fun formatReminderDate(date: LocalDate): String {
     val month = date.monthValue.toString().padStart(2, '0')
     val day = date.dayOfMonth.toString().padStart(2, '0')
     return "$day/$month/${date.year}"
+}
+
+private fun buildReminderCountdownLabel(
+    today: LocalDate,
+    date: LocalDate,
+): String {
+    val days = ChronoUnit.DAYS.between(today, date).coerceAtLeast(0)
+    return when (days) {
+        0L -> "Hôm nay"
+        1L -> "Ngày mai"
+        else -> "Còn $days ngày"
+    }
 }
 
 private fun sortMomentsNewestFirst(moments: List<MomentDto>): List<MomentDto> {

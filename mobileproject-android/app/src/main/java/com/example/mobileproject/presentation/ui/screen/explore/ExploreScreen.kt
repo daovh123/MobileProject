@@ -79,6 +79,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
@@ -170,6 +173,7 @@ fun ExploreScreen(
     val coroutineScope = rememberCoroutineScope()
     val uiState by exploreViewModel.uiState.collectAsState()
     val favoriteState by favoriteViewModel.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(Unit) {
         if (BuildConfig.DEBUG) {
@@ -279,9 +283,20 @@ fun ExploreScreen(
 
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
-            favoriteViewModel.loadFavorites(accessToken)
-            historyViewModel.loadHistory(accessToken)
+            favoriteViewModel.ensureLoaded(accessToken)
+            historyViewModel.ensureLoaded(accessToken)
         }
+    }
+
+    DisposableEffect(lifecycleOwner, accessToken) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && accessToken.isNotBlank()) {
+                favoriteViewModel.refreshIfStale(accessToken)
+                historyViewModel.refreshIfStale(accessToken)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(historyViewModel) {

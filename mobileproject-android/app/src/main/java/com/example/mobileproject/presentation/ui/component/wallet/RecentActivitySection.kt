@@ -25,7 +25,7 @@ fun RecentActivitySection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

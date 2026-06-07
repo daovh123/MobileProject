@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,6 +54,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mobileproject.R
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.ui.component.wallet.BalanceSection
 import com.example.mobileproject.presentation.ui.component.wallet.MonthlySpendingCard
 import com.example.mobileproject.presentation.ui.component.wallet.RecentActivitySection
@@ -82,14 +83,15 @@ fun WalletScreen(
     var isContributeSheetVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.loadData()
-        savingGoalViewModel.loadGoals()
+        viewModel.ensureLoaded()
+        savingGoalViewModel.ensureLoaded()
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.loadData()
+                viewModel.refreshIfStale()
+                savingGoalViewModel.refreshIfStale()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -97,17 +99,19 @@ fun WalletScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(containerColor = colorScheme.surfaceContainerLow, floatingActionButton = {}) { paddingValues ->
+        Scaffold(
+            containerColor = colorScheme.surfaceContainerLow,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            floatingActionButton = {},
+        ) { paddingValues ->
             if (uiState.isLoading && uiState.wallet == null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = colorScheme.primary)
-                }
+                AppFullScreenLoading(message = "Đang tải ví...")
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 80.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp),
                 ) {
                     item { BalanceSection(balance = uiState.wallet?.balance ?: 0L) }
                     item {
@@ -194,7 +198,7 @@ fun WalletScreen(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(bottom = 100.dp, end = 24.dp),
+                    .padding(bottom = 92.dp, end = 20.dp),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -324,7 +328,7 @@ fun WalletScreen(
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp)
+                .padding(end = 20.dp, bottom = 16.dp)
                 .size(64.dp),
         ) {
             Icon(
@@ -346,8 +350,8 @@ fun WalletScreen(
                         note = note,
                         contributorId = if (isDirect) "me" else null,
                     )
-                    isContributeSheetVisible = false
                 },
+                onWithdrawToWallet = { goal -> savingGoalViewModel.withdrawToWallet(goal.id) },
             )
         }
     }

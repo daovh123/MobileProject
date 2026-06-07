@@ -47,11 +47,6 @@ fun PartnerProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
 
-    val primaryPink = Color(0xFFFE8A8E)
-    val lightPinkBg = Color(0xFFFFF0F1)
-    val textColor = Color(0xFF5C5254)
-    val grayText = Color(0xFF8C7F7B)
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -59,7 +54,7 @@ fun PartnerProfileScreen(
                     Text(
                         text = "Thông tin nửa kia",
                         fontWeight = FontWeight.Bold,
-                        color = textColor
+                        color = colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -67,7 +62,7 @@ fun PartnerProfileScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = textColor
+                            tint = colorScheme.onSurface
                         )
                     }
                 },
@@ -82,8 +77,8 @@ fun PartnerProfileScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        lightPinkBg,
-                        Color.White,
+                        colorScheme.primaryContainer,
+                        colorScheme.surface,
                     )
                 )
             )
@@ -95,7 +90,7 @@ fun PartnerProfileScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = primaryPink)
+                CircularProgressIndicator(color = colorScheme.primary)
             }
             return@Scaffold
         }
@@ -121,7 +116,7 @@ fun PartnerProfileScreen(
                     Text(
                         text = "Chưa kết nối với đối phương hoặc không tìm thấy dữ liệu.",
                         textAlign = TextAlign.Center,
-                        color = grayText,
+                        color = colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -161,13 +156,11 @@ fun PartnerProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // HERO AVATAR SECTION
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -175,7 +168,7 @@ fun PartnerProfileScreen(
                 Box(
                     modifier = Modifier
                         .size(120.dp)
-                        .border(4.dp, primaryPink, CircleShape)
+                        .border(4.dp, colorScheme.primary, CircleShape)
                         .padding(6.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -193,14 +186,14 @@ fun PartnerProfileScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(primaryPink.copy(alpha = 0.2f), CircleShape),
+                                .background(colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "P",
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = primaryPink
+                                color = colorScheme.primary
                             )
                         }
                     }
@@ -210,23 +203,22 @@ fun PartnerProfileScreen(
                     text = displayName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = textColor,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
                 Text(
                     text = "@$username",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = grayText,
+                    color = colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            // DETAILS ELEVATED CARD
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+                colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -240,75 +232,75 @@ fun PartnerProfileScreen(
                             icon = Icons.Default.Person,
                             label = "Họ và tên",
                             value = fullName,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.SentimentSatisfied,
                             label = "Biệt danh",
                             value = nickname,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.Cake,
                             label = "Ngày sinh",
                             value = birthDateFormatted,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.Wc,
                             label = "Giới tính",
                             value = genderText,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.Phone,
                             label = "Số điện thoại",
                             value = phoneNumber,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.Favorite,
                             label = "Số ngày bên nhau",
                             value = "$daysTogether ngày",
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
 
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                         DetailRow(
                             icon = Icons.Default.CalendarToday,
                             label = "Ngày kết đôi",
                             value = anniversaryDate,
-                            textColor = textColor,
-                            grayText = grayText,
-                            accentColor = primaryPink
+                            textColor = colorScheme.onSurface,
+                            grayText = colorScheme.onSurfaceVariant,
+                            accentColor = colorScheme.primary
                         )
                     }
                 }

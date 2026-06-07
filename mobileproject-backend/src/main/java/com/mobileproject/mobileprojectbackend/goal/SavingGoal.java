@@ -14,6 +14,9 @@ public class SavingGoal extends Goal {
     @Field("current_amount")
     private Long currentAmount;
 
+    @Field("withdrawn_amount")
+    private Long withdrawnAmount;
+
     public SavingGoal() {
         super();
     }
@@ -22,6 +25,7 @@ public class SavingGoal extends Goal {
         super(coupleId, name, category, GoalType.SAVING, deadline);
         this.targetAmount = targetAmount;
         this.currentAmount = 0L;
+        this.withdrawnAmount = 0L;
     }
 
     public Long getTargetAmount() {
@@ -38,5 +42,13 @@ public class SavingGoal extends Goal {
 
     public void setCurrentAmount(Long currentAmount) {
         this.currentAmount = currentAmount;
+    }
+
+    public Long getWithdrawnAmount() {
+        return withdrawnAmount;
+    }
+
+    public void setWithdrawnAmount(Long withdrawnAmount) {
+        this.withdrawnAmount = withdrawnAmount;
     }
 }

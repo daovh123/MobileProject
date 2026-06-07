@@ -69,6 +69,15 @@ public class GoalController {
         return ResponseEntity.badRequest().body(response);
     }
 
+    @PostMapping("/{goalId}/withdraw-to-wallet")
+    public ResponseEntity<ContributeResponse> withdrawGoalToWallet(@PathVariable String goalId) {
+        ContributeResponse response = goalService.withdrawGoalToWallet(goalId);
+        if (response.success()) {
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.badRequest().body(response);
+    }
+
     @GetMapping("/couple/{coupleId}")
     public ResponseEntity<List<Goal>> getGoalsByCouple(@PathVariable String coupleId) {
         List<Goal> goals = goalService.getGoalsByCouple(coupleId);

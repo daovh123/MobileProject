@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.ui.component.wallet.TransactionItem
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 
@@ -26,7 +27,7 @@ fun RecentTransactionsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadData()
+        viewModel.ensureLoaded()
     }
 
     Scaffold(
@@ -56,10 +57,7 @@ fun RecentTransactionsScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (uiState.isLoading && uiState.allTransactions.isEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = colorScheme.primary
-                )
+                AppFullScreenLoading(message = "Đang tải giao dịch...")
             } else if (uiState.allTransactions.isEmpty()) {
                 Text(
                     text = "Không tìm thấy giao dịch",

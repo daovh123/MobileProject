@@ -32,43 +32,42 @@ fun ExpenseFormFields(
     val context = LocalContext.current
     val calendar = Calendar.getInstance().apply { timeInMillis = date }
     val dateFormatter = SimpleDateFormat("EEEE, dd MMMM", Locale.getDefault())
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(
         modifier = modifier.padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Note Field
         Column {
             Text(
                 text = stringResource(R.string.expense_note_label),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = note,
                 onValueChange = onNoteChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.expense_note_placeholder), color = Color.LightGray) },
+                placeholder = { Text(stringResource(R.string.expense_note_placeholder), color = colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color(0xFFFFF0F0),
-                    focusedBorderColor = Color(0xFFFF8A80)
+                    unfocusedContainerColor = colorScheme.surfaceContainerLowest,
+                    focusedContainerColor = colorScheme.surfaceContainerLowest,
+                    unfocusedBorderColor = colorScheme.outlineVariant,
+                    focusedBorderColor = colorScheme.primary
                 ),
-                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFFF8A80)) }
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = colorScheme.primary) }
             )
         }
 
-        // Date Field
         Column {
             Text(
                 text = stringResource(R.string.expense_date_label),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray
+                color = colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Surface(
@@ -88,19 +87,19 @@ fun ExpenseFormFields(
                         ).show()
                     },
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFF0F0))
+                color = colorScheme.surfaceContainerLowest,
+                border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFFFF8A80))
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = if (isToday(date)) stringResource(R.string.expense_date_today) else dateFormatter.format(Date(date)),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.DarkGray
+                        color = colorScheme.onSurface
                     )
                 }
             }

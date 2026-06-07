@@ -7,8 +7,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -59,12 +55,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.mobileproject.presentation.model.wallet.VietnamBank
 import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
-import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
+import com.example.mobileproject.presentation.ui.components.core.AutoShrinkSingleLineText
+import com.example.mobileproject.presentation.ui.screen.wallet.components.SearchableBankPicker
 import com.example.mobileproject.presentation.viewmodel.TopUpNavigationEvent
 import com.example.mobileproject.presentation.viewmodel.TopUpPaymentMode
 import com.example.mobileproject.presentation.viewmodel.TopUpStep
@@ -254,17 +251,30 @@ private fun AmountStep(
             color = colorScheme.surfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(modifier = Modifier.padding(20.dp), horizontalArrangement = Arrangement.Center) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = "Số dư dự kiến sau khi nạp: ",
+                    modifier = Modifier.weight(1f),
                     color = colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Text(
+                AutoShrinkSingleLineText(
                     text = formatSimpleAmount(uiState.predictedBalance),
+                    modifier = Modifier.weight(1f),
                     color = colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
+                    maxFontSize = 16.sp,
+                    minFontSize = 12.sp,
+                    textAlign = TextAlign.End,
                 )
             }
         }
@@ -347,21 +357,14 @@ private fun BankSelectStep(
             color = colorScheme.onSurface,
         )
 
-        LazyColumn(
+        SearchableBankPicker(
+            banks = VietnamBankCatalog.banks,
+            selectedBank = uiState.selectedBank,
+            onBankSelected = viewModel::onBankSelected,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(VietnamBankCatalog.banks, key = { it.id }) { bank ->
-                BankItem(
-                    bank = bank,
-                    isSelected = uiState.selectedBank?.id == bank.id,
-                    onClick = { viewModel.onBankSelected(bank) },
-                    colorScheme = colorScheme,
-                )
-            }
-        }
+        )
 
         if (uiState.selectedBank != null) {
             Column(
@@ -420,43 +423,3 @@ private fun BankSelectStep(
     }
 }
 
-@Composable
-private fun BankItem(
-    bank: VietnamBank,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    colorScheme: ColorScheme,
-) {
-    val borderColor = if (isSelected) colorScheme.primary else colorScheme.outlineVariant.copy(alpha = 0.4f)
-    val containerColor = if (isSelected) colorScheme.primaryContainer.copy(alpha = 0.35f) else colorScheme.surfaceVariant
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(16.dp)),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            BankLogo(bank = bank, size = 40.dp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = bank.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) colorScheme.primary else colorScheme.onSurface,
-                )
-                Text(
-                    text = bank.shortName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}

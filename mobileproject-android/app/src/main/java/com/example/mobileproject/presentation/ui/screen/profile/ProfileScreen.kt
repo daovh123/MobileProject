@@ -29,7 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -43,6 +42,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,6 +62,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mobileproject.BuildConfig
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.CoupleStatus
@@ -75,6 +78,7 @@ import com.example.mobileproject.presentation.ui.icons.LucideLink
 import com.example.mobileproject.presentation.ui.icons.LucideLogOut
 import com.example.mobileproject.presentation.ui.icons.LucidePalette
 import com.example.mobileproject.presentation.ui.icons.LucideShield
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.ui.theme.ThemeMode
 import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
@@ -107,9 +111,20 @@ fun ProfileScreen(
     val notifGoal by notificationViewModel.notifGoal.collectAsState()
     val notifMemory by notificationViewModel.notifMemory.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(accessToken) {
-        viewModel.loadProfile(accessToken)
+        viewModel.ensureProfileLoaded(accessToken)
+    }
+
+    DisposableEffect(lifecycleOwner, accessToken) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshProfileIfStale(accessToken)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(uiState.errorMessage) {
@@ -139,14 +154,10 @@ fun ProfileScreen(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) { innerPadding ->
         if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            AppFullScreenLoading(
+                modifier = Modifier.padding(innerPadding),
+                message = "Đang tải hồ sơ...",
+            )
             return@Scaffold
         }
 
@@ -613,7 +624,6 @@ private fun ProfileMenuCard(
             ProfileMenuDropdownItem(
                 title = stringResource(R.string.profile_help_center_title),
                 icon = LucideInfo,
-                trailingText = BuildConfig.VERSION_NAME,
             ) {
                 Button(
                     onClick = onOpenTerms,

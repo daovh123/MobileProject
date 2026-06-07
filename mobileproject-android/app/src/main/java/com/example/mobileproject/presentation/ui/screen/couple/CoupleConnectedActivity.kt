@@ -148,14 +148,15 @@ private fun CoupleConnectedScreen(
 
     LaunchedEffect(accessToken) {
         if (accessToken.isNotBlank()) {
-            profileViewModel.loadProfile(accessToken)
+            profileViewModel.ensureProfileLoaded(accessToken)
         }
     }
 
-    val primaryPink = Color(0xFFFE8A8E)
-    val lightPinkBg = Color(0xFFFFF0F1)
-    val textColor = Color(0xFF5C5254)
-    val grayText = Color(0xFF8C7F7B)
+    val colorScheme = MaterialTheme.colorScheme
+    val primaryPink = colorScheme.primary
+    val lightPinkBg = colorScheme.primaryContainer
+    val textColor = colorScheme.onSurface
+    val grayText = colorScheme.onSurfaceVariant
 
     val myProfile = uiState.savedProfile
     val partnerProfile = uiState.partnerProfile
@@ -169,7 +170,7 @@ private fun CoupleConnectedScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(lightPinkBg)
+            .background(colorScheme.surface)
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -181,7 +182,7 @@ private fun CoupleConnectedScreen(
                     .clip(RoundedCornerShape(32.dp))
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
@@ -203,9 +204,9 @@ private fun CoupleConnectedScreen(
                             Surface(
                                 modifier = Modifier.size(96.dp),
                                 shape = CircleShape,
-                                border = BorderStroke(3.dp, Color.White),
+                                border = BorderStroke(3.dp, colorScheme.surfaceContainerLowest),
                                 shadowElevation = 4.dp,
-                                color = Color.White
+                                color = colorScheme.surfaceContainerLowest
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -235,9 +236,9 @@ private fun CoupleConnectedScreen(
                             Surface(
                                 modifier = Modifier.size(96.dp),
                                 shape = CircleShape,
-                                border = BorderStroke(3.dp, Color.White),
+                                border = BorderStroke(3.dp, colorScheme.surfaceContainerLowest),
                                 shadowElevation = 4.dp,
-                                color = Color.White
+                                color = colorScheme.surfaceContainerLowest
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -257,7 +258,7 @@ private fun CoupleConnectedScreen(
                                             text = partnerName.firstOrNull()?.uppercase() ?: "?",
                                             fontSize = 28.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFC4B8CC)
+                                            color = colorScheme.secondary
                                         )
                                     }
                                 }
@@ -268,7 +269,7 @@ private fun CoupleConnectedScreen(
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
-                                .background(Color.White, shape = CircleShape),
+                                .background(colorScheme.surfaceContainerLowest, shape = CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
@@ -388,7 +389,7 @@ private fun CoupleConnectedScreen(
                         shape = RoundedCornerShape(50.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = primaryPink,
-                            contentColor = Color.White
+                            contentColor = colorScheme.onPrimary
                         )
                     ) {
                         Row(

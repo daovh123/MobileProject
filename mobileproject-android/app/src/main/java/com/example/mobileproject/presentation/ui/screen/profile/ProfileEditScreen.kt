@@ -92,7 +92,7 @@ fun ProfileEditScreen(
     var showDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(accessToken) {
-        viewModel.loadProfile(accessToken)
+        viewModel.ensureProfileLoaded(accessToken)
         viewModel.loadAvatarFrames(accessToken)
     }
 

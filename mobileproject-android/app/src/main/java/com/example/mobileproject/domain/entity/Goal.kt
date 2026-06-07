@@ -20,7 +20,8 @@ data class SavingGoal(
     override val status: GoalStatus,
     override val createdAt: String?,
     val targetAmount: Long,
-    val currentAmount: Long
+    val currentAmount: Long,
+    val withdrawnAmount: Long = 0L,
 ) : Goal(id, coupleId, name, category, deadline, status, createdAt, GoalType.SAVING)
 
 data class FutureGoal(
@@ -48,11 +49,13 @@ enum class GoalType {
 enum class GoalStatus {
     IN_PROGRESS,
     ACHIEVED,
+    WITHDRAWN,
     FAILED;
 
     companion object {
         fun fromString(status: String?): GoalStatus = when (status?.uppercase()) {
             "ACHIEVED" -> ACHIEVED
+            "WITHDRAWN" -> WITHDRAWN
             "FAILED" -> FAILED
             else -> IN_PROGRESS
         }
@@ -67,5 +70,7 @@ data class GoalContributionResult(
     val amount: Long,
     val currentAmount: Long,
     val walletBalance: Long?,
+    val goalStatus: GoalStatus? = null,
+    val withdrawnAmount: Long = 0L,
     val timestamp: String
 )

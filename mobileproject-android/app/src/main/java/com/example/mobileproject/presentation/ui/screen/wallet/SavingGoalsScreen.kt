@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
 import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 
@@ -32,7 +32,7 @@ fun SavingGoalsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadGoals()
+        viewModel.ensureLoaded()
     }
 
     Scaffold(
@@ -53,12 +53,10 @@ fun SavingGoalsScreen(
         containerColor = colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading && uiState.goals.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = colorScheme.primary)
-            }
+            AppFullScreenLoading(message = "Đang tải mục tiêu tiết kiệm...")
         } else {
             val sortedGoals = uiState.goals.sortedWith(
-                compareBy<SavingGoal> { it.status == GoalStatus.ACHIEVED }
+                compareBy<SavingGoal> { it.status != GoalStatus.IN_PROGRESS }
                     .thenBy { it.deadline ?: "9999-99-99" }
             )
 

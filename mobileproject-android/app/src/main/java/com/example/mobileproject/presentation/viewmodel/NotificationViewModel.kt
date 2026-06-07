@@ -31,8 +31,15 @@ class NotificationViewModel @Inject constructor(
     val notifPrefs: NotificationPreferencesStore,
 ) : ViewModel() {
 
+    private companion object {
+        const val NOTIFICATION_STALE_MS: Long = 45_000L
+        const val UNREAD_STALE_MS: Long = 20_000L
+    }
+
     private val _uiState = MutableStateFlow(NotificationUiState())
     val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
+    private var lastNotificationsLoadedAt: Long = 0L
+    private var lastUnreadLoadedAt: Long = 0L
 
     // Expose preferences as StateFlows
     val notifChat: StateFlow<Boolean> = notifPrefs.notifChat
@@ -51,38 +58,73 @@ class NotificationViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     init {
-        loadUnreadCount()
-        loadNotifications(reset = true)
+        ensureLoaded()
     }
 
-    fun loadUnreadCount() {
+    fun ensureLoaded() {
+        val state = _uiState.value
+        if (state.notifications.isEmpty() && lastNotificationsLoadedAt == 0L) {
+            loadNotifications(reset = true, force = true, showLoading = true)
+        } else {
+            refreshIfStale()
+        }
+        if (lastUnreadLoadedAt == 0L || isUnreadStale()) {
+            loadUnreadCount(force = state.unreadCount == 0)
+        }
+    }
+
+    fun refreshIfStale() {
+        if (isUnreadStale()) {
+            loadUnreadCount(force = false)
+        }
+        if (isNotificationsStale()) {
+            loadNotifications(
+                reset = true,
+                force = false,
+                showLoading = _uiState.value.notifications.isEmpty(),
+            )
+        }
+    }
+
+    fun loadUnreadCount(force: Boolean = false) {
         val token = authSessionStore.load()?.token ?: return
+        if (!force && !isUnreadStale()) return
         viewModelScope.launch {
             runCatching {
                 val resp = apiService.getUnreadNotificationCount("Bearer $token")
                 if (resp.isSuccessful) {
                     val count = resp.body()?.count?.toInt() ?: 0
+                    lastUnreadLoadedAt = System.currentTimeMillis()
                     _uiState.update { it.copy(unreadCount = count) }
                 }
             }
         }
     }
 
-    fun loadNotifications(reset: Boolean = false) {
+    fun loadNotifications(
+        reset: Boolean = false,
+        force: Boolean = false,
+        showLoading: Boolean = true,
+    ) {
         val token = authSessionStore.load()?.token ?: return
         val page = if (reset) 0 else _uiState.value.currentPage + 1
         if (!reset && !_uiState.value.hasNextPage) return
+        if (reset && !force && !isNotificationsStale() && _uiState.value.notifications.isNotEmpty()) return
         if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            if (showLoading) {
+                _uiState.update { it.copy(isLoading = true) }
+            }
             runCatching {
                 val resp = apiService.getNotifications("Bearer $token", page)
                 if (resp.isSuccessful) {
                     val pageData = resp.body()
                     if (pageData != null) {
-                        val newList = if (reset) pageData.content
-                        else _uiState.value.notifications + pageData.content
+                        lastNotificationsLoadedAt = System.currentTimeMillis()
+                        val filtered = pageData.content.filter { it.type.uppercase() != "CHAT_MESSAGE" }
+                        val newList = if (reset) filtered
+                        else _uiState.value.notifications + filtered
                         _uiState.update {
                             it.copy(
                                 notifications = newList,
@@ -104,12 +146,16 @@ class NotificationViewModel @Inject constructor(
     }
 
     fun loadNextPage() {
-        loadNotifications(reset = false)
+        loadNotifications(reset = false, force = true, showLoading = true)
     }
 
-    fun refresh() {
-        loadUnreadCount()
-        loadNotifications(reset = true)
+    fun refresh(force: Boolean = false) {
+        loadUnreadCount(force = force || _uiState.value.unreadCount == 0)
+        loadNotifications(
+            reset = true,
+            force = force,
+            showLoading = force && _uiState.value.notifications.isEmpty(),
+        )
     }
 
     fun markAllRead() {
@@ -143,7 +189,7 @@ class NotificationViewModel @Inject constructor(
         }
     }
 
-    fun refreshUnreadCount() = loadUnreadCount()
+    fun refreshUnreadCount() = loadUnreadCount(force = true)
 
     // Preference setters
     fun setNotifChat(v: Boolean) = viewModelScope.launch { notifPrefs.setNotifChat(v) }
@@ -151,4 +197,12 @@ class NotificationViewModel @Inject constructor(
     fun setNotifTransaction(v: Boolean) = viewModelScope.launch { notifPrefs.setNotifTransaction(v) }
     fun setNotifGoal(v: Boolean) = viewModelScope.launch { notifPrefs.setNotifGoal(v) }
     fun setNotifMemory(v: Boolean) = viewModelScope.launch { notifPrefs.setNotifMemory(v) }
+
+    private fun isNotificationsStale(now: Long = System.currentTimeMillis()): Boolean {
+        return now - lastNotificationsLoadedAt >= NOTIFICATION_STALE_MS
+    }
+
+    private fun isUnreadStale(now: Long = System.currentTimeMillis()): Boolean {
+        return now - lastUnreadLoadedAt >= UNREAD_STALE_MS
+    }
 }

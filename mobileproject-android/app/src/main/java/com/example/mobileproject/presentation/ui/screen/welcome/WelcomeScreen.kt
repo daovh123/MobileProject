@@ -74,7 +74,7 @@ fun WelcomeScreen(
                     .border(
                         border = BorderStroke(
                             width = 16.dp,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest
                         ),
                         shape = RoundedCornerShape(40.dp)
                     )
@@ -164,7 +164,7 @@ fun WelcomeScreen(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .clip(RoundedCornerShape(32.dp))
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                         .border(
                             width = 1.dp,
                             color = Color.Transparent,

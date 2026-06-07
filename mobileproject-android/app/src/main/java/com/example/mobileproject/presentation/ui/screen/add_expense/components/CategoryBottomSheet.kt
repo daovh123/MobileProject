@@ -32,9 +32,10 @@ fun CategoryBottomSheet(
     onCategorySelected: (ExpenseCategory) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = colorScheme.surfaceContainerLowest,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         dragHandle = null
     ) {
@@ -44,7 +45,6 @@ fun CategoryBottomSheet(
                 .padding(24.dp)
                 .heightIn(max = 600.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -54,37 +54,35 @@ fun CategoryBottomSheet(
                     text = stringResource(R.string.category_sheet_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2D2D2D)
+                    color = colorScheme.onSurface
                 )
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.background(Color(0xFFFFF0F0), CircleShape)
+                    modifier = Modifier.background(colorScheme.primaryContainer, CircleShape)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close), tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_close), tint = colorScheme.onSurfaceVariant)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Search Bar
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
-                placeholder = { Text(stringResource(R.string.category_search_placeholder), color = Color.LightGray) },
+                placeholder = { Text(stringResource(R.string.category_search_placeholder), color = colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color(0xFFFFF0F0).copy(alpha = 0.5f),
-                    focusedContainerColor = Color(0xFFFFF0F0).copy(alpha = 0.5f),
+                    unfocusedContainerColor = colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    focusedContainerColor = colorScheme.primaryContainer.copy(alpha = 0.5f),
                     unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFFFF8A80)
+                    focusedBorderColor = colorScheme.primary
                 ),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.LightGray) }
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = colorScheme.onSurfaceVariant) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Category Groups
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -106,7 +104,7 @@ fun CategoryBottomSheet(
                                 text = stringResource(groupLabelRes),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Gray,
+                                color = colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                             )
                         }
@@ -134,14 +132,15 @@ fun CategoryRowItem(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         onClick = onSelect,
         shape = RoundedCornerShape(24.dp),
-        color = if (isSelected) Color(0xFFFFF0F0) else Color.White,
+        color = if (isSelected) colorScheme.primaryContainer else colorScheme.surfaceContainerLowest,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFF0F0))
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -151,13 +150,13 @@ fun CategoryRowItem(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(if (isSelected) Color(0xFFFF8A80) else Color(0xFFFFF0F0)),
+                    .background(if (isSelected) colorScheme.primary else colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = category.icon,
                     contentDescription = null,
-                    tint = if (isSelected) Color.White else Color(0xFFFF8A80),
+                    tint = if (isSelected) colorScheme.onPrimary else colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -168,7 +167,7 @@ fun CategoryRowItem(
                 text = category.displayName.uppercase(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color(0xFF2D2D2D) else Color.Gray,
+                color = if (isSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
             
@@ -176,13 +175,13 @@ fun CategoryRowItem(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFFFF8A80)
+                    tint = colorScheme.primary
                 )
             } else {
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .border(2.dp, Color.LightGray.copy(alpha = 0.3f), CircleShape)
+                        .border(2.dp, colorScheme.outlineVariant.copy(alpha = 0.3f), CircleShape)
                 )
             }
         }

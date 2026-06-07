@@ -45,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.domain.entity.TopUpStatus
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
+import com.example.mobileproject.presentation.ui.theme.AppTheme
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import kotlinx.coroutines.delay
@@ -127,7 +128,7 @@ fun TopUpBankRedirectScreen(
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Thành công",
-                            tint = Color(0xFF4CAF50),
+                            tint = AppTheme.extendedColors.successGreen,
                             modifier = Modifier
                                 .size(80.dp)
                                 .scale(checkmarkScale),

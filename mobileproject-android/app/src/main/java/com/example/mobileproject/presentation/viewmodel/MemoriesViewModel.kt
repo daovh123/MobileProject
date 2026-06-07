@@ -17,6 +17,7 @@ import com.example.mobileproject.presentation.widget.MomentWidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,12 +33,35 @@ class MemoriesViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
+    private companion object {
+        const val MEMORIES_STALE_MS: Long = 45_000L
+    }
+
     private val _uiState = MutableStateFlow(MemoriesUiState())
     val uiState: StateFlow<MemoriesUiState> = _uiState.asStateFlow()
 
     private var accessToken: String? = null
+    private var lastLoadedToken: String? = null
+    private var lastLoadedAt: Long = 0L
+    private var loadJob: Job? = null
 
-    fun load(accessToken: String) {
+    fun ensureLoaded(accessToken: String, force: Boolean = false) {
+        val trimmedToken = accessToken.trim()
+        if (trimmedToken.isBlank()) return
+        val hasLoadedForToken = trimmedToken == lastLoadedToken && lastLoadedAt > 0L
+        val isFresh = System.currentTimeMillis() - lastLoadedAt < MEMORIES_STALE_MS
+        if (!force && hasLoadedForToken && isFresh) {
+            return
+        }
+
+        load(trimmedToken, showLoading = !hasLoadedForToken)
+    }
+
+    fun refreshIfStale(accessToken: String) {
+        ensureLoaded(accessToken, force = false)
+    }
+
+    fun load(accessToken: String, showLoading: Boolean = true) {
         if (accessToken.isBlank()) return
         this.accessToken = accessToken.trim()
         val session = authSessionStore.load()
@@ -53,14 +77,20 @@ class MemoriesViewModel @Inject constructor(
                     }
                 }
         }
-        refreshMoments()
+        refreshMoments(showLoading = showLoading)
     }
 
     fun refreshMoments(showLoading: Boolean = true) {
         val token = accessToken ?: return
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             if (showLoading) {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = state.moments.isEmpty(),
+                        errorMessage = null,
+                    )
+                }
             } else {
                 _uiState.update { it.copy(errorMessage = null) }
             }
@@ -77,6 +107,8 @@ class MemoriesViewModel @Inject constructor(
             }.onSuccess { response ->
                 if (response.isSuccessful) {
                     val moments = response.body().orEmpty()
+                    lastLoadedToken = token
+                    lastLoadedAt = System.currentTimeMillis()
                     _uiState.update { it.copy(isLoading = false, moments = moments, coupleId = coupleId) }
                     updateWidgetLatest(moments.firstOrNull())
                 } else {

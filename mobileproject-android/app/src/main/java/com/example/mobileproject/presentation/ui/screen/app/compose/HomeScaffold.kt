@@ -149,6 +149,7 @@ fun HomeScaffold(
     val isSettingsAppearanceRoute = currentRoute == HomeRoutes.SETTINGS_APPEARANCE
     val isSettingsHelpRoute = currentRoute == HomeRoutes.SETTINGS_HELP
     val isTransferRoute = currentRoute == HomeRoutes.TRANSFER
+    val isPartnerProfileRoute = currentRoute == HomeRoutes.PARTNER_PROFILE
 
     val hideTopAndBottomBar = isChatRoute || isAddExpenseRoute || isTopUpRoute ||
         isTopUpQRRoute || isTopUpBankRedirectRoute ||
@@ -156,7 +157,8 @@ fun HomeScaffold(
         isAddSavingGoalRoute || isAddFutureGoalRoute || isFutureGoalsRoute ||
         isProfileEditRoute || isMemoriesCaptureRoute || isNotificationsRoute ||
         isSettingsPrivacyRoute || isSettingsNotificationsRoute ||
-        isSettingsAppearanceRoute || isSettingsHelpRoute || isTransferRoute
+        isSettingsAppearanceRoute || isSettingsHelpRoute || isTransferRoute ||
+        isPartnerProfileRoute
 
     val snackbarHostState = remember { SnackbarHostState() }
     val notifState by notificationViewModel.uiState.collectAsState()
@@ -176,7 +178,7 @@ fun HomeScaffold(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(notificationViewModel) {
-        notificationViewModel.refresh()
+        notificationViewModel.ensureLoaded()
     }
 
     LaunchedEffect(navController, openLabel, msgFormat) {
@@ -193,14 +195,14 @@ fun HomeScaffold(
 
     LaunchedEffect(notificationViewModel) {
         NotificationRefreshBus.events.collect {
-            notificationViewModel.refresh()
+            notificationViewModel.refresh(force = true)
         }
     }
 
     DisposableEffect(lifecycleOwner, notificationViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                notificationViewModel.refresh()
+                notificationViewModel.refreshIfStale()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -268,9 +270,7 @@ fun HomeScaffold(
         containerColor = Color.Transparent,
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Box(
                 modifier = Modifier
@@ -286,18 +286,22 @@ fun HomeScaffold(
                     ),
             )
 
-            Box(
-                modifier = Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-110).dp, y = 130.dp)
-                    .background(
-                        brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.05f), Color.Transparent)),
-                        shape = CircleShape,
-                    ),
-            )
+            if (!isNotificationsRoute) {
+                Box(
+                    modifier = Modifier.align(Alignment.BottomStart).size(300.dp).offset(x = (-110).dp, y = 130.dp)
+                        .background(
+                            brush = Brush.radialGradient(colors = listOf(colorScheme.tertiary.copy(alpha = 0.05f), Color.Transparent)),
+                            shape = CircleShape,
+                        ),
+                )
+            }
 
             NavHost(
                 navController = navController,
                 startDestination = HomeRoutes.HOME,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
             ) {
                 composable(HomeRoutes.HOME) {
                     HomeScreen(
@@ -486,7 +490,7 @@ fun HomeScaffold(
                 composable(HomeRoutes.PARTNER_PROFILE) {
                     val profileViewModel: com.example.mobileproject.presentation.viewmodel.ProfileViewModel = hiltViewModel()
                     LaunchedEffect(accessToken) {
-                        profileViewModel.loadProfile(accessToken)
+                        profileViewModel.ensureProfileLoaded(accessToken)
                     }
                     PartnerProfileScreen(
                         accessToken = accessToken,

@@ -24,9 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -52,6 +51,8 @@ import com.example.mobileproject.data.datasource.remote.ApiService
 import com.example.mobileproject.domain.entity.*
 import com.example.mobileproject.presentation.service.MapShareForegroundService
 import com.example.mobileproject.presentation.notification.ChatNotifications
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
+import com.example.mobileproject.presentation.ui.components.core.AppScreenBackground
 import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActivity
 import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
 import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
@@ -60,6 +61,7 @@ import com.example.mobileproject.presentation.viewmodel.CoupleUiState
 import com.example.mobileproject.presentation.viewmodel.CoupleViewModel
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
 import com.example.mobileproject.presentation.viewmodel.HomeMapShareViewModel
+import com.example.mobileproject.presentation.viewmodel.MemoriesViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import kotlinx.coroutines.launch
@@ -108,6 +110,9 @@ fun HomeScreen(
     val goalViewModel: GoalViewModel = hiltViewModel()
     val goalState by goalViewModel.uiState.collectAsState()
 
+    val memoriesViewModel: MemoriesViewModel = hiltViewModel()
+    val memoriesState by memoriesViewModel.uiState.collectAsState()
+
     val homeMapShareViewModel: HomeMapShareViewModel = hiltViewModel()
     val homeMapShareState by homeMapShareViewModel.uiState.collectAsState()
     val isShareLocationEnabled = homeMapShareState.shareLocationEnabled
@@ -121,13 +126,22 @@ fun HomeScreen(
     var myLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var partnerLocationPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var hasCenteredOnce by remember { mutableStateOf(false) }
+    val memoriesSummary = when {
+        coupleState.coupleId == null -> "0"
+        memoriesState.isLoading && memoriesState.moments.isEmpty() -> "..."
+        else -> memoriesState.moments.size.toString()
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, coupleState.coupleId, accessToken) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 if (coupleState.coupleId != null) {
-                    goalViewModel.loadGoals()
+                    walletViewModel.refreshIfStale()
+                    goalViewModel.refreshIfStale()
+                    if (accessToken.isNotBlank()) {
+                        memoriesViewModel.refreshIfStale(accessToken)
+                    }
                 }
             }
         }
@@ -311,10 +325,13 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(coupleState.coupleId) {
+    LaunchedEffect(coupleState.coupleId, accessToken) {
         if (coupleState.coupleId != null) {
-            walletViewModel.loadData()
-            goalViewModel.loadGoals()
+            walletViewModel.ensureLoaded()
+            goalViewModel.ensureLoaded()
+            if (accessToken.isNotBlank()) {
+                memoriesViewModel.ensureLoaded(accessToken)
+            }
         }
     }
 
@@ -322,6 +339,7 @@ fun HomeScreen(
     val sortedGoals = goals.sortedWith(
         compareBy<Goal> { goal ->
             val isAchieved = goal.status == GoalStatus.ACHIEVED ||
+                goal.status == GoalStatus.WITHDRAWN ||
                 (goal as? SavingGoal)?.let { it.targetAmount > 0 && it.currentAmount >= it.targetAmount } == true ||
                 (goal as? FutureGoal)?.let { it.progress >= 100.0 } == true
             isAchieved
@@ -329,7 +347,9 @@ fun HomeScreen(
     )
     val walletBalance = walletState.wallet?.balance ?: 0L
     val inProgressSaving = sortedGoals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.IN_PROGRESS }.sumOf { it.currentAmount }
-    val achievedSaving = sortedGoals.filterIsInstance<SavingGoal>().filter { it.status == GoalStatus.ACHIEVED }.sumOf { it.currentAmount }
+    val achievedSaving = sortedGoals.filterIsInstance<SavingGoal>().filter {
+        it.status == GoalStatus.ACHIEVED || (it.targetAmount > 0 && it.currentAmount >= it.targetAmount)
+    }.sumOf { it.currentAmount }
     val displaySharedBalance = walletBalance + inProgressSaving - achievedSaving
 
     val colorScheme = MaterialTheme.colorScheme
@@ -347,17 +367,24 @@ fun HomeScreen(
         }
     }
 
+    val isInitialLoading = coupleState.isLoading && coupleState.coupleId == null && !coupleState.paired
+    if (isInitialLoading) {
+        AppFullScreenLoading(message = "Đang tải trang chủ...")
+        return
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
             state = coupleState,
             walletBalance = displaySharedBalance,
-            actualWalletBalance = walletBalance,
+            memoriesSummary = memoriesSummary,
             daysTogether = coupleState.daysTogether ?: computeDaysTogetherFromStartAt(coupleState.startAt) ?: 1L,
             goals = sortedGoals,
             canContribute = savingGoals.isNotEmpty(),
             onTopUpClick = onNavigateToTopUp,
             onTransferClick = onNavigateToTransfer,
             onContributeClick = { isContributeSheetVisible = true },
+            onOpenChat = onNavigateToChat,
             onPairNow = {
                 if (accessToken.isNotBlank()) {
                     context.startActivity(Intent(context, CoupleConnectActivity::class.java).putExtra(CoupleConnectActivity.EXTRA_ACCESS_TOKEN, accessToken))
@@ -394,7 +421,6 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                GoalFabItem(stringResource(R.string.home_fab_chat), Icons.AutoMirrored.Filled.Chat) { isFabExpanded = false; onNavigateToChat() }
                 GoalFabItem(stringResource(R.string.home_fab_add_future_goal), Icons.Default.Event) { isFabExpanded = false; onNavigateToAddFutureGoal() }
                 GoalFabItem(stringResource(R.string.home_fab_add_saving_goal), Icons.Default.Savings) { isFabExpanded = false; onNavigateToAddSavingGoal() }
             }
@@ -423,8 +449,8 @@ fun HomeScreen(
                         note = note,
                         contributorId = if (isDirect) "me" else null,
                     )
-                    isContributeSheetVisible = false
                 },
+                onWithdrawToWallet = { goal -> goalViewModel.withdrawToWallet(goal.id) },
             )
         }
     }
@@ -475,13 +501,14 @@ private fun GoalFabItem(text: String, icon: androidx.compose.ui.graphics.vector.
 private fun HomeContent(
     state: CoupleUiState,
     walletBalance: Long,
-    actualWalletBalance: Long,
+    memoriesSummary: String,
     daysTogether: Long,
     goals: List<Goal>,
     canContribute: Boolean,
     onTopUpClick: () -> Unit,
     onTransferClick: () -> Unit,
     onContributeClick: () -> Unit,
+    onOpenChat: () -> Unit,
     onPairNow: () -> Unit,
     onCenterMe: () -> Unit,
     onCenterPartner: () -> Unit,
@@ -536,8 +563,20 @@ private fun HomeContent(
             DaysTogetherModernCard(daysTogether = daysTogether)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MiniMetricCard(stringResource(R.string.home_mini_metric_savings), formatSimpleAmount(actualWalletBalance), Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                MiniMetricCard(stringResource(R.string.home_mini_metric_memories), stringResource(R.string.home_mini_metric_new_format, 12), Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f))
+                MiniMetricCard(
+                    title = stringResource(R.string.home_mini_metric_chat),
+                    value = stringResource(R.string.home_mini_metric_chat_hint),
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenChat,
+                    compactValue = true,
+                )
+                MiniMetricCard(
+                    title = stringResource(R.string.home_mini_metric_memories),
+                    value = memoriesSummary,
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             GoalListSection(
@@ -924,25 +963,54 @@ fun DaysTogetherModernCard(daysTogether: Long) {
 }
 
 @Composable
-fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
+fun MiniMetricCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    compactValue: Boolean = false,
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     ElevatedCard(
-        modifier = modifier,
+        modifier = modifier.then(
+            if (onClick != null) {
+                Modifier.clickable(onClick = onClick)
+            } else {
+                Modifier
+            }
+        ),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 116.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
             Icon(icon, null, tint = colorScheme.primary, modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                title,
-                style = MaterialTheme.typography.labelSmall,
-                color = colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-            )
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                )
+                Text(
+                    value,
+                    style = if (compactValue) MaterialTheme.typography.bodySmall else MaterialTheme.typography.titleSmall,
+                    fontWeight = if (compactValue) FontWeight.Medium else FontWeight.ExtraBold,
+                    color = colorScheme.onSurface,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -996,14 +1064,12 @@ private fun IncomingRequestHomeCard(
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val primaryPink = Color(0xFFFE8A8E)
-    val lightPinkBg = Color(0xFFFFF0F1)
-    val textColor = Color(0xFF5C5254)
+    val colorScheme = MaterialTheme.colorScheme
 
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -1018,19 +1084,19 @@ private fun IncomingRequestHomeCard(
                     text = "Lời mời ghép đôi mới 💕",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = textColor,
+                    color = colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    color = lightPinkBg
+                    color = colorScheme.primaryContainer
                 ) {
                     Text(
                         text = requesterName,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = primaryPink,
+                        color = colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1051,8 +1117,8 @@ private fun IncomingRequestHomeCard(
                             .height(48.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryPink,
-                            contentColor = Color.White
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -1070,8 +1136,8 @@ private fun IncomingRequestHomeCard(
                             .height(48.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = textColor
+                            containerColor = colorScheme.surfaceContainerHigh,
+                            contentColor = colorScheme.onSurface
                         )
                     ) {
                         Text(

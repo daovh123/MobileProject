@@ -8,23 +8,26 @@ object ApiBaseUrlResolver {
 
     private const val TAG = "ApiBaseUrlResolver"
     private const val EMULATOR_HOST = "10.0.2.2"
+    private const val DEFAULT_HTTP_SCHEME = "http://"
     private val lanIpv4Regex = Regex("192\\.168\\.\\d+\\.\\d+")
 
     fun resolveHttpBase(rawBaseUrl: String): String {
         val raw = rawBaseUrl.trim().removeSurrounding("\"")
         val isEmulator = isProbablyAnEmulator()
+        val normalized = normalizeHttpScheme(raw)
 
         var resolved = runCatching {
-            rewriteWithUri(raw, isEmulator)
+            rewriteWithUri(normalized, isEmulator)
         }.getOrElse {
-            rewriteWithStringFallback(raw, isEmulator)
+            rewriteWithStringFallback(normalized, isEmulator)
         }
+        resolved = normalizeHttpScheme(resolved)
 
         if (!resolved.endsWith("/")) {
             resolved += "/"
         }
 
-        Log.i(TAG, "HTTP base raw='$raw' resolved='$resolved' emulator=$isEmulator")
+        Log.i(TAG, "HTTP base raw='$raw' normalized='$normalized' resolved='$resolved' emulator=$isEmulator")
         return resolved
     }
 
@@ -67,6 +70,27 @@ object ApiBaseUrlResolver {
         }
 
         return rewritten
+    }
+
+    private fun normalizeHttpScheme(url: String): String {
+        val trimmed = url.trim()
+        if (trimmed.isEmpty()) {
+            return "${DEFAULT_HTTP_SCHEME}localhost:8080"
+        }
+
+        return when {
+            trimmed.startsWith("http://", ignoreCase = true) ||
+                trimmed.startsWith("https://", ignoreCase = true) -> trimmed
+
+            trimmed.startsWith("ws://", ignoreCase = true) ->
+                DEFAULT_HTTP_SCHEME + trimmed.substringAfter("://")
+
+            trimmed.startsWith("wss://", ignoreCase = true) ->
+                "https://" + trimmed.substringAfter("://")
+
+            trimmed.startsWith("//") -> "$DEFAULT_HTTP_SCHEME${trimmed.removePrefix("//")}"
+            else -> "$DEFAULT_HTTP_SCHEME$trimmed"
+        }
     }
 
     private fun isProbablyAnEmulator(): Boolean {

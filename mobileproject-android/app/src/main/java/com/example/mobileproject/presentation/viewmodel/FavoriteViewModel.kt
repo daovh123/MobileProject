@@ -25,10 +25,34 @@ class FavoriteViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
 ) : ViewModel() {
 
+    private companion object {
+        const val FAVORITES_STALE_MS: Long = 60_000L
+    }
+
     private val _uiState = MutableStateFlow(FavoriteUiState())
     val uiState: StateFlow<FavoriteUiState> = _uiState.asStateFlow()
+    private var lastLoadedToken: String? = null
+    private var lastLoadedAt: Long = 0L
 
-    fun loadFavorites(token: String) {
+    fun ensureLoaded(token: String, force: Boolean = false) {
+        val trimmedToken = token.trim()
+        if (trimmedToken.isBlank()) {
+            loadFavorites(token)
+            return
+        }
+        val hasLoadedForToken = trimmedToken == lastLoadedToken && lastLoadedAt > 0L
+        val isFresh = System.currentTimeMillis() - lastLoadedAt < FAVORITES_STALE_MS
+        if (!force && hasLoadedForToken && isFresh) {
+            return
+        }
+        loadFavorites(trimmedToken, showLoading = !hasLoadedForToken)
+    }
+
+    fun refreshIfStale(token: String) {
+        ensureLoaded(token, force = false)
+    }
+
+    fun loadFavorites(token: String, showLoading: Boolean = true) {
         if (token.isBlank()) {
             _uiState.update {
                 it.copy(
@@ -42,10 +66,18 @@ class FavoriteViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (showLoading) {
+                _uiState.update { state ->
+                    state.copy(isLoading = state.favoriteIds.isEmpty(), errorMessage = null)
+                }
+            } else {
+                _uiState.update { it.copy(errorMessage = null) }
+            }
 
             favoriteRepository.getFavorites(token)
                 .onSuccess { favorites ->
+                    lastLoadedToken = token.trim()
+                    lastLoadedAt = System.currentTimeMillis()
                     _uiState.update {
                         it.copy(
                             isLoading = false,

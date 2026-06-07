@@ -35,7 +35,8 @@ fun GoalDto.toDomain(): Goal {
             status = statusEnum,
             createdAt = this.createdAt,
             targetAmount = this.targetAmount ?: 0L,
-            currentAmount = this.currentAmount ?: 0L
+            currentAmount = this.currentAmount ?: 0L,
+            withdrawnAmount = this.withdrawnAmount ?: 0L,
         )
     }
 }

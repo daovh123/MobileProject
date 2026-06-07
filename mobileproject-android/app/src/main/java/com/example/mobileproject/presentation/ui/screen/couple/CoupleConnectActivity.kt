@@ -237,7 +237,7 @@ private fun CoupleConnectScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    uiState.myCoupleCode?.replace("-", "") ?: "------",
+                                    uiState.myCoupleCode?.replace("", "") ?: "------",
                                     style = MaterialTheme.typography.displaySmall,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
@@ -486,7 +486,7 @@ private fun CoupleConnectScreen(
                             // Requester Info: Soft Well
                             Surface(
                                 shape = RoundedCornerShape(32.dp),
-                                color = Color.White,
+                                color = colorScheme.surfaceContainerLowest,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
@@ -519,7 +519,7 @@ private fun CoupleConnectScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.surfaceContainerLowest),
                                     shape = RoundedCornerShape(32.dp)
                                 ) {
                                     Text(

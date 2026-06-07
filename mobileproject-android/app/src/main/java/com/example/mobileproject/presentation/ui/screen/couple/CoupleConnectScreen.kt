@@ -104,15 +104,15 @@ fun CoupleConnectContent(
         label = "couple-heart-scale",
     )
 
-    val primaryPink = Color(0xFFFE8A8E)
-    val lightPinkBg = Color(0xFFFFF0F1)
-    val textColor = Color(0xFF5C5254)
-    val grayText = Color(0xFF8C7F7B)
+    val primaryPink = colorScheme.primary
+    val lightPinkBg = colorScheme.primaryContainer
+    val textColor = colorScheme.onSurface
+    val grayText = colorScheme.onSurfaceVariant
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(lightPinkBg)
+            .background(colorScheme.surface)
     ) {
         LazyColumn(
             modifier = Modifier
@@ -146,7 +146,7 @@ fun CoupleConnectContent(
                             Icon(
                                 imageVector = LucideHeart,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = colorScheme.onPrimary,
                                 modifier = Modifier.size(36.dp)
                             )
                         }
@@ -183,7 +183,7 @@ fun CoupleConnectContent(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp)),
                     shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -234,7 +234,6 @@ fun CoupleConnectContent(
                             )
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Code Pill Container
                             val rawCode = uiState.myCoupleCode?.replace("-", "")?.takeIf { it.isNotBlank() } ?: "000000"
                             val formattedCode = if (rawCode.length == 6) "${rawCode.substring(0, 3)}-${rawCode.substring(3)}" else rawCode
 
@@ -281,7 +280,6 @@ fun CoupleConnectContent(
                                 }
                             }
 
-                            // If waiting/rejected messages inside Card 1
                             if (uiState.outgoingStatus.equals("PENDING", ignoreCase = true)) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Surface(
@@ -339,7 +337,7 @@ fun CoupleConnectContent(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(32.dp)),
                     shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -435,7 +433,7 @@ fun CoupleConnectContent(
                                 shape = RoundedCornerShape(50.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = primaryPink,
-                                    contentColor = Color.White,
+                                    contentColor = colorScheme.onPrimary,
                                     disabledContainerColor = primaryPink.copy(alpha = 0.5f)
                                 )
                             ) {
@@ -476,7 +474,7 @@ fun CoupleConnectContent(
                 item {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
+                        color = colorScheme.surfaceContainerLowest,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
@@ -519,7 +517,7 @@ fun CoupleConnectContent(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(32.dp),
-                        color = Color.White,
+                        color = colorScheme.surfaceContainerLowest,
                         shadowElevation = 2.dp
                     ) {
                         Column(
@@ -572,7 +570,7 @@ fun CoupleConnectContent(
                                     shape = RoundedCornerShape(25.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = primaryPink,
-                                        contentColor = Color.White
+                                        contentColor = colorScheme.onPrimary
                                     )
                                 ) {
                                     Text(

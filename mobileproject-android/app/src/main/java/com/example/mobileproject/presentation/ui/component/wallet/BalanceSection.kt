@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mobileproject.presentation.ui.components.core.AutoShrinkSingleLineText
 import com.example.mobileproject.presentation.ui.theme.AppTheme
 import java.text.DecimalFormat
 
@@ -48,13 +49,15 @@ fun BalanceSection(
                     letterSpacing = 1.5.sp,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
+                AutoShrinkSingleLineText(
                     text = formatSimpleAmount(balance),
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 40.sp,
-                    ),
+                    maxFontSize = 40.sp,
+                    minFontSize = 20.sp,
+                    stepGranularity = 1.sp,
+                    style = MaterialTheme.typography.displayMedium,
                     color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

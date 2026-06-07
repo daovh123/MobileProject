@@ -33,7 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.surfaceColorAtElevation
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -165,12 +165,12 @@ fun HomeTopBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = colorScheme.surface.copy(alpha = 0.95f),
-            scrolledContainerColor = colorScheme.surfaceColorAtElevation(3.dp),
+            scrolledContainerColor = colorScheme.surface.copy(alpha = 0.95f),
             titleContentColor = colorScheme.onSurface,
             navigationIconContentColor = colorScheme.primary,
             actionIconContentColor = colorScheme.primary,
         ),
-        modifier = Modifier.padding(bottom = 2.dp),
+        modifier = Modifier,
     )
 }
 

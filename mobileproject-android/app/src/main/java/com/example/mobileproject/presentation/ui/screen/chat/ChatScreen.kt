@@ -93,7 +93,7 @@ import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
+
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.window.Popup
 import androidx.compose.foundation.layout.offset
@@ -110,6 +110,7 @@ import com.example.mobileproject.presentation.ui.icons.LucideReply
 import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.ui.icons.LucideImage
 import com.example.mobileproject.presentation.ui.icons.LucideCamera
+import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
 import com.example.mobileproject.presentation.viewmodel.ChatViewModel
 import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardParser
 import com.example.mobileproject.presentation.viewmodel.ExplorePlanChatCardData
@@ -211,7 +212,12 @@ fun ChatScreen(
 
         // ── Message list ────────────────────────────────────────────
         val messages = uiState.messages
-        if (messages.isEmpty() && !uiState.isLoading) {
+        if (uiState.isLoading && messages.isEmpty()) {
+            AppFullScreenLoading(
+                modifier = Modifier.weight(1f),
+                message = "Đang tải tin nhắn...",
+            )
+        } else if (messages.isEmpty() && !uiState.isLoading) {
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -564,8 +570,8 @@ private fun ChatInputBar(
                         unfocusedTextColor = colorScheme.onSurface,
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5),
-                        unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5),
+                        focusedContainerColor = colorScheme.surfaceVariant,
+                        unfocusedContainerColor = colorScheme.surfaceVariant,
                         cursorColor = colorScheme.primary,
                     ),
                 )
@@ -795,7 +801,7 @@ private fun ChatBubble(
 
     val bubbleShape = getBubbleShape(mine, positionInGroup)
     val mineGradient = Brush.linearGradient(colors = listOf(colorScheme.primary, colorScheme.tertiary))
-    val partnerColor = if (isSystemInDarkTheme()) Color(0xFF242526) else Color(0xFFF0F2F5)
+    val partnerColor = colorScheme.surfaceVariant
 
     val textColor = if (mine) Color.White else colorScheme.onSurface
     val timeColor = if (mine) Color.White.copy(alpha = 0.65f) else colorScheme.onSurfaceVariant
@@ -856,7 +862,7 @@ private fun ChatBubble(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = if (isSystemInDarkTheme()) Color(0xFF303030) else Color.White,
+                        color = colorScheme.surfaceContainerHigh,
                         shadowElevation = 6.dp,
                         modifier = Modifier.padding(bottom = 4.dp)
                     ) {
@@ -941,7 +947,7 @@ private fun ChatBubble(
                 if (reaction != null) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSystemInDarkTheme()) Color(0xFF3E4042) else Color(0xFFF0F2F5),
+                        color = colorScheme.surfaceVariant,
                         border = BorderStroke(1.dp, colorScheme.background),
                         modifier = Modifier
                             .offset(

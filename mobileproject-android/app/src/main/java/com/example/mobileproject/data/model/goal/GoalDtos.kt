@@ -18,6 +18,7 @@ data class GoalDto(
     // Saving Goal fields
     @SerializedName("targetAmount") val targetAmount: Long?,
     @SerializedName("currentAmount") val currentAmount: Long?,
+    @SerializedName("withdrawnAmount") val withdrawnAmount: Long?,
     
     // Future Goal fields
     @SerializedName("progress") val progress: Double?,
@@ -67,5 +68,7 @@ data class ContributionResponseDto(
     @SerializedName("amount") val amount: Long?,
     @SerializedName("currentGoalAmount") val currentGoalAmount: Long?,
     @SerializedName("currentWalletBalance") val currentWalletBalance: Long?,
-    @SerializedName("contributorId") val contributorId: String?
+    @SerializedName("contributorId") val contributorId: String?,
+    @SerializedName("goalStatus") val goalStatus: String?,
+    @SerializedName("withdrawnAmount") val withdrawnAmount: Long?
 )

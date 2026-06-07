@@ -57,6 +57,7 @@ import coil.compose.AsyncImage
 import com.example.mobileproject.domain.entity.TopUpRequest
 import com.example.mobileproject.domain.entity.TopUpStatus
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
+import com.example.mobileproject.presentation.ui.theme.AppTheme
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
 import com.example.mobileproject.utils.formatSimpleAmount
 import com.google.zxing.BarcodeFormat
@@ -166,7 +167,7 @@ fun TopUpQRScreen(
 
                 Card(
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLowest),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -280,7 +281,7 @@ private fun LoadingTopUpState(colorScheme: ColorScheme) {
 @Composable
 private fun TopUpStatusBadge(status: TopUpStatus, colorScheme: ColorScheme) {
     val (label, tint, icon) = when (status) {
-        TopUpStatus.PAID -> Triple("Đã thanh toán", Color(0xFF2E7D32), Icons.Default.CheckCircle)
+        TopUpStatus.PAID -> Triple("Đã thanh toán", AppTheme.extendedColors.successGreen, Icons.Default.CheckCircle)
         TopUpStatus.FAILED -> Triple("Thất bại", colorScheme.error, Icons.Default.ErrorOutline)
         TopUpStatus.EXPIRED -> Triple("Hết hạn", colorScheme.error, Icons.Default.ErrorOutline)
         TopUpStatus.PENDING -> Triple("Đang chờ chuyển khoản", colorScheme.primary, Icons.Default.Pending)

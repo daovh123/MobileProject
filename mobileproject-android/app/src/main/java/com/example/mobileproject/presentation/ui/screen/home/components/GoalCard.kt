@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.mobileproject.domain.entity.FutureGoal
 import com.example.mobileproject.domain.entity.Goal
+import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
 import com.example.mobileproject.utils.formatSimpleAmount
 
@@ -73,13 +74,22 @@ fun GoalCard(
 @Composable
 private fun SavingGoalContent(goal: SavingGoal) {
     val colorScheme = MaterialTheme.colorScheme
-    val progress = if (goal.targetAmount > 0) goal.currentAmount.toFloat() / goal.targetAmount else 0f
+    val displayedAmount = if (goal.status == GoalStatus.WITHDRAWN) goal.withdrawnAmount else goal.currentAmount
+    val progress = when {
+        goal.targetAmount <= 0L -> 0f
+        goal.status == GoalStatus.WITHDRAWN -> 1f
+        else -> displayedAmount.toFloat() / goal.targetAmount
+    }
     val percentage = (progress * 100).toInt()
-    val remaining = (goal.targetAmount - goal.currentAmount).coerceAtLeast(0)
+    val remaining = when {
+        goal.status == GoalStatus.WITHDRAWN -> 0L
+        goal.status == GoalStatus.ACHIEVED || displayedAmount >= goal.targetAmount -> 0L
+        else -> (goal.targetAmount - displayedAmount).coerceAtLeast(0)
+    }
 
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "${formatSimpleAmount(goal.currentAmount)} / ${formatSimpleAmount(goal.targetAmount)}",
+        text = "${formatSimpleAmount(displayedAmount)} / ${formatSimpleAmount(goal.targetAmount)}",
         style = MaterialTheme.typography.bodyMedium,
         color = colorScheme.onSurfaceVariant
     )
@@ -99,7 +109,13 @@ private fun SavingGoalContent(goal: SavingGoal) {
     Spacer(modifier = Modifier.height(12.dp))
     
     Text(
-        text = "You're $percentage% done! Just ${formatSimpleAmount(remaining)} more to go.",
+        text = when {
+            goal.status == GoalStatus.WITHDRAWN ->
+                "Đã rút ${formatSimpleAmount(goal.withdrawnAmount)} về ví chung."
+            goal.status == GoalStatus.ACHIEVED || displayedAmount >= goal.targetAmount ->
+                "Đã hoàn thành mục tiêu. Bạn có thể rút tiền về ví chung."
+            else -> "Bạn đã hoàn thành $percentage%. Còn ${formatSimpleAmount(remaining)} nữa là đủ mục tiêu."
+        },
         style = MaterialTheme.typography.bodySmall,
         color = colorScheme.onSurfaceVariant
     )
