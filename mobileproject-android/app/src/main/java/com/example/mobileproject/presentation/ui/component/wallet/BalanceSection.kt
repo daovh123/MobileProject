@@ -12,6 +12,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -25,8 +29,19 @@ fun BalanceSection(
     balance: Long,
     modifier: Modifier = Modifier,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     val extendedColors = AppTheme.extendedColors
+    val balanceText = formatSimpleAmount(balance)
+    var fontSize by remember(balanceText) {
+        mutableStateOf(
+            when {
+                balanceText.length <= 10 -> 40.sp
+                balanceText.length <= 14 -> 34.sp
+                balanceText.length <= 18 -> 28.sp
+                else -> 24.sp
+            }
+        )
+    }
+    val minFontSize = 18.sp
 
     ElevatedCard(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -49,12 +64,17 @@ fun BalanceSection(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = formatSimpleAmount(balance),
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 40.sp,
-                    ),
+                    text = balanceText,
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Black,
                     color = Color.White,
+                    maxLines = 1,
+                    softWrap = false,
+                    onTextLayout = { result ->
+                        if (result.hasVisualOverflow && fontSize > minFontSize) {
+                            fontSize = (fontSize.value - 2f).sp
+                        }
+                    },
                 )
             }
         }

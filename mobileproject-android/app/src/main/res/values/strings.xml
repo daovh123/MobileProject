@@ -88,7 +88,7 @@
     <string name="profile_anniversary_loading">Đang tải thông tin kỷ niệm...</string>
     <string name="profile_anniversary_title_with_partner">Kỷ niệm của %1$s</string>
     <string name="profile_anniversary_title_shared">Kỷ niệm chung</string>
-    <string name="profile_privacy_rights_count">2 quyền</string>
+    <string name="profile_privacy_rights_count"></string>
     <string name="profile_notifications_count">7 mục</string>
     <string name="profile_help_center_title">Trung tâm trợ giúp</string>
     <string name="couple_connect_title">Kết nối với người thương</string>

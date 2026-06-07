@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
@@ -368,9 +367,10 @@ fun HomeScreen(
                     releaseMapView()
                 }
             },
+            onNavigateToChat = onNavigateToChat,
         )
 
-        // FAB Logic — combined Chat + Add goals
+        // FAB Logic — combined Add goals
         if (isFabExpanded) {
             Box(modifier = Modifier.fillMaxSize().background(colorScheme.scrim.copy(alpha = 0.4f)).clickable { isFabExpanded = false })
             Column(
@@ -378,7 +378,6 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                GoalFabItem(stringResource(R.string.home_fab_chat), Icons.AutoMirrored.Filled.Chat) { isFabExpanded = false; onNavigateToChat() }
                 GoalFabItem(stringResource(R.string.home_fab_add_future_goal), Icons.Default.Event) { isFabExpanded = false; onNavigateToAddFutureGoal() }
                 GoalFabItem(stringResource(R.string.home_fab_add_saving_goal), Icons.Default.Savings) { isFabExpanded = false; onNavigateToAddSavingGoal() }
             }
@@ -472,6 +471,7 @@ private fun HomeContent(
     onSeeAllGoals: () -> Unit,
     onSeeAllFutureGoals: () -> Unit,
     onTaskToggle: (String, String) -> Unit,
+    onNavigateToChat: () -> Unit,
     mapView: MapView?,
     accessToken: String,
     shareLocationEnabled: Boolean,
@@ -509,7 +509,7 @@ private fun HomeContent(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 MiniMetricCard(stringResource(R.string.home_mini_metric_savings), formatSimpleAmount(actualWalletBalance), Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                MiniMetricCard(stringResource(R.string.home_mini_metric_memories), stringResource(R.string.home_mini_metric_new_format, 12), Icons.AutoMirrored.Filled.MenuBook, Modifier.weight(1f))
+                MiniMetricCard(stringResource(R.string.home_mini_metric_chat), stringResource(R.string.home_mini_metric_chat_hint), Icons.AutoMirrored.Filled.Chat, Modifier.weight(1f), onClick = onNavigateToChat)
             }
 
             GoalListSection(
@@ -896,11 +896,13 @@ fun DaysTogetherModernCard(daysTogether: Long) {
 }
 
 @Composable
-fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
+fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val colorScheme = MaterialTheme.colorScheme
+    var valueFontSize by remember(value) { mutableStateOf(16.sp) }
+    val minFontSize = 11.sp
 
     ElevatedCard(
-        modifier = modifier,
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerLowest),
     ) {
@@ -914,7 +916,19 @@ fun MiniMetricCard(title: String, value: String, icon: androidx.compose.ui.graph
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
             )
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colorScheme.onSurface)
+            Text(
+                value,
+                fontSize = valueFontSize,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+                onTextLayout = { result ->
+                    if (result.hasVisualOverflow && valueFontSize > minFontSize) {
+                        valueFontSize = (valueFontSize.value - 1f).sp
+                    }
+                },
+            )
         }
     }
 }

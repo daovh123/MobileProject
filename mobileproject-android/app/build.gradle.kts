@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation.layout)
     implementation("androidx.compose.ui:ui-text-google-fonts")
+    implementation(libs.androidx.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("androidx.navigation:navigation-compose:2.8.7")

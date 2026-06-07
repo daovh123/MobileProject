@@ -462,7 +462,6 @@ fun HomeScaffold(
                 composable(HomeRoutes.PROFILE) {
                     ProfileScreen(
                         accessToken = accessToken,
-                        onNavigateBack = { navController.popBackStack() },
                         onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
                         onEditProfile = {
                             navController.navigate(HomeRoutes.PROFILE_EDIT)

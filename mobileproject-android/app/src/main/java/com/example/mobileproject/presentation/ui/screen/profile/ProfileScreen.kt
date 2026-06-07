@@ -1,5 +1,8 @@
+@file:Suppress("SpellCheckingInspection")
+
 package com.example.mobileproject.presentation.ui.screen.profile
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
@@ -81,10 +84,10 @@ import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
 import com.example.mobileproject.presentation.viewmodel.UserSettingsViewModel
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun ProfileScreen(
     accessToken: String,
-    onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
     onEditProfile: () -> Unit,
     onInvitePartner: () -> Unit,
@@ -98,8 +101,6 @@ fun ProfileScreen(
     val themeMode by themeViewModel.themeMode.collectAsState()
     val pushNotificationsEnabled by userSettingsViewModel.pushNotifications.collectAsState()
     val emailNotificationsEnabled by userSettingsViewModel.emailNotifications.collectAsState()
-    val showActivityStatus by userSettingsViewModel.showActivityStatus.collectAsState()
-    val searchableByEmail by userSettingsViewModel.searchableByEmail.collectAsState()
     val notifChat by notificationViewModel.notifChat.collectAsState()
     val notifPayment by notificationViewModel.notifPayment.collectAsState()
     val notifTransaction by notificationViewModel.notifTransaction.collectAsState()
@@ -186,10 +187,6 @@ fun ProfileScreen(
                 themeLabel = themeLabel,
                 themeMode = themeMode,
                 onThemeChange = themeViewModel::setThemeMode,
-                showActivityStatus = showActivityStatus,
-                onShowActivityStatusChange = userSettingsViewModel::setShowActivityStatus,
-                searchableByEmail = searchableByEmail,
-                onSearchableByEmailChange = userSettingsViewModel::setSearchableByEmail,
                 pushNotificationsEnabled = pushNotificationsEnabled,
                 onPushNotificationsChange = userSettingsViewModel::setPushNotifications,
                 emailNotificationsEnabled = emailNotificationsEnabled,
@@ -474,10 +471,6 @@ private fun ProfileMenuCard(
     themeLabel: String,
     themeMode: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
-    showActivityStatus: Boolean,
-    onShowActivityStatusChange: (Boolean) -> Unit,
-    searchableByEmail: Boolean,
-    onSearchableByEmailChange: (Boolean) -> Unit,
     pushNotificationsEnabled: Boolean,
     onPushNotificationsChange: (Boolean) -> Unit,
     emailNotificationsEnabled: Boolean,
@@ -512,18 +505,6 @@ private fun ProfileMenuCard(
                 icon = LucideShield,
                 trailingText = stringResource(R.string.profile_privacy_rights_count),
             ) {
-//                SwitchInfoRow(
-//                    title = stringResource(R.string.settings_show_activity_title),
-//                    subtitle = stringResource(R.string.settings_show_activity_subtitle),
-//                    checked = showActivityStatus,
-//                    onCheckedChange = onShowActivityStatusChange,
-//                )
-//                SwitchInfoRow(
-//                    title = stringResource(R.string.settings_searchable_by_email_title),
-//                    subtitle = stringResource(R.string.settings_searchable_by_email_subtitle),
-//                    checked = searchableByEmail,
-//                    onCheckedChange = onSearchableByEmailChange,
-//                )
             }
             ProfileMenuDropdownItem(
                 title = stringResource(R.string.settings_notifications_section_title),
@@ -600,9 +581,7 @@ private fun ProfileMenuCard(
             ProfileMenuDropdownItem(
                 title = stringResource(R.string.profile_help_center_title),
                 icon = LucideInfo,
-                trailingText = BuildConfig.VERSION_NAME,
             ) {
-                Text(
                 Button(
                     onClick = onOpenTerms,
                     modifier = Modifier

@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
@@ -157,7 +160,7 @@ private fun RecentMomentsPreviewCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenCapture),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFCEFF1)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -171,13 +174,13 @@ private fun RecentMomentsPreviewCard(
                 Text(
                     text = "Khoảnh khắc gần đây",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
                 Icon(
                     imageVector = LucideImage,
                     contentDescription = null,
-                    tint = Color(0xFFF28A97),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -187,7 +190,7 @@ private fun RecentMomentsPreviewCard(
                         .weight(1f)
                         .height(132.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F7)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (first != null) {
@@ -197,12 +200,12 @@ private fun RecentMomentsPreviewCard(
                                     .align(Alignment.BottomStart)
                                     .padding(8.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF28A97),
+                                color = MaterialTheme.colorScheme.primary,
                             ) {
                                 Text(
                                     text = first.title.ifBlank { "Kỷ niệm mới" },
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -224,7 +227,7 @@ private fun RecentMomentsPreviewCard(
                             .fillMaxWidth()
                             .weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F7)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     ) {
                         if (second != null) {
                             MomentPhoto(second.imageUrl, second.title)
@@ -237,13 +240,13 @@ private fun RecentMomentsPreviewCard(
                             .fillMaxWidth()
                             .weight(1f),
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF28A97)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text(
                                 text = if (remain > 0) "+$remain" else "Mở",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -282,7 +285,7 @@ private fun PartnerSection(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7E3E7)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(
             modifier = Modifier
@@ -303,7 +306,7 @@ private fun PartnerSection(
                 Text(
                     text = "Thông tin nửa kia",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -313,7 +316,7 @@ private fun PartnerSection(
                     .fillMaxWidth()
                     .clickable(onClick = onClick),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8FA)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
             ) {
                 Row(
                     modifier = Modifier
@@ -324,7 +327,7 @@ private fun PartnerSection(
                     Icon(
                         imageVector = LucideUser,
                         contentDescription = null,
-                        tint = Color(0xFF2F3A40),
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(28.dp),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -333,18 +336,18 @@ private fun PartnerSection(
                             text = displayName,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF3D3033),
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = metaText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF8E777B),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Icon(
                         imageVector = LucideSettings,
                         contentDescription = null,
-                        tint = Color(0xFF8E777B),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -370,7 +373,7 @@ private fun MemoriesCalendarCard(
             .fillMaxWidth()
             .clickable(onClick = onOpenSpecialDays),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7E9EB)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -385,16 +388,16 @@ private fun MemoriesCalendarCard(
                     text = calendarMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4B3A3D),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Icon(
                     imageVector = LucideChevronRight,
                     contentDescription = null,
-                    tint = Color(0xFF8E777B),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             CalendarMonthGrid(month = calendarMonth, selectedDay = selectedDay)
-            Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFF3EFF0)) {
+            Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -404,13 +407,13 @@ private fun MemoriesCalendarCard(
                     Surface(
                         modifier = Modifier.size(28.dp),
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFFFD8DE),
+                        color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Filled.Cake,
                                 contentDescription = null,
-                                tint = Color(0xFFF28A97),
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -421,7 +424,7 @@ private fun MemoriesCalendarCard(
                             text = nearestReminder?.title ?: "Chưa có ngày đặc biệt sắp tới",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF4B3A3D),
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         val subtitle = nearestReminder?.let { reminder ->
                             val days = ChronoUnit.DAYS.between(today, reminder.date).coerceAtLeast(0)
@@ -430,7 +433,7 @@ private fun MemoriesCalendarCard(
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF8E777B),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     AsyncImage(
@@ -455,31 +458,42 @@ private fun SpecialDaysBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
+                .navigationBarsPadding(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                bottom = 24.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = "10 ngày đặc biệt sắp tới",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF3A2A2D),
-            )
-            if (days.isEmpty()) {
+            item {
                 Text(
-                    text = "Không có ngày đặc biệt nào sắp tới.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "10 ngày đặc biệt sắp tới",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
+            }
+            if (days.isEmpty()) {
+                item {
+                    Text(
+                        text = "Không có ngày đặc biệt nào sắp tới.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             } else {
-                days.forEachIndexed { index, day ->
+                itemsIndexed(
+                    items = days,
+                    key = { index, day -> "${day.title}_${day.date}_$index" },
+                ) { index, day ->
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFF9EEF0),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
                     ) {
                         Row(
                             modifier = Modifier
@@ -491,20 +505,20 @@ private fun SpecialDaysBottomSheet(
                             Text(
                                 text = "${index + 1}.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E777B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = day.title,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF3D3033),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
                                     text = formatReminderDate(day.date),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF8E777B),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -533,7 +547,7 @@ private fun CalendarMonthGrid(
                 Text(
                     text = day,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFAA969A),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(28.dp),
                 )
             }
@@ -548,13 +562,13 @@ private fun CalendarMonthGrid(
                         Surface(
                             modifier = Modifier.width(28.dp).height(28.dp),
                             shape = RoundedCornerShape(14.dp),
-                            color = if (isSelected) Color(0xFFF28A97) else Color.Transparent,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = day.toString(),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSelected) Color.White else Color(0xFF4B3A3D),
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }
@@ -620,13 +634,13 @@ private fun EmptyMomentTile(
         modifier = Modifier
             .fillMaxSize()
             .clickable(onClick = onClick),
-        color = Color(0xFFFFEEF1),
+        color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = "Chạm để mở camera",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFF28A97),
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
