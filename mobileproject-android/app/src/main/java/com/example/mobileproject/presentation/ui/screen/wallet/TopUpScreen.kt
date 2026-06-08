@@ -67,7 +67,9 @@ import com.example.mobileproject.presentation.viewmodel.TopUpPaymentMode
 import com.example.mobileproject.presentation.viewmodel.TopUpStep
 import com.example.mobileproject.presentation.viewmodel.TopUpUiState
 import com.example.mobileproject.presentation.viewmodel.TopUpViewModel
+import com.example.mobileproject.utils.formatAmountWithDots
 import com.example.mobileproject.utils.formatSimpleAmount
+import com.example.mobileproject.utils.stripAmountFormatting
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,8 +187,8 @@ private fun AmountStep(
                 }
 
                 BasicTextField(
-                    value = uiState.amount,
-                    onValueChange = viewModel::onAmountChange,
+                    value = formatAmountWithDots(uiState.amount),
+                    onValueChange = { newText -> viewModel.onAmountChange(stripAmountFormatting(newText)) },
                     textStyle = TextStyle(
                         fontSize = fontSize,
                         fontWeight = FontWeight.Bold,

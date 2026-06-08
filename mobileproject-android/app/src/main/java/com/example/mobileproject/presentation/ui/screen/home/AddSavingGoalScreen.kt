@@ -63,6 +63,8 @@ import com.example.mobileproject.R
 import com.example.mobileproject.domain.model.ExpenseCategory
 import com.example.mobileproject.presentation.ui.screen.add_expense.components.CategoryBottomSheet
 import com.example.mobileproject.presentation.viewmodel.GoalViewModel
+import com.example.mobileproject.utils.formatAmountWithDots
+import com.example.mobileproject.utils.stripAmountFormatting
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -200,15 +202,15 @@ fun AddSavingGoalScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.goal_target_amount_label), fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                 TextField(
-                    value = targetAmount,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) targetAmount = it },
+                    value = formatAmountWithDots(targetAmount),
+                    onValueChange = { targetAmount = stripAmountFormatting(it) },
                     modifier = Modifier.fillMaxWidth(),
                     prefix = {
                         Text("$ ", color = colorScheme.primary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
                     },
                     placeholder = {
                         Text(
-                            "1000",
+                            "1.000",
                             color = colorScheme.primary.copy(alpha = 0.3f),
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,

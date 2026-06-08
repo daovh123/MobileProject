@@ -60,7 +60,9 @@ import com.example.mobileproject.presentation.model.wallet.VietnamBankCatalog
 import com.example.mobileproject.presentation.ui.screen.wallet.components.BankLogo
 import com.example.mobileproject.presentation.ui.screen.wallet.components.SearchableBankPicker
 import com.example.mobileproject.presentation.viewmodel.TransferMoneyViewModel
+import com.example.mobileproject.utils.formatAmountWithDots
 import com.example.mobileproject.utils.formatSimpleAmount
+import com.example.mobileproject.utils.stripAmountFormatting
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -253,8 +255,8 @@ fun TransferMoneyScreen(
             )
 
             OutlinedTextField(
-                value = amount,
-                onValueChange = { input -> if (input.all(Char::isDigit)) amount = input },
+                value = formatAmountWithDots(amount),
+                onValueChange = { input -> amount = stripAmountFormatting(input) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Số tiền") },
                 singleLine = true,

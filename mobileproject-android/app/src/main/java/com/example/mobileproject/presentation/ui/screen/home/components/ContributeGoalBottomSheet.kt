@@ -56,7 +56,9 @@ import androidx.compose.ui.unit.sp
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
+import com.example.mobileproject.utils.formatAmountWithDots
 import com.example.mobileproject.utils.formatSimpleAmount
+import com.example.mobileproject.utils.stripAmountFormatting
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -229,8 +231,8 @@ fun ContributeGoalBottomSheet(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = amount,
-                        onValueChange = { if (it.all(Char::isDigit)) amount = it },
+                        value = formatAmountWithDots(amount),
+                        onValueChange = { amount = stripAmountFormatting(it) },
                         prefix = { Text("đ ", color = colorScheme.primary, fontWeight = FontWeight.Bold) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
