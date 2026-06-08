@@ -55,9 +55,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.mobileproject.R
 import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
-import com.example.mobileproject.presentation.ui.component.wallet.BalanceSection
-import com.example.mobileproject.presentation.ui.component.wallet.MonthlySpendingCard
-import com.example.mobileproject.presentation.ui.component.wallet.RecentActivitySection
+import com.example.mobileproject.presentation.ui.components.wallet.BalanceSection
+import com.example.mobileproject.presentation.ui.components.wallet.MonthlySpendingCard
+import com.example.mobileproject.presentation.ui.components.wallet.RecentActivitySection
 import com.example.mobileproject.presentation.ui.screen.home.components.ContributeGoalBottomSheet
 import com.example.mobileproject.presentation.viewmodel.SavingGoalViewModel
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel

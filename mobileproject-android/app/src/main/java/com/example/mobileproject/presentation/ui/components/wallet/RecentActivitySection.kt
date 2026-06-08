@@ -1,36 +1,30 @@
-package com.example.mobileproject.presentation.ui.component.wallet
+package com.example.mobileproject.presentation.ui.components.wallet
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mobileproject.R
-import com.example.mobileproject.domain.entity.GoalStatus
 import com.example.mobileproject.domain.entity.SavingGoal
-import com.example.mobileproject.presentation.ui.screen.home.components.GoalCard
+import com.example.mobileproject.domain.entity.Transaction
 
 @Composable
-fun GoalSection(
-    goals: List<SavingGoal>,
+fun RecentActivitySection(
+    transactions: List<Transaction>,
+    goals: List<SavingGoal> = emptyList(),
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val sortedGoals = goals.sortedWith(
-        compareBy<SavingGoal> { it.status != GoalStatus.IN_PROGRESS } // Closed goals at bottom
-            .thenBy { it.deadline ?: "9999-99-99" } // Near deadline first
-    )
-
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -38,7 +32,7 @@ fun GoalSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.wallet_saving_goals_title),
+                text = stringResource(R.string.wallet_recent_activity_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.onSurface
@@ -48,20 +42,20 @@ fun GoalSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        if (sortedGoals.isEmpty()) {
+        if (transactions.isEmpty()) {
             Text(
-                text = stringResource(R.string.wallet_no_saving_goals),
+                text = stringResource(R.string.wallet_recent_activity_empty),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 textAlign = TextAlign.Center,
                 color = colorScheme.onSurfaceVariant
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Hiển thị tối đa 2 mục như yêu cầu
-                sortedGoals.take(2).forEach { goal ->
-                    GoalCard(goal = goal)
+                // Chỉ hiển thị 5 giao dịch gần nhất ở màn hình chính
+                transactions.take(5).forEach { transaction ->
+                    TransactionItem(transaction = transaction, goals = goals)
                 }
             }
         }

@@ -1,4 +1,4 @@
-package com.example.mobileproject.presentation.ui.component.wallet
+package com.example.mobileproject.presentation.ui.components.wallet
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

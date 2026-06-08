@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.ui.components.core.AppFullScreenLoading
-import com.example.mobileproject.presentation.ui.component.wallet.TransactionItem
+import com.example.mobileproject.presentation.ui.components.wallet.TransactionItem
 import com.example.mobileproject.presentation.viewmodel.WalletViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

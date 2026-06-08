@@ -290,7 +290,7 @@ private fun RegisterScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        val enableScroll = maxHeight < 860.dp
+        val enableScroll = maxHeight < 3860.dp
 
         Image(
             painter = painterResource(id = R.drawable.img_register_and_login_rabbit),

@@ -1,4 +1,4 @@
-﻿package com.example.mobileproject.presentation.ui.component
+﻿package com.example.mobileproject.presentation.ui.components
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable

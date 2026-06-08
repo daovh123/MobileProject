@@ -1,6 +1,5 @@
-package com.example.mobileproject.presentation.ui.component.wallet
+package com.example.mobileproject.presentation.ui.components.wallet
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mobileproject.R
 import com.example.mobileproject.domain.entity.CategoryBreakdown
-import java.text.DecimalFormat
 import java.text.DateFormatSymbols
 
 @Composable
