@@ -11,7 +11,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -76,7 +75,7 @@ import com.example.mobileproject.data.datasource.local.AuthSessionStore
 import com.example.mobileproject.domain.entity.AuthSession
 import com.example.mobileproject.presentation.ui.components.auth.AuthBackdrop
 import com.example.mobileproject.presentation.ui.components.auth.AuthBrandMark
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.viewmodel.AuthViewModel
 import com.example.mobileproject.presentation.viewmodel.ThemeModeViewModel
@@ -99,13 +98,13 @@ class LoginActivity : ComponentActivity() {
         enableImmersiveMode()
         val prefilledEmail = intent.getStringExtra(EXTRA_PREFILLED_EMAIL).orEmpty()
         val showRegistrationSuccess = intent.getBooleanExtra(EXTRA_REGISTERED_SUCCESS, false)
-        val openChat = intent.getBooleanExtra(HomeActivity.EXTRA_OPEN_CHAT, false)
+        val openChat = intent.getBooleanExtra(HomeHelper.EXTRA_OPEN_CHAT, false)
 
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
-            val intent = Intent(this, HomeActivity::class.java).apply {
-                putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
-                putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
+            val intent = Intent(this, HomeHelper::class.java).apply {
+                putExtra(HomeHelper.EXTRA_ACCESS_TOKEN, savedSession.token)
+                putExtra(HomeHelper.EXTRA_OPEN_CHAT, openChat)
             }
             startActivity(intent)
             finish()
@@ -128,9 +127,9 @@ class LoginActivity : ComponentActivity() {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(
                     onLoginSuccess = { session ->
-                        val intent = Intent(this, HomeActivity::class.java).apply {
-                            putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, session.token)
-                            putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
+                        val intent = Intent(this, HomeHelper::class.java).apply {
+                            putExtra(HomeHelper.EXTRA_ACCESS_TOKEN, session.token)
+                            putExtra(HomeHelper.EXTRA_OPEN_CHAT, openChat)
                         }
                         startActivity(intent)
                         finish()

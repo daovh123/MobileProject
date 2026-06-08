@@ -32,7 +32,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -58,7 +56,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
 import com.example.mobileproject.presentation.viewmodel.ProfileViewModel
 
@@ -81,8 +79,8 @@ class CoupleConnectedActivity : ComponentActivity() {
                     relationshipStartDate = relationshipStartDate,
                     onGoHome = {
                         startActivity(
-                            Intent(this, HomeActivity::class.java)
-                                .putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, accessToken)
+                            Intent(this, HomeHelper::class.java)
+                                .putExtra(HomeHelper.EXTRA_ACCESS_TOKEN, accessToken)
                         )
                         finish()
                     }

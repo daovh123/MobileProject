@@ -4,22 +4,16 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -45,7 +39,7 @@ import com.example.mobileproject.presentation.ui.screen.couple.CoupleConnectActi
 import com.example.mobileproject.presentation.ui.screen.explore.ExploreRoute
 import com.example.mobileproject.presentation.ui.screen.home.AddFutureGoalScreen
 import com.example.mobileproject.presentation.ui.screen.home.AddSavingGoalScreen
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import com.example.mobileproject.presentation.ui.screen.home.HomeScreen
 import com.example.mobileproject.presentation.ui.screen.memories.CaptureMomentScreen
 import com.example.mobileproject.presentation.ui.screen.memories.MemoriesScreen
@@ -64,11 +58,7 @@ import com.example.mobileproject.presentation.ui.screen.wallet.TopUpQRScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TopUpBankRedirectScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.TransferMoneyScreen
 import com.example.mobileproject.presentation.ui.screen.wallet.WalletScreen
-import com.example.mobileproject.presentation.ui.icons.LucideBell
-import com.example.mobileproject.presentation.ui.icons.LucideClose
-import com.example.mobileproject.presentation.ui.icons.LucideUser
 import com.example.mobileproject.presentation.ui.screen.profile.ProfileEditScreen
-import com.example.mobileproject.presentation.ui.components.core.DraggableChatFab
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.presentation.viewmodel.NotificationViewModel
 
@@ -326,7 +316,7 @@ fun HomeScaffold(
                         accessToken = accessToken,
                         onNavigateBack = { navController.popBackStack() },
                         onLogout = {
-                            (context as? HomeActivity)?.logoutAndOpenLogin()
+                            (context as? HomeHelper)?.logoutAndOpenLogin()
                         }
                     )
                 }
@@ -456,7 +446,7 @@ fun HomeScaffold(
                 composable(HomeRoutes.SETTINGS_PRIVACY) {
                     SettingsPrivacyScreen(
                         accessToken = accessToken,
-                        onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
+                        onLogout = { (context as? HomeHelper)?.logoutAndOpenLogin() },
                     )
                 }
                 composable(HomeRoutes.SETTINGS_NOTIFICATIONS) {
@@ -472,7 +462,7 @@ fun HomeScaffold(
                     ProfileScreen(
                         accessToken = accessToken,
                         onNavigateBack = { navController.popBackStack() },
-                        onLogout = { (context as? HomeActivity)?.logoutAndOpenLogin() },
+                        onLogout = { (context as? HomeHelper)?.logoutAndOpenLogin() },
                         onEditProfile = {
                             navController.navigate(HomeRoutes.PROFILE_EDIT)
                         },

@@ -11,7 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
@@ -192,8 +192,8 @@ object ChatNotifications {
     }
 
     private fun createOpenChatPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, HomeActivity::class.java).apply {
-            putExtra(HomeActivity.EXTRA_OPEN_CHAT, true)
+        val intent = Intent(context, HomeHelper::class.java).apply {
+            putExtra(HomeHelper.EXTRA_OPEN_CHAT, true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
@@ -343,7 +343,7 @@ object ChatNotifications {
             }
         }
 
-        val intent = Intent(context, HomeActivity::class.java).apply {
+        val intent = Intent(context, HomeHelper::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val pendingIntent = PendingIntent.getActivity(

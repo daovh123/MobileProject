@@ -12,7 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mobileproject.data.datasource.local.AuthSessionStore
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import com.example.mobileproject.presentation.ui.screen.login.LoginActivity
 import com.example.mobileproject.presentation.ui.screen.register.RegisterActivity
 import com.example.mobileproject.presentation.ui.theme.MobileProjectTheme
@@ -31,12 +31,12 @@ class WelcomeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableImmersiveMode()
 
-        val openChat = intent.getBooleanExtra(HomeActivity.EXTRA_OPEN_CHAT, false)
+        val openChat = intent.getBooleanExtra(HomeHelper.EXTRA_OPEN_CHAT, false)
         val savedSession = authSessionStore.load()
         if (savedSession != null) {
-            val destinationIntent = Intent(this, HomeActivity::class.java).apply {
-                putExtra(HomeActivity.EXTRA_ACCESS_TOKEN, savedSession.token)
-                putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
+            val destinationIntent = Intent(this, HomeHelper::class.java).apply {
+                putExtra(HomeHelper.EXTRA_ACCESS_TOKEN, savedSession.token)
+                putExtra(HomeHelper.EXTRA_OPEN_CHAT, openChat)
             }
             startActivity(destinationIntent)
             finish()
@@ -56,7 +56,7 @@ class WelcomeActivity : ComponentActivity() {
                     onLoginClick = {
                         startActivity(
                             Intent(this@WelcomeActivity, LoginActivity::class.java).apply {
-                                putExtra(HomeActivity.EXTRA_OPEN_CHAT, openChat)
+                                putExtra(HomeHelper.EXTRA_OPEN_CHAT, openChat)
                             }
                         )
                     },

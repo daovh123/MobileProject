@@ -23,7 +23,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.action.actionStartActivity
 import com.example.mobileproject.R
-import com.example.mobileproject.presentation.ui.screen.home.HomeActivity
+import com.example.mobileproject.presentation.ui.screen.home.HomeHelper
 import kotlinx.coroutines.flow.first
 import java.io.File
 
@@ -45,7 +45,7 @@ class MomentWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            val openApp = actionStartActivity<HomeActivity>()
+            val openApp = actionStartActivity<HomeHelper>()
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()

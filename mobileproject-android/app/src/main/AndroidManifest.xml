@@ -39,7 +39,7 @@
             android:exported="false" />
 
         <activity
-            android:name="com.example.mobileproject.presentation.ui.screen.home.HomeActivity"
+            android:name="com.example.mobileproject.presentation.ui.screen.home.HomeHelper"
             android:exported="false" />
 
         <activity

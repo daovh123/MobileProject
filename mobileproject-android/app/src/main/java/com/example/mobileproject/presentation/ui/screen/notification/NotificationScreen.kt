@@ -1,5 +1,7 @@
 package com.example.mobileproject.presentation.ui.screen.notification
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +55,7 @@ private data class NotificationVisual(
     val iconTint: Color,
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
@@ -66,6 +70,10 @@ fun NotificationScreen(
         if (notifState.unreadCount > 0) {
             viewModel.markAllRead()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.ensureLoaded()
     }
 
     LaunchedEffect(listState, notifState.hasNextPage, notifState.isLoading) {
@@ -110,6 +118,7 @@ fun NotificationScreen(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent,
                 ),
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         containerColor = Color.Transparent,
@@ -119,6 +128,26 @@ fun NotificationScreen(
                 modifier = Modifier.padding(paddingValues),
                 message = "Đang tải thông báo...",
             )
+        } else if (notifState.errorMessage != null && notifState.notifications.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = notifState.errorMessage ?: "",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = { viewModel.refresh(force = true) }) {
+                        Text("Thử lại")
+                    }
+                }
+            }
         } else if (notifState.notifications.isEmpty() && !notifState.isLoading) {
             Box(
                 modifier = Modifier
@@ -161,6 +190,7 @@ fun NotificationScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun NotificationItem(item: AppNotificationDto) {
     val colorScheme = MaterialTheme.colorScheme
@@ -285,6 +315,7 @@ private fun resolveNotificationVisual(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun formatNotificationTime(createdAt: String): String {
     return try {
         val instant = java.time.Instant.parse(createdAt)

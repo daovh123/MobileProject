@@ -22,6 +22,7 @@ data class NotificationUiState(
     val isLoading: Boolean = false,
     val hasNextPage: Boolean = false,
     val currentPage: Int = 0,
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
@@ -34,6 +35,7 @@ class NotificationViewModel @Inject constructor(
     private companion object {
         const val NOTIFICATION_STALE_MS: Long = 45_000L
         const val UNREAD_STALE_MS: Long = 20_000L
+        val HIDDEN_NOTIFICATION_TYPES = setOf("CHAT_MESSAGE", "CHAT_MESSENGE")
     }
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -114,33 +116,64 @@ class NotificationViewModel @Inject constructor(
 
         viewModelScope.launch {
             if (showLoading) {
-                _uiState.update { it.copy(isLoading = true) }
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            } else {
+                _uiState.update { it.copy(errorMessage = null) }
             }
             runCatching {
-                val resp = apiService.getNotifications("Bearer $token", page)
-                if (resp.isSuccessful) {
-                    val pageData = resp.body()
-                    if (pageData != null) {
-                        lastNotificationsLoadedAt = System.currentTimeMillis()
-                        val filtered = pageData.content.filter { it.type.uppercase() != "CHAT_MESSAGE" }
-                        val newList = if (reset) filtered
-                        else _uiState.value.notifications + filtered
-                        _uiState.update {
-                            it.copy(
-                                notifications = newList,
-                                hasNextPage = pageData.hasNext,
-                                currentPage = pageData.currentPage,
-                                isLoading = false,
-                            )
-                        }
-                    } else {
-                        _uiState.update { it.copy(isLoading = false) }
-                    }
+                var nextPage = page
+                var loadedPage = page
+                var hasNextPage = false
+                var foundVisibleNotification = false
+                var newList: List<AppNotificationDto> = if (reset) {
+                    emptyList()
                 } else {
-                    _uiState.update { it.copy(isLoading = false) }
+                    _uiState.value.notifications
                 }
-            }.onFailure {
-                _uiState.update { s -> s.copy(isLoading = false) }
+
+                while (true) {
+                    val requestedPage = nextPage
+                    val resp = apiService.getNotifications("Bearer $token", requestedPage)
+                    if (!resp.isSuccessful) {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = "Lỗi tải thông báo (${resp.code()})") }
+                        return@runCatching
+                    }
+
+                    val pageData = resp.body()
+                    if (pageData == null) {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = "Dữ liệu trả về trống") }
+                        return@runCatching
+                    }
+
+                    lastNotificationsLoadedAt = System.currentTimeMillis()
+                    val visibleNotifications = pageData.content
+                        .filterNot { isHiddenNotificationType(it.type) }
+                    if (visibleNotifications.isNotEmpty()) {
+                        newList = newList + visibleNotifications
+                        foundVisibleNotification = true
+                    }
+
+                    loadedPage = pageData.currentPage
+                    hasNextPage = pageData.hasNext
+
+                    if (foundVisibleNotification || !hasNextPage) {
+                        break
+                    }
+
+                    nextPage = requestedPage + 1
+                }
+
+                _uiState.update {
+                    it.copy(
+                        notifications = newList,
+                        hasNextPage = hasNextPage,
+                        currentPage = loadedPage,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update { s -> s.copy(isLoading = false, errorMessage = e.message ?: "Không thể tải thông báo") }
             }
         }
     }
@@ -204,5 +237,9 @@ class NotificationViewModel @Inject constructor(
 
     private fun isUnreadStale(now: Long = System.currentTimeMillis()): Boolean {
         return now - lastUnreadLoadedAt >= UNREAD_STALE_MS
+    }
+
+    private fun isHiddenNotificationType(type: String): Boolean {
+        return type.trim().uppercase() in HIDDEN_NOTIFICATION_TYPES
     }
 }
