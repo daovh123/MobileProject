@@ -1,4 +1,4 @@
-# You & Me Wallet
+# AFFINITY Wallet
 
 Ứng dụng quản lý tài chính và lối sống dành cho các cặp đôi. Quản lý ví chung, theo dõi chi tiêu, trò chuyện thời gian thực, chia sẻ vị trí, lưu giữ kỷ niệm và khám phá địa điểm cùng nhau.
 
